@@ -1,26 +1,7 @@
-import React from 'react';
-import {
-  Box,
-  Typography,
-  Grid,
-  Card,
-  CardContent,
-  Stack,
-  LinearProgress,
-  Paper,
-  Button,
-  Avatar,
-  Divider,
-} from '@mui/material';
-import { styled } from '@mui/material/styles';
-import {
-  TrendingUp,
-  People,
-  CheckCircle,
-  Info,
-  ArrowUpward,
-} from '@mui/icons-material';
-import { Line } from 'react-chartjs-2';
+import type React from "react"
+import { Box, Typography, Grid, Card, CardContent } from "@mui/material"
+import { TrendingUp, People, CheckCircle, Info } from "@mui/icons-material"
+import { Line } from "react-chartjs-2"
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -30,20 +11,12 @@ import {
   Title,
   Tooltip,
   Legend,
-} from 'chart.js';
-import MetricCard from '../../components/common/MetricCard';
-import PerformanceMetric from '../../components/common/PerformanceMetric';
-import ActivityItem from '../../components/common/ActivityItem';
+} from "chart.js"
+import MetricCard from "../../components/common/MetricCard"
+import PerformanceMetric from "../../components/common/PerformanceMetric"
+import ActivityItem from "../../components/common/ActivityItem"
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-);
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
 
 const chartOptions = {
   responsive: true,
@@ -65,25 +38,25 @@ const chartOptions = {
       },
     },
   },
-};
+}
 
 const chartData = {
-  labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+  labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
   datasets: [
     {
-      label: 'Revenue',
+      label: "Revenue",
       data: [30, 45, 35, 50, 40, 60],
-      borderColor: '#2563eb',
+      borderColor: "#2563eb",
       tension: 0.4,
     },
   ],
-};
+}
 
-const Overview: React.FC = () => {
+const PartnerOverview: React.FC = () => {
   return (
     <Box>
       <Typography variant="h4" sx={{ mb: 4 }}>
-        Dashboard Overview
+        Partner Dashboard
       </Typography>
 
       <Grid container spacing={3}>
@@ -140,29 +113,14 @@ const Overview: React.FC = () => {
         </Grid>
 
         <Grid item xs={12} md={4}>
-          <Card sx={{ height: '100%' }}>
+          <Card sx={{ height: "100%" }}>
             <CardContent>
               <Typography variant="h6" sx={{ mb: 2 }}>
                 Performance Metrics
               </Typography>
-              <PerformanceMetric
-                label="Lead Quality"
-                value="85/100"
-                color="#2563eb"
-                progress={85}
-              />
-              <PerformanceMetric
-                label="Response Time"
-                value="92/100"
-                color="#10b981"
-                progress={92}
-              />
-              <PerformanceMetric
-                label="Customer Satisfaction"
-                value="88/100"
-                color="#f59e0b"
-                progress={88}
-              />
+              <PerformanceMetric label="Lead Quality" value="85/100" color="#2563eb" progress={85} />
+              <PerformanceMetric label="Response Time" value="92/100" color="#10b981" progress={92} />
+              <PerformanceMetric label="Customer Satisfaction" value="88/100" color="#f59e0b" progress={88} />
             </CardContent>
           </Card>
         </Grid>
@@ -212,7 +170,7 @@ const Overview: React.FC = () => {
         </Grid>
       </Grid>
     </Box>
-  );
-};
+  )
+}
 
-export default Overview;
+export default PartnerOverview

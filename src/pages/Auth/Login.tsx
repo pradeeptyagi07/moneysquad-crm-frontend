@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, Link } from "react-router-dom"
 import {
   Box,
   Typography,
@@ -12,15 +12,16 @@ import {
   IconButton,
   Card,
   CardContent,
-  Link,
   CircularProgress,
   Alert,
   Divider,
 } from "@mui/material"
 import { Visibility, VisibilityOff, Login as LoginIcon } from "@mui/icons-material"
+import { useAuth } from "../../hooks/useAuth"
 
 const Login: React.FC = () => {
   const navigate = useNavigate()
+  const { login, userRole } = useAuth()
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -91,16 +92,20 @@ const Login: React.FC = () => {
     setError(null)
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      const success = await login(formData.emailOrMobile, formData.password)
 
-      // For demo purposes, show error for specific credentials
-      if (formData.emailOrMobile === "test@example.com" && formData.password === "wrongpass") {
+      if (success) {
+        // Navigate based on user role
+        if (userRole === "admin") {
+          navigate("/admin")
+        } else if (userRole === "manager") {
+          navigate("/manager")
+        } else if (userRole === "partner") {
+          navigate("/partner")
+        }
+      } else {
         throw new Error("Invalid credentials. Please try again.")
       }
-
-      // Success - would normally set auth tokens, user context, etc.
-      navigate("/overview")
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unexpected error occurred")
     } finally {
@@ -286,7 +291,8 @@ const Login: React.FC = () => {
 
             <Box sx={{ textAlign: "right", mb: 3 }}>
               <Link
-                href="#"
+                component={Link}
+                to="/forgot-password"
                 underline="hover"
                 sx={{
                   color: "primary.main",

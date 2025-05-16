@@ -1,18 +1,21 @@
-import React, { Suspense } from "react"
-import { Routes, Route, useLocation, Navigate } from "react-router-dom"
+"use client"
+
+import { Suspense } from "react"
+import { Navigate, useRoutes } from "react-router-dom"
 import { Box, CircularProgress } from "@mui/material"
-import Layout from "./components/Layout"
 import { LocalizationProvider } from "@mui/x-date-pickers"
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns"
+import { AuthProvider, useAuth } from "./hooks/useAuth"
 
-// Lazy load pages
-const Overview = React.lazy(() => import("./pages/Overview/Overview"))
-const Leads = React.lazy(() => import("./pages/Leads/Leads"))
-const Offers = React.lazy(() => import("./pages/Offers/Offers"))
-const Commissions = React.lazy(() => import("./pages/Commissions/Commissions"))
-const Settings = React.lazy(() => import("./pages/Settings/Settings"))
-const Login = React.lazy(() => import("./pages/Auth/Login"))
-const BecomePartner = React.lazy(() => import("./pages/Auth/BecomePartner"))
+// Import route configurations
+import adminRoutes from "./routes/adminRoutes"
+import managerRoutes from "./routes/managerRoutes"
+import partnerRoutes from "./routes/partnerRoutes"
+
+// Auth pages
+import Login from "./pages/Auth/Login"
+import BecomePartner from "./pages/Auth/BecomePartner"
+import ForgotPassword from "./pages/Auth/ForgotPassword"
 
 // Loading component for suspense fallback
 const LoadingFallback = () => (
@@ -29,32 +32,64 @@ const LoadingFallback = () => (
   </Box>
 )
 
-function App() {
-  const location = useLocation()
-  const isAuthPage = location.pathname === "/" || location.pathname.startsWith("/sign-up")
+// Router component that uses authentication context
+const AppRoutes = () => {
+  const { isAuthenticated, userRole } = useAuth()
 
+  // Redirect authenticated users to their role-specific dashboard
+  const getRedirect = () => {
+    if (!isAuthenticated) return "/"
+
+    switch (userRole) {
+      case "admin":
+        return "/admin"
+      case "manager":
+        return "/manager"
+      case "partner":
+        return "/partner"
+      default:
+        return "/"
+    }
+  }
+
+  // Combine all routes
+  const allRoutes = [
+    {
+      path: "/",
+      element: isAuthenticated ? <Navigate to={getRedirect()} replace /> : <Login />,
+    },
+    {
+      path: "/sign-up/become-partner",
+      element: <BecomePartner />,
+    },
+    {
+      path: "/forgot-password",
+      element: <ForgotPassword />,
+    },
+    // Include all role-specific routes directly (without protection wrapper)
+    ...adminRoutes,
+    ...managerRoutes,
+    ...partnerRoutes,
+    // Redirect any unknown routes to appropriate dashboard or login
+    {
+      path: "*",
+      element: <Navigate to={getRedirect()} replace />,
+    },
+  ]
+
+  const routes = useRoutes(allRoutes)
+  return routes
+}
+
+function App() {
   return (
-    <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Suspense fallback={<LoadingFallback />}>
-        {isAuthPage ? (
-          <Routes>
-            <Route path="/" element={<Login />} />
-            <Route path="/sign-up/become-partner" element={<BecomePartner />} />
-          </Routes>
-        ) : (
-          <Layout>
-            <Routes>
-              <Route path="/overview" element={<Overview />} />
-              <Route path="/leads" element={<Leads />} />
-              <Route path="/offers" element={<Offers />} />
-              <Route path="/commissions" element={<Commissions />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="*" element={<Navigate to="/overview" replace />} />
-            </Routes>
-          </Layout>
-        )}
-      </Suspense>
-    </LocalizationProvider>
+    <AuthProvider>
+      <LocalizationProvider dateAdapter={AdapterDateFns}>
+        <Suspense fallback={<LoadingFallback />}>
+          <AppRoutes />
+        </Suspense>
+      </LocalizationProvider>
+    </AuthProvider>
   )
 }
 
