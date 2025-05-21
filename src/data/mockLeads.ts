@@ -288,6 +288,32 @@ export const mockLeads: Lead[] = [
         updatedBy: "Tom Partner"
       }
     ]
+  },
+  {
+    id: "LEAD009",
+    applicantName: "Lisa Wang",
+    applicantProfile: "Business",
+    businessName: "Wang Technologies",
+    mobileNumber: "9876543217",
+    email: "lwang@example.com",
+    pincode: "400008",
+    loanType: "Business Loan",
+    loanAmount: 3000000,
+    status: "pending",
+    createdBy: "Tom Partner",
+    createdAt: "2023-05-17T09:30:00Z",
+    assignedTo: "",
+    assignedToId: "",
+    lender: "",
+    comments: "Tech startup seeking expansion capital",
+    timeline: [
+      {
+        status: "created",
+        timestamp: "2023-05-17T09:30:00Z",
+        comment: "Lead created",
+        updatedBy: "Tom Partner"
+      }
+    ]
   }
 ];
 
