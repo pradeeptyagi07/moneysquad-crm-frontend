@@ -1,80 +1,65 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
+import type React from "react"
+import { createContext, useContext } from "react"
+import { useDispatch, useSelector } from "react-redux"
+import { loginUser, logoutUser, clearAuthError } from "../store/slices/authSlice"
+import type { RootState } from "../store"
 
 interface AuthContextType {
   isAuthenticated: boolean
   userRole: string
   userName: string
+  loading: boolean
+  error: string | null
   login: (email: string, password: string) => Promise<boolean>
   logout: () => void
+  clearError: () => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-// Dummy users with different roles
-const dummyUsers = [
-  { email: "admin@example.com", password: "password123", role: "admin" },
-  { email: "partner@example.com", password: "password123", role: "partner" },
-  { email: "manager@example.com", password: "password123", role: "manager" },
-]
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const dispatch = useDispatch()
+  const { isAuthenticated, userRole, userName, loading, error } = useSelector((state: RootState) => state.auth)
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [userRole, setUserRole] = useState("")
-  const [userName, setUserName] = useState("")
-
-  useEffect(() => {
-    // Check if user is already logged in
-    const storedRole = localStorage.getItem("userRole")
-    const storedName = localStorage.getItem("userName")
-
-    if (storedRole && storedName) {
-      setIsAuthenticated(true)
-      setUserRole(storedRole)
-      setUserName(storedName)
-    }
-  }, [])
-
+  // Login function that dispatches the Redux action
   const login = async (email: string, password: string): Promise<boolean> => {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    // Check if credentials match any dummy user
-    const user = dummyUsers.find((user) => user.email === email && user.password === password)
-
-    if (user) {
-      localStorage.setItem("userRole", user.role)
-      localStorage.setItem("userName", user.email)
-      setIsAuthenticated(true)
-      setUserRole(user.role)
-      setUserName(user.email)
-      return true
+    try {
+      const resultAction = await dispatch(loginUser({ email, password }))
+      return !resultAction.meta.requestStatus.includes("rejected")
+    } catch (err) {
+      console.error("Login error in useAuth:", err)
+      return false
     }
-
-    return false
   }
 
+  // Logout function that dispatches the Redux action
   const logout = () => {
-    localStorage.removeItem("userRole")
-    localStorage.removeItem("userName")
-    setIsAuthenticated(false)
-    setUserRole("")
-    setUserName("")
+    dispatch(logoutUser())
   }
 
+  // Clear error function
+  const clearError = () => {
+    dispatch(clearAuthError())
+  }
+
+  // Provide the auth context
   const value = {
     isAuthenticated,
     userRole,
     userName,
+    loading,
+    error,
     login,
     logout,
+    clearError,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
-export const useAuth = () => {
+export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext)
   if (context === undefined) {
     throw new Error("useAuth must be used within an AuthProvider")

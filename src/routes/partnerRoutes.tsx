@@ -8,11 +8,12 @@ import Leads from "../pages/Leads/Leads"
 import Offers from "../pages/Offers/Offers"
 import Commissions from "../pages/Commissions/Commissions"
 import Settings from "../pages/Settings/Settings"
-import { useAuth } from "../hooks/useAuth"
+import { useAppSelector } from "../hooks/useAppSelector"
 
 // Protected route component specific to partner role
 const PartnerRoute = ({ children }: { children: JSX.Element }) => {
-  const { isAuthenticated, userRole } = useAuth()
+  // Use Redux state instead of auth context
+  const { isAuthenticated, userRole } = useAppSelector((state) => state.auth)
 
   if (!isAuthenticated) {
     return <Navigate to="/" replace />

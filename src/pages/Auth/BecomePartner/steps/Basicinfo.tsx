@@ -1,7 +1,9 @@
+// ✅ File: steps/BasicInfo.tsx
 "use client"
 
 import type React from "react"
 import { useState } from "react"
+import { useAppDispatch } from "../../../../hooks/useAppDispatch"
 import {
   Box,
   Grid,
@@ -14,6 +16,7 @@ import {
   Alert,
 } from "@mui/material"
 import { VerifiedUser } from "@mui/icons-material"
+import { sendPartnerOtp, verifyPartnerOtp } from "../../../../store/slices/signupPartnerSlice"
 import type { PartnerFormData } from "../index"
 
 interface BasicInfoProps {
@@ -24,11 +27,12 @@ interface BasicInfoProps {
 const registrationTypes = ["Individual", "Proprietorship", "LLP", "Private Limited", "Other"]
 
 const BasicInfo: React.FC<BasicInfoProps> = ({ formData, updateFormData }) => {
+  const dispatch = useAppDispatch()
+
   const [errors, setErrors] = useState({
     fullName: "",
     mobileNumber: "",
     email: "",
-    pincode: "",
     registrationType: "",
   })
 
@@ -40,15 +44,9 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ formData, updateFormData }) => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-
-    // Clear errors when user types
     if (errors[name as keyof typeof errors]) {
-      setErrors({
-        ...errors,
-        [name]: "",
-      })
+      setErrors({ ...errors, [name]: "" })
     }
-
     updateFormData({ [name]: value })
   }
 
@@ -68,8 +66,6 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ formData, updateFormData }) => {
             ? ""
             : "Enter a valid email address"
           : "Email is required"
-      case "pincode":
-        return value ? (/^\d{6}$/.test(value) ? "" : "Enter a valid 6-digit pincode") : "Pincode is required"
       case "registrationType":
         return value ? "" : "Please select registration type"
       default:
@@ -79,33 +75,22 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ formData, updateFormData }) => {
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-    const errorMessage = validateField(name, value)
-
-    setErrors({
-      ...errors,
-      [name]: errorMessage,
-    })
+    setErrors({ ...errors, [name]: validateField(name, value) })
   }
 
   const handleSendOtp = async () => {
     const emailError = validateField("email", formData.email)
-
     if (emailError) {
-      setErrors({
-        ...errors,
-        email: emailError,
-      })
+      setErrors({ ...errors, email: emailError })
       return
     }
 
     setIsSendingOtp(true)
-
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      await dispatch(sendPartnerOtp(formData.email)).unwrap()
       setOtpSent(true)
     } catch (error) {
-      console.error("Error sending OTP:", error)
+      setOtpError(error as string)
     } finally {
       setIsSendingOtp(false)
     }
@@ -118,21 +103,11 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ formData, updateFormData }) => {
     }
 
     setIsVerifying(true)
-    setOtpError("")
-
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-
-      // For demo purposes, accept any 4-digit OTP
-      if (otp.length === 4 && /^\d{4}$/.test(otp)) {
-        updateFormData({ otpVerified: true })
-      } else {
-        setOtpError("Invalid OTP. Please try again.")
-      }
+      await dispatch(verifyPartnerOtp({ email: formData.email, otp })).unwrap()
+      updateFormData({ otpVerified: true })
     } catch (error) {
-      console.error("Error verifying OTP:", error)
-      setOtpError("Failed to verify OTP. Please try again.")
+      setOtpError(error as string)
     } finally {
       setIsVerifying(false)
     }
@@ -141,6 +116,7 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ formData, updateFormData }) => {
   return (
     <Box>
       <Grid container spacing={3}>
+        {/* Full Name */}
         <Grid item xs={12}>
           <TextField
             fullWidth
@@ -152,12 +128,11 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ formData, updateFormData }) => {
             onBlur={handleBlur}
             error={!!errors.fullName}
             helperText={errors.fullName}
-            InputProps={{
-              sx: { borderRadius: 2 },
-            }}
+            InputProps={{ sx: { borderRadius: 2 } }}
           />
         </Grid>
 
+        {/* Mobile Number */}
         <Grid item xs={12} md={6}>
           <TextField
             fullWidth
@@ -176,6 +151,7 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ formData, updateFormData }) => {
           />
         </Grid>
 
+        {/* Email */}
         <Grid item xs={12} md={6}>
           <TextField
             fullWidth
@@ -200,6 +176,7 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ formData, updateFormData }) => {
           />
         </Grid>
 
+        {/* OTP Section */}
         <Grid item xs={12}>
           {!formData.otpVerified && !otpSent && (
             <Button
@@ -232,9 +209,7 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ formData, updateFormData }) => {
                 error={!!otpError}
                 helperText={otpError}
                 sx={{ flex: 1 }}
-                InputProps={{
-                  sx: { borderRadius: 2 },
-                }}
+                InputProps={{ sx: { borderRadius: 2 } }}
               />
               <Button
                 variant="contained"
@@ -262,23 +237,7 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ formData, updateFormData }) => {
           )}
         </Grid>
 
-        <Grid item xs={12} md={6}>
-          <TextField
-            fullWidth
-            required
-            label="Pincode"
-            name="pincode"
-            value={formData.pincode}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            error={!!errors.pincode}
-            helperText={errors.pincode}
-            InputProps={{
-              sx: { borderRadius: 2 },
-            }}
-          />
-        </Grid>
-
+        {/* Registration Type */}
         <Grid item xs={12} md={6}>
           <TextField
             select
@@ -291,9 +250,7 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ formData, updateFormData }) => {
             onBlur={handleBlur}
             error={!!errors.registrationType}
             helperText={errors.registrationType}
-            InputProps={{
-              sx: { borderRadius: 2 },
-            }}
+            InputProps={{ sx: { borderRadius: 2 } }}
           >
             {registrationTypes.map((option) => (
               <MenuItem key={option} value={option}>
@@ -303,6 +260,7 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ formData, updateFormData }) => {
           </TextField>
         </Grid>
 
+        {/* Note */}
         <Grid item xs={12}>
           <Typography variant="body2" color="text.secondary">
             All fields marked with * are mandatory. Your email will be verified via a verification code.

@@ -3,14 +3,12 @@
 import type React from "react"
 import { useState } from "react"
 import { Box, Tab, Tabs, Typography, Paper } from "@mui/material"
-import { Person, Security, AccountBalance, Home, Badge, UploadFile, Notifications } from "@mui/icons-material"
-import ProfileSection from "./components/ProfileSection"
+import { Security, AccountBalance, Home, Badge, UploadFile } from "@mui/icons-material"
 import BankDetailsSection from "./components/BankDetailsSection"
-import SecuritySection from "./components/SecuritySection"
 import PersonalDetailsSection from "./components/PersonalDetailsSection"
 import AddressDetailsSection from "./components/AddressDetailsSection"
 import DocumentsSection from "./components/DocumentsSection"
-import NotificationsSection from "./components/NotificationsSection"
+import SecuritySection from "./components/SecuritySection"
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -48,7 +46,7 @@ interface PartnerSettingsProps {
 const PartnerSettings: React.FC<PartnerSettingsProps> = ({ user }) => {
   const [value, setValue] = useState(0)
 
-  const handleChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleChange = (_event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue)
   }
 
@@ -95,36 +93,28 @@ const PartnerSettings: React.FC<PartnerSettingsProps> = ({ user }) => {
             },
           }}
         >
-          <Tab icon={<Person />} label="Profile" iconPosition="start" {...a11yProps(0)} sx={{ px: 3 }} />
-          <Tab icon={<Badge />} label="Personal Details" iconPosition="start" {...a11yProps(1)} sx={{ px: 3 }} />
-          <Tab icon={<Home />} label="Address" iconPosition="start" {...a11yProps(2)} sx={{ px: 3 }} />
-          <Tab icon={<AccountBalance />} label="Bank Details" iconPosition="start" {...a11yProps(3)} sx={{ px: 3 }} />
-          <Tab icon={<UploadFile />} label="Documents" iconPosition="start" {...a11yProps(4)} sx={{ px: 3 }} />
-          <Tab icon={<Notifications />} label="Notifications" iconPosition="start" {...a11yProps(5)} sx={{ px: 3 }} />
-          <Tab icon={<Security />} label="Security" iconPosition="start" {...a11yProps(6)} sx={{ px: 3 }} />
+          <Tab icon={<Badge />} label="Personal Details" iconPosition="start" {...a11yProps(0)} sx={{ px: 3 }} />
+          <Tab icon={<Home />} label="Address" iconPosition="start" {...a11yProps(1)} sx={{ px: 3 }} />
+          <Tab icon={<AccountBalance />} label="Bank Details" iconPosition="start" {...a11yProps(2)} sx={{ px: 3 }} />
+          <Tab icon={<UploadFile />} label="Documents" iconPosition="start" {...a11yProps(3)} sx={{ px: 3 }} />
+          <Tab icon={<Security />} label="Security" iconPosition="start" {...a11yProps(4)} sx={{ px: 3 }} />
         </Tabs>
       </Box>
 
       <TabPanel value={value} index={0}>
-        <ProfileSection user={user} isAdmin={false} />
-      </TabPanel>
-      <TabPanel value={value} index={1}>
         <PersonalDetailsSection user={user} />
       </TabPanel>
-      <TabPanel value={value} index={2}>
+      <TabPanel value={value} index={1}>
         <AddressDetailsSection user={user} />
       </TabPanel>
-      <TabPanel value={value} index={3}>
+      <TabPanel value={value} index={2}>
         <BankDetailsSection user={user} />
       </TabPanel>
-      <TabPanel value={value} index={4}>
+      <TabPanel value={value} index={3}>
         <DocumentsSection user={user} />
       </TabPanel>
-      <TabPanel value={value} index={5}>
-        <NotificationsSection user={user} />
-      </TabPanel>
-      <TabPanel value={value} index={6}>
-        <SecuritySection user={user} />
+      <TabPanel value={value} index={4}>
+        <SecuritySection />
       </TabPanel>
     </Paper>
   )

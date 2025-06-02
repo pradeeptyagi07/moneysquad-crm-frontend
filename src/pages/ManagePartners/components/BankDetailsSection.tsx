@@ -2,9 +2,15 @@
 
 import type React from "react"
 import { useState } from "react"
-import { Box, Typography, Paper, Grid, Divider, IconButton } from "@mui/material"
+import {
+  Box,
+  Typography,
+  Paper,
+  Grid,
+  Divider,
+  IconButton
+} from "@mui/material"
 import { Visibility, VisibilityOff } from "@mui/icons-material"
-import type { Partner } from "../types/partnerTypes"
 
 interface BankDetailsSectionProps {
   partner: Partner
@@ -14,17 +20,14 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = ({ partner }) => {
   const [showAccountNumber, setShowAccountNumber] = useState(false)
   const [showIFSC, setShowIFSC] = useState(false)
 
-  const toggleAccountNumber = () => {
-    setShowAccountNumber(!showAccountNumber)
-  }
+  const bank = partner.bankDetails || {}
 
-  const toggleIFSC = () => {
-    setShowIFSC(!showIFSC)
-  }
+  const toggleAccountNumber = () => setShowAccountNumber(!showAccountNumber)
+  const toggleIFSC = () => setShowIFSC(!showIFSC)
 
   const maskText = (text: string) => {
     const visibleChars = 4
-    const maskedPart = "*".repeat(text.length - visibleChars)
+    const maskedPart = "*".repeat(Math.max(0, text.length - visibleChars))
     const visiblePart = text.slice(-visibleChars)
     return maskedPart + visiblePart
   }
@@ -76,7 +79,7 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = ({ partner }) => {
             Account Type
           </Typography>
           <Typography variant="body1" sx={{ fontWeight: 500, mb: 2 }}>
-            {partner.accountType}
+            {bank.accountType}
           </Typography>
         </Grid>
 
@@ -85,7 +88,7 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = ({ partner }) => {
             Account Holder Name
           </Typography>
           <Typography variant="body1" sx={{ fontWeight: 500, mb: 2 }}>
-            {partner.accountHolderName}
+            {bank.accountHolderName}
           </Typography>
         </Grid>
 
@@ -94,7 +97,7 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = ({ partner }) => {
             Bank Name
           </Typography>
           <Typography variant="body1" sx={{ fontWeight: 500, mb: 2 }}>
-            {partner.bankName}
+            {bank.bankName}
           </Typography>
         </Grid>
 
@@ -104,7 +107,7 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = ({ partner }) => {
           </Typography>
           <Box sx={{ display: "flex", alignItems: "center" }}>
             <Typography variant="body1" sx={{ fontWeight: 500, mb: 2 }}>
-              {showAccountNumber ? partner.accountNumber : maskText(partner.accountNumber)}
+              {showAccountNumber ? bank.accountNumber : maskText(bank.accountNumber || "")}
             </Typography>
             <IconButton size="small" onClick={toggleAccountNumber} sx={{ ml: 1, mb: 2 }}>
               {showAccountNumber ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
@@ -118,7 +121,7 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = ({ partner }) => {
           </Typography>
           <Box sx={{ display: "flex", alignItems: "center" }}>
             <Typography variant="body1" sx={{ fontWeight: 500, mb: 2 }}>
-              {showIFSC ? partner.ifscCode : maskText(partner.ifscCode)}
+              {showIFSC ? bank.ifscCode : maskText(bank.ifscCode || "")}
             </Typography>
             <IconButton size="small" onClick={toggleIFSC} sx={{ ml: 1, mb: 2 }}>
               {showIFSC ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
@@ -131,7 +134,7 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = ({ partner }) => {
             Branch Name
           </Typography>
           <Typography variant="body1" sx={{ fontWeight: 500, mb: 2 }}>
-            {partner.branchName}
+            {bank.branchName}
           </Typography>
         </Grid>
       </Grid>

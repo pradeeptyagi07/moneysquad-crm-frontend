@@ -11,7 +11,6 @@ const ManagerLayout = () => {
   const menuItems = [
     { text: "Overview", icon: "Dashboard", path: "/manager/overview" },
     { text: "Leads", icon: "People", path: "/manager/leads" },
-    { text: "Commissions", icon: "AttachMoney", path: "/manager/commissions" },
     { text: "Settings", icon: "Settings", path: "/manager/settings" },
   ]
 

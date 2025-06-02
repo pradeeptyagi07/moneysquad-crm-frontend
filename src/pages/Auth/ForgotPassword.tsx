@@ -1,8 +1,7 @@
 "use client"
 
 import type React from "react"
-
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import {
   Box,
   Typography,
@@ -19,30 +18,17 @@ import { Link, useNavigate } from "react-router-dom"
 import { motion } from "framer-motion"
 import OtpInput from "react-otp-input"
 import { LockReset, Email, ArrowBack } from "@mui/icons-material"
-
-// Simulated OTP verification
-const simulateOtpSend = async (email: string): Promise<string> => {
-  // In a real app, this would call an API to send OTP
-  await new Promise((resolve) => setTimeout(resolve, 1500))
-  return "1234" // Simulated OTP for demo purposes
-}
+import { useAppDispatch } from "../../hooks/useAppDispatch"
+import { sendOtp, forgotPassword } from "../../store/slices/authSlice"
 
 const ForgotPassword = () => {
+  const dispatch = useAppDispatch()
   const navigate = useNavigate()
   const [email, setEmail] = useState("")
   const [otp, setOtp] = useState("")
-  const [generatedOtp, setGeneratedOtp] = useState("")
-  const [step, setStep] = useState(1) // 1: Email, 2: OTP, 3: Success
+  const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
-  const [countdown, setCountdown] = useState(0)
-
-  useEffect(() => {
-    if (countdown > 0) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 1000)
-      return () => clearTimeout(timer)
-    }
-  }, [countdown])
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -53,51 +39,30 @@ const ForgotPassword = () => {
 
     setLoading(true)
     setError("")
-
     try {
-      const otp = await simulateOtpSend(email)
-      setGeneratedOtp(otp)
+      await dispatch(sendOtp(String(email))).unwrap()
       setStep(2)
-      setCountdown(60) // 60 seconds countdown for resend
-    } catch (error) {
-      setError("Failed to send OTP. Please try again.")
+    } catch (err: any) {
+      setError(err || "Failed to send OTP. Please try again.")
     } finally {
       setLoading(false)
     }
   }
 
-  const handleOtpSubmit = (e: React.FormEvent) => {
+  const handleOtpSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (otp.length !== 4) {
-      setError("Please enter the complete 4-digit OTP")
+    if (otp.length !== 6) {
+      setError("Please enter the complete 6-digit OTP")
       return
     }
 
     setLoading(true)
     setError("")
-
-    // Simulate OTP verification
-    setTimeout(() => {
-      if (otp === generatedOtp) {
-        setStep(3)
-      } else {
-        setError("Invalid OTP. Please try again.")
-      }
-      setLoading(false)
-    }, 1500)
-  }
-
-  const handleResendOtp = async () => {
-    if (countdown > 0) return
-
-    setLoading(true)
     try {
-      const otp = await simulateOtpSend(email)
-      setGeneratedOtp(otp)
-      setCountdown(60)
-      setError("")
-    } catch (error) {
-      setError("Failed to resend OTP. Please try again.")
+      await dispatch(forgotPassword({ email: String(email), otp })).unwrap()
+      setStep(3)
+    } catch (err: any) {
+      setError(err || "Invalid OTP. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -140,7 +105,7 @@ const ForgotPassword = () => {
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
             {step === 1 && "Enter your email to receive a verification code"}
-            {step === 2 && "Enter the 4-digit code sent to your email"}
+            {step === 2 && "Enter the 6-digit code sent to your email"}
             {step === 3 && "Your password has been reset successfully"}
           </Typography>
         </Box>
@@ -205,55 +170,26 @@ const ForgotPassword = () => {
         ) : (
           <Box component="form" onSubmit={step === 1 ? handleEmailSubmit : handleOtpSubmit} sx={{ width: "100%" }}>
             {step === 1 ? (
-              <Box
-                component={motion.div}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.5 }}
-              >
-                <TextField
-                  fullWidth
-                  label="Email Address"
-                  variant="outlined"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  disabled={loading}
-                  InputProps={{
-                    startAdornment: <Email color="action" sx={{ mr: 1 }} />,
-                  }}
-                  sx={{
-                    mb: 3,
-                    "& .MuiOutlinedInput-root": {
-                      borderRadius: 2,
-                      "&:hover fieldset": {
-                        borderColor: "primary.main",
-                      },
-                    },
-                  }}
-                />
-                <Button
-                  type="submit"
-                  variant="contained"
-                  color="primary"
-                  size="large"
-                  fullWidth
-                  disabled={loading}
-                  sx={{
-                    py: 1.5,
+              <TextField
+                fullWidth
+                label="Email Address"
+                variant="outlined"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={loading}
+                InputProps={{ startAdornment: <Email color="action" sx={{ mr: 1 }} /> }}
+                sx={{
+                  mb: 3,
+                  "& .MuiOutlinedInput-root": {
                     borderRadius: 2,
-                    background: "linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)",
-                    transition: "transform 0.2s",
-                    "&:hover": {
-                      transform: "translateY(-2px)",
-                      boxShadow: "0 6px 20px rgba(37, 99, 235, 0.2)",
+                    "&:hover fieldset": {
+                      borderColor: "primary.main",
                     },
-                  }}
-                >
-                  {loading ? <CircularProgress size={24} color="inherit" /> : "Send Verification Code"}
-                </Button>
-              </Box>
+                  },
+                }}
+              />
             ) : (
               <Box
                 component={motion.div}
@@ -264,12 +200,12 @@ const ForgotPassword = () => {
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
-                  maxWidth: "400px",
+                  maxWidth: "480px",
                   mx: "auto",
                 }}
               >
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                  We've sent a 4-digit code to
+                  We've sent a 6-digit code to
                 </Typography>
                 <Typography variant="body1" fontWeight={600} sx={{ mb: 4 }}>
                   {email}
@@ -278,15 +214,15 @@ const ForgotPassword = () => {
                 <OtpInput
                   value={otp}
                   onChange={setOtp}
-                  numInputs={4}
+                  numInputs={6}
                   inputType="text"
                   shouldAutoFocus
                   renderSeparator={<Box sx={{ width: 8 }} />}
                   renderInput={(props) => (
                     <Box
                       sx={{
-                        width: 60,
-                        height: 60,
+                        width: 48,
+                        height: 48,
                         display: "flex",
                         justifyContent: "center",
                         alignItems: "center",
@@ -305,20 +241,18 @@ const ForgotPassword = () => {
                         style={{
                           width: "100%",
                           height: "100%",
-                          fontSize: "1.5rem",
+                          fontSize: "1.25rem",
                           textAlign: "center",
                           border: "none",
                           borderRadius: 8,
                           outline: "none",
                           background: "transparent",
-                          // Hide number input arrows
                           WebkitAppearance: "none",
                           MozAppearance: "textfield",
                         }}
                         onKeyDown={(e) => {
-                          // Allow only numbers, backspace, delete, tab, arrows
                           if (
-                            !/^\d$/.test(e.key) &&
+                            !/\d/.test(e.key) &&
                             e.key !== "Backspace" &&
                             e.key !== "Delete" &&
                             e.key !== "Tab" &&
@@ -334,50 +268,40 @@ const ForgotPassword = () => {
                   containerStyle={{
                     display: "flex",
                     justifyContent: "center",
-                    gap: "16px",
+                    gap: "12px",
                     marginBottom: "24px",
                   }}
                 />
+              </Box>
+            )}
 
-                <Button
-                  type="submit"
-                  variant="contained"
-                  color="primary"
-                  size="large"
-                  fullWidth
-                  disabled={loading || otp.length !== 4}
-                  sx={{
-                    py: 1.5,
-                    borderRadius: 2,
-                    mb: 2,
-                    background: "linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)",
-                    transition: "transform 0.2s",
-                    "&:hover": {
-                      transform: "translateY(-2px)",
-                      boxShadow: "0 6px 20px rgba(37, 99, 235, 0.2)",
-                    },
-                  }}
-                >
-                  {loading ? <CircularProgress size={24} color="inherit" /> : "Verify & Reset Password"}
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              size="large"
+              fullWidth
+              disabled={loading || (step === 2 && otp.length !== 6)}
+              sx={{
+                py: 1.5,
+                borderRadius: 2,
+                mb: 2,
+                background: "linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)",
+                transition: "transform 0.2s",
+                "&:hover": {
+                  transform: "translateY(-2px)",
+                  boxShadow: "0 6px 20px rgba(37, 99, 235, 0.2)",
+                },
+              }}
+            >
+              {loading ? <CircularProgress size={24} color="inherit" /> : step === 1 ? "Send Verification Code" : "Verify & Reset Password"}
+            </Button>
+
+            {step === 2 && (
+              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+                <Button startIcon={<ArrowBack />} onClick={() => setStep(1)} disabled={loading} sx={{ color: "text.secondary" }}>
+                  Back
                 </Button>
-
-                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
-                  <Button
-                    startIcon={<ArrowBack />}
-                    onClick={() => setStep(1)}
-                    disabled={loading}
-                    sx={{ color: "text.secondary" }}
-                  >
-                    Back
-                  </Button>
-                  <Button
-                    onClick={handleResendOtp}
-                    disabled={loading || countdown > 0}
-                    sx={{ color: countdown > 0 ? "text.secondary" : "primary.main" }}
-                  >
-                    {countdown > 0 ? `Resend in ${countdown}s` : "Resend Code"}
-                  </Button>
-                </Box>
               </Box>
             )}
           </Box>

@@ -1,7 +1,7 @@
-"use client"
+// src/pages/Leads/components/AssignLeadDialog.tsx
+"use client";
 
-import type React from "react"
-import { useState } from "react"
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -15,104 +15,139 @@ import {
   Typography,
   Box,
   IconButton,
-} from "@mui/material"
-import { Close } from "@mui/icons-material"
-import type { Lead } from "../../../data/leadTypes"
-import { mockManagers } from "../../../data/mockLeads"
+  CircularProgress,
+  Snackbar,
+  Alert,
+} from "@mui/material";
+import { Close } from "@mui/icons-material";
+import { useAppDispatch } from "../../../hooks/useAppDispatch";
+import { useAppSelector } from "../../../hooks/useAppSelector";
+import { fetchManagers } from "../../../store/slices/teamSLice";
+import { assignLead, fetchAllLeads } from "../../../store/slices/leadSLice";
+import type { Lead } from "../../../store/slices/leadSLice";
 
 interface AssignLeadDialogProps {
-  open: boolean
-  onClose: () => void
-  lead: Lead
-  onAssign: (leadId: string, managerId: string, managerName: string) => void
+  open: boolean;
+  onClose: () => void;
+  lead?: Lead | null;
 }
 
-const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({ open, onClose, lead, onAssign }) => {
-  const [selectedManager, setSelectedManager] = useState("")
+const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({ open, onClose, lead }) => {
+  const dispatch = useAppDispatch();
 
-  const handleAssign = () => {
-    if (!selectedManager || !lead) return
+  // do not render without lead or when closed
+  if (!open || !lead) return null;
 
-    const manager = mockManagers.find((m) => m.id === selectedManager)
-    if (manager) {
-      onAssign(lead.id, manager.id, manager.name)
+  // Manager list
+  const { managers, loading: mgrLoading, error: mgrError } = useAppSelector(
+    (state) => state.team
+  );
+
+  // Local state
+  const [selectedMgr, setSelectedMgr] = useState<string>("");
+  const [loadingAssign, setLoadingAssign] = useState<boolean>(false);
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: "success" | "error" }>({
+    open: false,
+    message: "",
+    severity: "success",
+  });
+
+  // Fetch managers on open
+  useEffect(() => {
+    dispatch(fetchManagers());
+    setSelectedMgr("");
+    setSnackbar({ open: false, message: "", severity: "success" });
+  }, [dispatch]);
+
+  // assign handler
+  const handleAssign = async () => {
+    setLoadingAssign(true);
+    try {
+      await dispatch(assignLead({ leadId: lead.id!, managerAssigned: selectedMgr })).unwrap();
+      dispatch(fetchAllLeads());
+      setSnackbar({ open: true, message: "Manager assigned successfully!", severity: "success" });
+      setTimeout(() => {
+        setSnackbar((s) => ({ ...s, open: false }));
+        onClose();
+      }, 1000);
+    } catch (err: any) {
+      const msg = typeof err === "string" ? err : err.message || String(err);
+      setSnackbar({ open: true, message: msg, severity: "error" });
+    } finally {
+      setLoadingAssign(false);
     }
-  }
+  };
 
-  // If lead is undefined, don't render the dialog content
-  if (!lead) {
-    return (
-      <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+  return (
+    <>
+      <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
         <DialogTitle>
           <Box display="flex" justifyContent="space-between" alignItems="center">
             <Typography variant="h6">Assign Lead to Manager</Typography>
-            <IconButton edge="end" color="inherit" onClick={onClose} aria-label="close">
+            <IconButton onClick={onClose} size="small">
               <Close />
             </IconButton>
           </Box>
         </DialogTitle>
-        <DialogContent>
-          <Typography>No lead selected</Typography>
+
+        <DialogContent dividers>
+          <Typography gutterBottom>
+            <strong>Lead ID:</strong> {lead.leadId || lead.id}
+          </Typography>
+
+          {mgrLoading ? (
+            <Box display="flex" justifyContent="center" p={2}>
+              <CircularProgress />
+            </Box>
+          ) : mgrError ? (
+            <Typography color="error">{mgrError}</Typography>
+          ) : (
+            <FormControl fullWidth>
+              <InputLabel>Select Manager</InputLabel>
+              <Select
+                value={selectedMgr}
+                onChange={(e) => setSelectedMgr(e.target.value)}
+                label="Select Manager"
+              >
+                {managers.map((m) => (
+                  <MenuItem key={m._id} value={m._id}>
+                    {m.firstName} {m.lastName}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
         </DialogContent>
+
         <DialogActions>
-          <Button onClick={onClose}>Close</Button>
+          <Button onClick={onClose} disabled={loadingAssign}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleAssign}
+            variant="contained"
+            disabled={!selectedMgr || loadingAssign}
+          >
+            {loadingAssign ? <CircularProgress size={20} /> : "Assign"}
+          </Button>
         </DialogActions>
       </Dialog>
-    )
-  }
 
-  return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>
-        <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Typography variant="h6">Assign Lead to Manager</Typography>
-          <IconButton edge="end" color="inherit" onClick={onClose} aria-label="close">
-            <Close />
-          </IconButton>
-        </Box>
-      </DialogTitle>
-      <DialogContent>
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="subtitle2" color="textSecondary">
-            Lead ID
-          </Typography>
-          <Typography variant="body1" fontWeight={500}>
-            {lead.id}
-          </Typography>
-        </Box>
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          severity={snackbar.severity}
+          onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </>
+  );
+};
 
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="subtitle2" color="textSecondary">
-            Applicant
-          </Typography>
-          <Typography variant="body1" fontWeight={500}>
-            {lead.applicantName}
-          </Typography>
-        </Box>
-
-        <FormControl fullWidth sx={{ mt: 2 }}>
-          <InputLabel>Select Manager</InputLabel>
-          <Select
-            value={selectedManager}
-            onChange={(e) => setSelectedManager(e.target.value as string)}
-            label="Select Manager"
-          >
-            {mockManagers.map((manager) => (
-              <MenuItem key={manager.id} value={manager.id}>
-                {manager.name} ({manager.email})
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button onClick={handleAssign} variant="contained" color="primary" disabled={!selectedManager}>
-          Assign
-        </Button>
-      </DialogActions>
-    </Dialog>
-  )
-}
-
-export default AssignLeadDialog
+export default AssignLeadDialog;

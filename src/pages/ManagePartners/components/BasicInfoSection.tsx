@@ -1,6 +1,5 @@
 import type React from "react"
 import { Box, Typography, Paper, Grid, Divider } from "@mui/material"
-import type { Partner } from "../types/partnerTypes"
 
 interface BasicInfoSectionProps {
   partner: Partner
@@ -54,7 +53,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ partner }) => {
             Full Name
           </Typography>
           <Typography variant="body1" sx={{ fontWeight: 500, mb: 2 }}>
-            {partner.fullName}
+            {partner.basicInfo?.fullName || "-"}
           </Typography>
         </Grid>
 
@@ -63,7 +62,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ partner }) => {
             Partner ID
           </Typography>
           <Typography variant="body1" sx={{ fontWeight: 500, mb: 2 }}>
-            {partner.partnerId}
+            {partner.partnerId || "-"}
           </Typography>
         </Grid>
 
@@ -72,7 +71,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ partner }) => {
             Email Address
           </Typography>
           <Typography variant="body1" sx={{ fontWeight: 500, mb: 2 }}>
-            {partner.email}
+            {partner.email || "-"}
           </Typography>
         </Grid>
 
@@ -81,7 +80,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ partner }) => {
             Mobile Number
           </Typography>
           <Typography variant="body1" sx={{ fontWeight: 500, mb: 2 }}>
-            {partner.mobileNumber}
+            {partner.mobile || partner.basicInfo?.mobile || "-"}
           </Typography>
         </Grid>
 
@@ -90,7 +89,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ partner }) => {
             Pincode
           </Typography>
           <Typography variant="body1" sx={{ fontWeight: 500, mb: 2 }}>
-            {partner.pincode}
+            {partner.addressDetails?.pincode || "-"}
           </Typography>
         </Grid>
 
@@ -99,7 +98,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ partner }) => {
             Registration Type
           </Typography>
           <Typography variant="body1" sx={{ fontWeight: 500, mb: 2 }}>
-            {partner.registrationType}
+            {partner.basicInfo?.registeringAs || "-"}
           </Typography>
         </Grid>
 

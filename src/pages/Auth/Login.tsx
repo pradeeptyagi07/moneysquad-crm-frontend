@@ -1,8 +1,9 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
-import { useNavigate, Link } from "react-router-dom"
+
+import { useState, useEffect } from "react"
+import { useNavigate, Link as RouterLink } from "react-router-dom"
 import {
   Box,
   Typography,
@@ -13,67 +14,89 @@ import {
   Card,
   CardContent,
   CircularProgress,
-  Alert,
   Divider,
+  Link,
+  Snackbar,
+  Alert,
 } from "@mui/material"
 import { Visibility, VisibilityOff, Login as LoginIcon } from "@mui/icons-material"
-import { useAuth } from "../../hooks/useAuth"
+import { useDispatch, useSelector } from "react-redux"
+import { loginUser, clearAuthError } from "../../store/slices/authSlice"
+import type { RootState, AppDispatch } from "../../store"
 
-const Login: React.FC = () => {
+const Login = () => {
   const navigate = useNavigate()
-  const { login, userRole } = useAuth()
+  const dispatch = useDispatch<AppDispatch>()
+
+  // Get auth state from Redux
+  const { isAuthenticated, userRole, loading, error } = useSelector((state: RootState) => state.auth)
+
+  // Local state
   const [showPassword, setShowPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [snackbarOpen, setSnackbarOpen] = useState(false)
+  const [snackbarMessage, setSnackbarMessage] = useState("")
+  const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">("success")
+  const [formData, setFormData] = useState({ emailOrMobile: "", password: "" })
+  const [formErrors, setFormErrors] = useState({ emailOrMobile: "", password: "" })
+  const [hasRedirected, setHasRedirected] = useState(false)
 
-  const [formData, setFormData] = useState({
-    emailOrMobile: "",
-    password: "",
-  })
+  // Show error in snackbar
+  useEffect(() => {
+    if (error) {
+      setSnackbarMessage(error)
+      setSnackbarSeverity("error")
+      setSnackbarOpen(true)
+    }
+  }, [error])
 
-  const [formErrors, setFormErrors] = useState({
-    emailOrMobile: "",
-    password: "",
-  })
+  // Handle successful login
+  useEffect(() => {
+    if (isAuthenticated && !hasRedirected) {
+      // Show success message
+      setSnackbarMessage("Login successful! Redirecting...")
+      setSnackbarSeverity("success")
+      setSnackbarOpen(true)
 
+      // Set flag to prevent multiple redirects
+      setHasRedirected(true)
+
+      // Redirect after delay
+      const timer = setTimeout(() => {
+        if (userRole === "admin") navigate("/admin")
+        else if (userRole === "manager") navigate("/manager")
+        else if (userRole === "partner") navigate("/partner")
+      }, 2000)
+
+      return () => clearTimeout(timer)
+    }
+  }, [isAuthenticated, userRole, navigate, hasRedirected])
+
+  // Handle input change
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-    setFormData({
-      ...formData,
-      [name]: value,
-    })
+    setFormData({ ...formData, [name]: value })
 
-    // Clear errors when user types
+    // Clear field error
     if (formErrors[name as keyof typeof formErrors]) {
-      setFormErrors({
-        ...formErrors,
-        [name]: "",
-      })
+      setFormErrors({ ...formErrors, [name]: "" })
     }
+
+    // Clear Redux error
+    if (error) dispatch(clearAuthError())
   }
 
+  // Validate form
   const validateForm = () => {
+    const newErrors = { emailOrMobile: "", password: "" }
     let isValid = true
-    const newErrors = { ...formErrors }
 
-    // Validate email/mobile
     if (!formData.emailOrMobile) {
       newErrors.emailOrMobile = "Email or mobile number is required"
       isValid = false
-    } else if (
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.emailOrMobile) &&
-      !/^[6-9]\d{9}$/.test(formData.emailOrMobile)
-    ) {
-      newErrors.emailOrMobile = "Please enter a valid email or 10-digit mobile number"
-      isValid = false
     }
 
-    // Validate password
     if (!formData.password) {
       newErrors.password = "Password is required"
-      isValid = false
-    } else if (formData.password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters"
       isValid = false
     }
 
@@ -81,40 +104,29 @@ const Login: React.FC = () => {
     return isValid
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Handle login
+  const handleLogin = (e: React.MouseEvent | React.KeyboardEvent) => {
     e.preventDefault()
 
-    if (!validateForm()) {
-      return
-    }
+    if (!validateForm()) return
 
-    setIsLoading(true)
-    setError(null)
+    // Reset redirect flag
+    setHasRedirected(false)
 
-    try {
-      const success = await login(formData.emailOrMobile, formData.password)
-
-      if (success) {
-        // Navigate based on user role
-        if (userRole === "admin") {
-          navigate("/admin")
-        } else if (userRole === "manager") {
-          navigate("/manager")
-        } else if (userRole === "partner") {
-          navigate("/partner")
-        }
-      } else {
-        throw new Error("Invalid credentials. Please try again.")
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "An unexpected error occurred")
-    } finally {
-      setIsLoading(false)
-    }
+    dispatch(
+      loginUser({
+        email: formData.emailOrMobile,
+        password: formData.password,
+      }),
+    )
   }
 
-  const handleTogglePasswordVisibility = () => {
-    setShowPassword(!showPassword)
+  // Handle key press
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.preventDefault()
+      handleLogin(e)
+    }
   }
 
   return (
@@ -142,32 +154,56 @@ const Login: React.FC = () => {
         },
       }}
     >
+      {/* Snackbar */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={() => setSnackbarOpen(false)}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setSnackbarOpen(false)}
+          severity={snackbarSeverity}
+          sx={{ width: "100%" }}
+          elevation={6}
+          variant="filled"
+        >
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
+
       <Box
         sx={{
           position: "absolute",
-          top: { xs: 20, md: 40 },
+          top: { xs: 16, md: 24 },
           left: "50%",
           transform: "translateX(-50%)",
           textAlign: "center",
+          zIndex: 1
         }}
       >
-        <Typography
-          variant="h4"
+        <Box
+          component="img"
+          src="/images/MoneySquad-logo.png"
+          alt="MoneySquad"
           sx={{
+            height: { xs: 50, md: 60 },   // ← smaller logo
+            mb: 1
+          }}
+        />
+        <Typography
+          variant="h6"
+          sx={{
+            color: "primary.main",       // ← premium blue
             fontWeight: 800,
-            background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            letterSpacing: "-0.5px",
+            letterSpacing: 1,
           }}
         >
-          MoneySquad
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
           Partner Portal
         </Typography>
       </Box>
 
+      {/* Background elements */}
       <Box
         sx={{
           position: "absolute",
@@ -180,7 +216,6 @@ const Login: React.FC = () => {
           zIndex: 0,
         }}
       />
-
       <Box
         sx={{
           position: "absolute",
@@ -193,6 +228,8 @@ const Login: React.FC = () => {
           zIndex: 0,
         }}
       />
+
+      {/* Login Card */}
       <Card
         sx={{
           maxWidth: 450,
@@ -204,6 +241,7 @@ const Login: React.FC = () => {
           background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
         }}
       >
+        {/* Icon */}
         <Box
           sx={{
             position: "absolute",
@@ -242,13 +280,8 @@ const Login: React.FC = () => {
             Log in to your MoneySquad partner account
           </Typography>
 
-          {error && (
-            <Alert severity="error" sx={{ mb: 3 }}>
-              {error}
-            </Alert>
-          )}
-
-          <form onSubmit={handleSubmit}>
+          {/* Login Form */}
+          <div onKeyDown={handleKeyDown}>
             <TextField
               fullWidth
               label="Email or Mobile Number"
@@ -259,9 +292,7 @@ const Login: React.FC = () => {
               helperText={formErrors.emailOrMobile}
               sx={{ mb: 3 }}
               InputProps={{
-                sx: {
-                  borderRadius: 2,
-                },
+                sx: { borderRadius: 2 },
               }}
             />
 
@@ -276,12 +307,10 @@ const Login: React.FC = () => {
               helperText={formErrors.password}
               sx={{ mb: 2 }}
               InputProps={{
-                sx: {
-                  borderRadius: 2,
-                },
+                sx: { borderRadius: 2 },
                 endAdornment: (
                   <InputAdornment position="end">
-                    <IconButton onClick={handleTogglePasswordVisibility} edge="end">
+                    <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
                       {showPassword ? <VisibilityOff /> : <Visibility />}
                     </IconButton>
                   </InputAdornment>
@@ -291,13 +320,14 @@ const Login: React.FC = () => {
 
             <Box sx={{ textAlign: "right", mb: 3 }}>
               <Link
-                component={Link}
+                component={RouterLink}
                 to="/forgot-password"
-                underline="hover"
                 sx={{
                   color: "primary.main",
                   fontWeight: 500,
                   fontSize: "0.875rem",
+                  textDecoration: "none",
+                  "&:hover": { textDecoration: "underline" },
                 }}
               >
                 Forgot Password?
@@ -305,11 +335,11 @@ const Login: React.FC = () => {
             </Box>
 
             <Button
-              type="submit"
               fullWidth
               variant="contained"
               size="large"
-              disabled={isLoading}
+              disabled={loading}
+              onClick={handleLogin}
               sx={{
                 py: 1.5,
                 borderRadius: 2,
@@ -323,9 +353,9 @@ const Login: React.FC = () => {
                 },
               }}
             >
-              {isLoading ? <CircularProgress size={24} color="inherit" /> : "Login"}
+              {loading ? <CircularProgress size={24} color="inherit" /> : "Login"}
             </Button>
-          </form>
+          </div>
 
           <Divider sx={{ my: 4 }}>
             <Typography variant="body2" color="text.secondary">

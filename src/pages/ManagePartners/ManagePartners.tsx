@@ -1,25 +1,35 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState, useEffect } from "react"
-import { Box, Typography, Paper, Tabs, Tab, Chip, Divider, TextField, InputAdornment } from "@mui/material"
-import { Search } from "@mui/icons-material"
-import PartnersTable from "./components/PartnersTable"
-import PartnerEditRequestsTable from "./components/PartnerEditRequestsTable"
-import PartnerStats from "./components/PartnerStats"
-import { mockPartners } from "./data/mockPartners"
-import { mockLeads } from "../../data/mockLeads"
-import type { Partner } from "./types/partnerTypes"
+import type React from "react";
+import { useState, useEffect } from "react";
+import {
+  Box,
+  Typography,
+  Paper,
+  Tabs,
+  Tab,
+  Chip,
+  Divider,
+  TextField,
+  InputAdornment,
+} from "@mui/material";
+import { Search } from "@mui/icons-material";
+import PartnersTable from "./components/PartnersTable";
+import PartnerEditRequestsTable from "./components/PartnerEditRequestsTable";
+import PartnerStats from "./components/PartnerStats";
+import { useAppSelector } from "../../hooks/useAppSelector";
+import { useAppDispatch } from "../../hooks/useAppDispatch";
+
+import { fetchAllPartners } from "../../store/slices/managePartnerSlice";
 
 interface TabPanelProps {
-  children?: React.ReactNode
-  index: number
-  value: number
+  children?: React.ReactNode;
+  index: number;
+  value: number;
 }
 
 const TabPanel = (props: TabPanelProps) => {
-  const { children, value, index, ...other } = props
-
+  const { children, value, index, ...other } = props;
   return (
     <div
       role="tabpanel"
@@ -30,84 +40,93 @@ const TabPanel = (props: TabPanelProps) => {
     >
       {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
     </div>
-  )
-}
+  );
+};
 
-const a11yProps = (index: number) => {
-  return {
-    id: `partner-tab-${index}`,
-    "aria-controls": `partner-tabpanel-${index}`,
-  }
-}
+const a11yProps = (index: number) => ({
+  id: `partner-tab-${index}`,
+  "aria-controls": `partner-tabpanel-${index}`,
+});
 
 const ManagePartners: React.FC = () => {
-  const [tabValue, setTabValue] = useState(0)
-  const [partners, setPartners] = useState<Partner[]>([])
-  const [filteredPartners, setFilteredPartners] = useState<Partner[]>([])
-  const [searchQuery, setSearchQuery] = useState("")
-  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all")
+  const dispatch = useAppDispatch();
+  const managePartnersState =
+    useAppSelector((state) => state.managePartners) || {};
+  const { partners: apiPartners = [], loading = false } = managePartnersState;
 
-  // Calculate active status based on leads in the last 30 days
+  const [tabValue, setTabValue] = useState(0);
+  const [filteredPartners, setFilteredPartners] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "active" | "inactive"
+  >("all");
+
   useEffect(() => {
-    const thirtyDaysAgo = new Date()
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+    dispatch(fetchAllPartners());
+  }, [dispatch]);
 
-    const partnersWithStatus = mockPartners.map((partner) => {
-      // Check if partner has any leads in the last 30 days
-      const hasRecentLeads = mockLeads.some(
-        (lead) => lead.createdBy === partner.fullName && new Date(lead.createdAt) >= thirtyDaysAgo,
-      )
-
-      return {
-        ...partner,
-        status: hasRecentLeads ? "active" : "inactive",
-      }
-    })
-
-    setPartners(partnersWithStatus)
-    setFilteredPartners(partnersWithStatus)
-  }, [])
+  useEffect(() => {
+    setFilteredPartners(apiPartners);
+  }, [apiPartners]);
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
-    setTabValue(newValue)
-  }
+    setTabValue(newValue);
+  };
 
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const query = event.target.value.toLowerCase()
-    setSearchQuery(query)
-    filterPartners(query, statusFilter)
-  }
+    const query = event.target.value.toLowerCase();
+    setSearchQuery(query);
+    filterPartners(query, statusFilter);
+  };
 
   const handleStatusFilter = (status: "all" | "active" | "inactive") => {
-    setStatusFilter(status)
-    filterPartners(searchQuery, status)
-  }
+    setStatusFilter(status);
+    filterPartners(searchQuery, status);
+  };
 
-  const filterPartners = (query: string, status: "all" | "active" | "inactive") => {
-    let filtered = partners
+  const filterPartners = (
+    query: string,
+    status: "all" | "active" | "inactive"
+  ) => {
+    let filtered = apiPartners;
 
-    // Apply search query filter
     if (query) {
-      filtered = filtered.filter(
-        (partner) =>
-          partner.fullName.toLowerCase().includes(query) ||
-          partner.email.toLowerCase().includes(query) ||
-          partner.mobileNumber.includes(query) ||
-          partner.partnerId.toLowerCase().includes(query),
-      )
+      filtered = filtered.filter((partner) => {
+        const fullName = partner?.basicInfo?.fullName?.toLowerCase() || "";
+        const email = partner?.basicInfo?.email?.toLowerCase() || "";
+        const mobile = partner?.basicInfo?.mobile || "";
+        const partnerId = partner?.partnerId?.toLowerCase() || "";
+        return (
+          fullName.includes(query) ||
+          email.includes(query) ||
+          mobile.includes(query) ||
+          partnerId.includes(query)
+        );
+      });
     }
 
-    // Apply status filter
     if (status !== "all") {
-      filtered = filtered.filter((partner) => partner.status === status)
+      filtered = filtered.filter((partner) => partner.status === status);
     }
 
-    setFilteredPartners(filtered)
-  }
+    setFilteredPartners(filtered);
+  };
+
+  useEffect(() => {
+    console.log("Fetched API Partners:", apiPartners);
+    setFilteredPartners(apiPartners);
+  }, [apiPartners]);
 
   return (
     <Box>
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 3,
+        }}
+      >
         <Typography
           variant="h4"
           sx={{
@@ -121,7 +140,7 @@ const ManagePartners: React.FC = () => {
         </Typography>
       </Box>
 
-      <PartnerStats partners={partners} />
+      <PartnerStats partners={apiPartners} />
 
       <Paper sx={{ mt: 4, borderRadius: 3, overflow: "hidden" }}>
         <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
@@ -149,47 +168,32 @@ const ManagePartners: React.FC = () => {
 
         <Box sx={{ p: 3 }}>
           <TabPanel value={tabValue} index={0}>
-            <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
+            <Box
+              sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}
+            >
               <Box sx={{ display: "flex", gap: 1 }}>
-                <Chip
-                  label="All"
-                  variant={statusFilter === "all" ? "filled" : "outlined"}
-                  onClick={() => handleStatusFilter("all")}
-                  sx={{
-                    fontWeight: 600,
-                    backgroundColor: statusFilter === "all" ? "primary.main" : "transparent",
-                    color: statusFilter === "all" ? "white" : "text.primary",
-                    "&:hover": {
-                      backgroundColor: statusFilter === "all" ? "primary.dark" : "rgba(0, 0, 0, 0.05)",
-                    },
-                  }}
-                />
-                <Chip
-                  label="Active"
-                  variant={statusFilter === "active" ? "filled" : "outlined"}
-                  onClick={() => handleStatusFilter("active")}
-                  sx={{
-                    fontWeight: 600,
-                    backgroundColor: statusFilter === "active" ? "success.main" : "transparent",
-                    color: statusFilter === "active" ? "white" : "text.primary",
-                    "&:hover": {
-                      backgroundColor: statusFilter === "active" ? "success.dark" : "rgba(0, 0, 0, 0.05)",
-                    },
-                  }}
-                />
-                <Chip
-                  label="Inactive"
-                  variant={statusFilter === "inactive" ? "filled" : "outlined"}
-                  onClick={() => handleStatusFilter("inactive")}
-                  sx={{
-                    fontWeight: 600,
-                    backgroundColor: statusFilter === "inactive" ? "text.secondary" : "transparent",
-                    color: statusFilter === "inactive" ? "white" : "text.primary",
-                    "&:hover": {
-                      backgroundColor: statusFilter === "inactive" ? "text.disabled" : "rgba(0, 0, 0, 0.05)",
-                    },
-                  }}
-                />
+                {(["all", "active", "inactive"] as const).map((status) => (
+                  <Chip
+                    key={status}
+                    label={status[0].toUpperCase() + status.slice(1)}
+                    variant={statusFilter === status ? "filled" : "outlined"}
+                    onClick={() => handleStatusFilter(status)}
+                    sx={{
+                      fontWeight: 600,
+                      backgroundColor:
+                        statusFilter === status
+                          ? "primary.main"
+                          : "transparent",
+                      color: statusFilter === status ? "white" : "text.primary",
+                      "&:hover": {
+                        backgroundColor:
+                          statusFilter === status
+                            ? "primary.dark"
+                            : "rgba(0, 0, 0, 0.05)",
+                      },
+                    }}
+                  />
+                ))}
               </Box>
               <TextField
                 placeholder="Search partners..."
@@ -213,12 +217,12 @@ const ManagePartners: React.FC = () => {
           </TabPanel>
 
           <TabPanel value={tabValue} index={1}>
-            <PartnerEditRequestsTable partners={partners} />
+            <PartnerEditRequestsTable partners={apiPartners} />
           </TabPanel>
         </Box>
       </Paper>
     </Box>
-  )
-}
+  );
+};
 
-export default ManagePartners
+export default ManagePartners;

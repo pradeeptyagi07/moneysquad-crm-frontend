@@ -3,7 +3,6 @@
 import type React from "react"
 import { Box, Typography, Paper, Grid, Button, Chip } from "@mui/material"
 import { InsertDriveFile, CloudDownload, Visibility } from "@mui/icons-material"
-import type { Partner } from "../types/partnerTypes"
 
 interface DocumentsSectionProps {
   partner: Partner
@@ -11,68 +10,30 @@ interface DocumentsSectionProps {
 }
 
 const DocumentsSection: React.FC<DocumentsSectionProps> = ({ partner, onViewDocument }) => {
-  const documents = [
-    {
-      title: "Profile Photo",
-      fileName: "profile_photo.jpg",
-      uploadDate: "15 May 2023",
-      status: "Verified",
-      required: false,
-      url: partner.profilePhoto || "",
-    },
-    {
-      title: "PAN Card",
-      fileName: "pan_card.jpg",
-      uploadDate: "15 May 2023",
-      status: "Verified",
-      required: true,
-      url: partner.panCard || "",
-    },
-    {
-      title: "Aadhar Card (Front)",
-      fileName: "aadhar_front.jpg",
-      uploadDate: "15 May 2023",
-      status: "Verified",
-      required: true,
-      url: partner.aadharFront || "",
-    },
-    {
-      title: "Aadhar Card (Back)",
-      fileName: "aadhar_back.jpg",
-      uploadDate: "15 May 2023",
-      status: "Verified",
-      required: true,
-      url: partner.aadharBack || "",
-    },
-    {
-      title: "Cancelled Cheque",
-      fileName: "cancelled_cheque.jpg",
-      uploadDate: "15 May 2023",
-      status: "Verified",
-      required: false,
-      url: partner.cancelledCheque || "",
-    },
-    {
-      title: "GST Certificate",
-      fileName: "gst_certificate.pdf",
-      uploadDate: "15 May 2023",
-      status: "Verified",
-      required: false,
-      url: partner.gstCertificate || "",
-    },
-  ]
+  const docs = partner.documents || {}
 
-  const additionalDocuments =
-    partner.otherDocuments?.map((doc, index) => ({
-      title: `Additional Document ${index + 1}`,
-      fileName: doc.name,
-      uploadDate: "15 May 2023",
-      status: "Verified",
-      required: false,
-      url: URL.createObjectURL(doc),
-    })) || []
-
-  const allDocuments = [...documents, ...additionalDocuments]
+  const allDocuments = Object.entries(docs).flatMap(([key, value]: [string, any], index) => {
+    if (key === "otherDocuments" && Array.isArray(value)) {
+      return value.map((doc: any, i: number) => ({
+        title: `Additional Document ${i + 1}`,
+        fileName: doc.name || `additional_doc_${i + 1}`,
+        uploadDate: "N/A",
+        status: "Verified",
+        required: false,
+        url: doc.url || URL.createObjectURL(doc),
+      }))
+    } else if (typeof value === "string" && value) {
+      return [{
+        title: key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
+        fileName: value.split('/').pop() || key + ".file",
+        uploadDate: "N/A",
+        status: "Verified",
+        required: false,
+        url: value,
+      }]
+    }
+    return []
+  })
 
   return (
     <Box>

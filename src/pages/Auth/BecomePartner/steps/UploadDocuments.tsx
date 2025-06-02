@@ -74,7 +74,13 @@ const DocumentCard: React.FC<DocumentCardProps> = ({
           {description}
         </Typography>
 
-        <input type="file" ref={fileInputRef} style={{ display: "none" }} onChange={handleFileChange} accept={accept} />
+        <input
+          type="file"
+          ref={fileInputRef}
+          style={{ display: "none" }}
+          onChange={handleFileChange}
+          accept={accept}
+        />
 
         {!file ? (
           <Button
@@ -143,23 +149,34 @@ const UploadDocuments: React.FC<UploadDocumentsProps> = ({ formData, updateFormD
   }
 
   const handleAddOtherDocument = (file: File) => {
-    const newOtherDocuments = [...otherDocuments, file]
-    setOtherDocuments(newOtherDocuments)
-    updateFormData({ otherDocuments: newOtherDocuments })
+    const newDocs = [...otherDocuments, file]
+    setOtherDocuments(newDocs)
+    updateFormData({ otherDocuments: newDocs })
   }
 
   const handleDeleteOtherDocument = (index: number) => {
-    const newOtherDocuments = otherDocuments.filter((_, i) => i !== index)
-    setOtherDocuments(newOtherDocuments)
-    updateFormData({ otherDocuments: newOtherDocuments })
+    const newDocs = otherDocuments.filter((_, i) => i !== index)
+    setOtherDocuments(newDocs)
+    updateFormData({ otherDocuments: newDocs })
   }
 
   return (
     <Box>
+      {/* Header with new mandatory-note */}
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
-        <Typography variant="subtitle1">Upload Required Documents</Typography>
-        <Typography variant="body2" color="text.secondary">
-          You can skip this step and upload documents later
+        <Typography variant="h6" fontWeight={700}>
+          Upload Required Documents
+        </Typography>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "error.main",
+            fontWeight: 600,
+            textAlign: "right",
+            maxWidth: 600,
+          }}
+        >
+          ⚠️ This step is <strong>mandatory</strong>. Please upload your <em>PAN Card</em> and both sides of your <em>Aadhar Card</em> to become eligible for partner commissions.
         </Typography>
       </Box>
 
@@ -231,6 +248,7 @@ const UploadDocuments: React.FC<UploadDocumentsProps> = ({ formData, updateFormD
 
       <Divider sx={{ my: 4 }} />
 
+      {/* Additional Documents */}
       <Box sx={{ mb: 3 }}>
         <Typography variant="subtitle1" sx={{ mb: 1 }}>
           Additional Documents

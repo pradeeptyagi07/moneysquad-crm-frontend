@@ -43,8 +43,12 @@ import { getStatusIcon, getStatusColor, formatCurrency } from "./utils/leadUtils
 import LeadDetailsDialog from "./components/LeadDetailsDialog"
 import LeadForm from "./components/LeadForm"
 import LeadTimelineDialog from "./components/LeadTimelineDialog"
+import { createLead } from "../../store/slices/leadSLice"
+import { useAppDispatch } from "../../hooks/useAppDispatch"
 
 const PartnerLeads = () => {
+  const dispatch = useAppDispatch()
+
   const theme = useTheme()
   const { userName } = useAuth()
   const [leads, setLeads] = useState<Lead[]>([])
@@ -184,42 +188,61 @@ const PartnerLeads = () => {
   }
 
   // Lead actions
-  const handleCreateLead = (leadData: Partial<Lead>) => {
-    const newLead: Lead = {
-      id: `LEAD${Math.floor(Math.random() * 10000)}`,
-      applicantName: leadData.applicantName || "",
-      applicantProfile: leadData.applicantProfile || "Salaried",
-      businessName: leadData.businessName || "",
-      mobileNumber: leadData.mobileNumber || "",
-      email: leadData.email || "",
-      pincode: leadData.pincode || "",
-      loanType: leadData.loanType || "",
-      loanAmount: leadData.loanAmount || 0,
-      status: "pending",
-      createdBy: userName,
-      createdAt: new Date().toISOString(),
-      assignedTo: "",
-      assignedToId: "",
-      lender: "",
-      comments: leadData.comments || "",
-      timeline: [
-        {
-          status: "created",
-          timestamp: new Date().toISOString(),
-          comment: "Lead created",
-          updatedBy: userName,
-        },
-      ],
+  const handleCreateLead = async (leadData: Partial<Lead>) => {
+    const user = JSON.parse(localStorage.getItem("user") || "{}")
+    const partnerId = user?.id
+  
+    if (!partnerId) {
+      console.error("Partner ID missing from localStorage user")
+      setSnackbar({
+        open: true,
+        message: "Unable to determine partner identity",
+        severity: "error",
+      })
+      return
     }
-
-    setLeads([newLead, ...leads])
-    setCreateDialogOpen(false)
-    setSnackbar({
-      open: true,
-      message: "Lead created successfully",
-      severity: "success",
-    })
+  
+    const payload = {
+      partnerId,
+      leadData: {
+        applicant: {
+          name: leadData.applicantName || "",
+          profile: leadData.applicantProfile || "Salaried",
+          mobile: leadData.mobileNumber || "",
+          email: leadData.email || "",
+          pincode: leadData.pincode || "",
+        },
+        loan: {
+          type: leadData.loanType || "",
+          amount: String(leadData.loanAmount || "0"),
+          comments: leadData.comments || "",
+        },
+      },
+    }
+  
+    try {
+      const result = await dispatch(createLead(payload)).unwrap()
+  
+      setSnackbar({
+        open: true,
+        message: "Lead created successfully",
+        severity: "success",
+      })
+  
+      setCreateDialogOpen(false)
+  
+      // Optionally update local state if needed
+      // setLeads([result, ...leads])
+    } catch (err) {
+      console.error("Lead creation failed:", err)
+      setSnackbar({
+        open: true,
+        message: `Error: ${err}`,
+        severity: "error",
+      })
+    }
   }
+  
 
   const handleEditLead = (leadData: Partial<Lead>) => {
     // Double-check that the lead is not assigned (security measure)

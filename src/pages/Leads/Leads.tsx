@@ -1,23 +1,27 @@
-// Create a basic Leads component that routes to the appropriate role-specific component
 "use client"
 
-import type React from "react"
+import { useEffect } from "react"
 import { useAuth } from "../../hooks/useAuth"
+import { useAppDispatch } from "../../hooks/useAppDispatch"
 import AdminLeads from "./AdminLeads"
-import ManagerLeads from "./ManagerLeads"
-import PartnerLeads from "./PartnerLeads"
+
+import { fetchAllLeads } from "../../store/slices/leadSLice"
 
 const Leads: React.FC = () => {
   const { userRole } = useAuth()
+  const dispatch = useAppDispatch()
 
-  // Render the appropriate leads component based on user role
+  useEffect(() => {
+    dispatch(fetchAllLeads())
+  }, [dispatch])
+
   switch (userRole) {
     case "admin":
       return <AdminLeads />
     case "manager":
-      return <ManagerLeads />
+      return <AdminLeads />
     case "partner":
-      return <PartnerLeads />
+      return <AdminLeads />
     default:
       return <div>Unauthorized</div>
   }

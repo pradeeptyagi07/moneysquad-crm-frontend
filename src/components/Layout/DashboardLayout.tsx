@@ -6,52 +6,38 @@ import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import {
   Box,
-  Drawer,
-  AppBar,
-  Toolbar,
-  List,
-  Typography,
+  CssBaseline,
   Divider,
+  Drawer,
   IconButton,
+  List,
   ListItem,
   ListItemButton,
   ListItemIcon,
   ListItemText,
+  Toolbar,
+  Typography,
   Avatar,
-  useTheme,
-  useMediaQuery,
+  ListItemAvatar,
+  Button,
 } from "@mui/material"
-import { styled } from "@mui/material/styles"
-import * as MuiIcons from "@mui/icons-material"
+import {
+  Menu as MenuIcon,
+  Dashboard,
+  People,
+  LocalOffer,
+  AttachMoney,
+  Settings,
+  Groups,
+  SupervisorAccount,
+  Logout,
+} from "@mui/icons-material"
 import { useAuth } from "../../hooks/useAuth"
-
-// Dynamic icon component
-const DynamicIcon = ({ iconName }: { iconName: string }) => {
-  const IconComponent = (MuiIcons as any)[iconName]
-  return IconComponent ? <IconComponent /> : <MuiIcons.Circle />
-}
+import { useAppSelector } from "../../hooks/useAppSelector"
 
 const drawerWidth = 240
 
-const Main = styled("main", { shouldForwardProp: (prop) => prop !== "open" })<{
-  open?: boolean
-}>(({ theme, open }) => ({
-  flexGrow: 1,
-  transition: theme.transitions.create("margin", {
-    easing: theme.transitions.easing.sharp,
-    duration: theme.transitions.duration.leavingScreen,
-  }),
-  marginLeft: 0,
-  ...(open && {
-    transition: theme.transitions.create("margin", {
-      easing: theme.transitions.easing.easeOut,
-      duration: theme.transitions.duration.enteringScreen,
-    }),
-    marginLeft: drawerWidth,
-  }),
-}))
-
-interface MenuItem {
+interface DashboardMenuItem {
   text: string
   icon: string
   path: string
@@ -59,17 +45,37 @@ interface MenuItem {
 
 interface DashboardLayoutProps {
   children: React.ReactNode
-  menuItems: MenuItem[]
-  userRole: string
-  userName: string
+  menuItems: DashboardMenuItem[]
+  userRole?: string
+  userName?: string
 }
 
-const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, menuItems, userRole, userName }) => {
-  const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"))
+const DashboardLayout = ({
+  children,
+  menuItems,
+  userRole: propUserRole,
+  userName: propUserName,
+}: DashboardLayoutProps) => {
   const [mobileOpen, setMobileOpen] = useState(false)
   const navigate = useNavigate()
   const { logout } = useAuth()
+
+  // Get user info from Redux state, fallback to props for backward compatibility
+  const auth = useAppSelector((state) => state.auth)
+
+  // Get user name from either the user object or the userName property
+  let userName = propUserName || ""
+  if (!userName && auth.user) {
+    if (auth.user.firstName || auth.user.lastName) {
+      userName = `${auth.user.firstName || ""} ${auth.user.lastName || ""}`.trim()
+    } else if ((auth as any).user?.basicInfo?.fullName) {
+      userName = (auth as any).user.basicInfo.fullName
+    }
+  }
+  
+
+  // Get user role
+  const userRole = propUserRole || auth.userRole || ""
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen)
@@ -80,13 +86,44 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, menuItems, 
     navigate("/")
   }
 
+  const getIcon = (iconName: string) => {
+    switch (iconName) {
+      case "Dashboard":
+        return <Dashboard />
+      case "People":
+        return <People />
+      case "LocalOffer":
+        return <LocalOffer />
+      case "AttachMoney":
+        return <AttachMoney />
+      case "Settings":
+        return <Settings />
+      case "Groups":
+        return <Groups />
+      case "SupervisorAccount":
+        return <SupervisorAccount />
+      default:
+        return <Dashboard />
+    }
+  }
+
+  // Get the first character for the avatar, safely
+  const avatarText = userName && userName.length > 0 ? userName.charAt(0).toUpperCase() : "U"
+
   const drawer = (
-    <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <Box sx={{ p: 2, display: "flex", alignItems: "center" }}>
-        <Typography variant="h6" sx={{ fontWeight: 600, color: "primary.main" }}>
-          MoneySquad
+    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+      <Toolbar
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          py: 1,
+        }}
+      >
+        <Typography variant="h6" component="div" sx={{ fontWeight: "bold", color: "#0f766e" }}>
+          Money Squad
         </Typography>
-      </Box>
+      </Toolbar>
       <Divider />
       <List sx={{ flexGrow: 1 }}>
         {menuItems.map((item) => (
@@ -94,32 +131,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, menuItems, 
             <ListItemButton
               onClick={() => {
                 navigate(item.path)
-                if (isMobile) setMobileOpen(false)
-              }}
-              sx={{
-                borderRadius: 1,
-                mx: 1,
-                my: 0.5,
-                "&.Mui-selected": {
-                  backgroundColor: "primary.light",
-                  color: "white",
-                  "&:hover": {
-                    backgroundColor: "primary.main",
-                  },
-                  "& .MuiListItemIcon-root": {
-                    color: "white",
-                  },
-                },
+                setMobileOpen(false)
               }}
             >
-              <ListItemIcon
-                sx={{
-                  minWidth: 40,
-                  color: "text.secondary",
-                }}
-              >
-                <DynamicIcon iconName={item.icon} />
-              </ListItemIcon>
+              <ListItemIcon>{getIcon(item.icon)}</ListItemIcon>
               <ListItemText primary={item.text} />
             </ListItemButton>
           </ListItem>
@@ -127,83 +142,62 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, menuItems, 
       </List>
       <Divider />
       <Box sx={{ p: 2 }}>
-        <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-          <Avatar src="https://avatar.iran.liara.run/public" sx={{ mr: 2 }} />
-          <Box>
-            <Typography variant="subtitle2">{userName || "User"}</Typography>
-            <Typography variant="caption" color="text.secondary">
-              Role: {userRole}
-            </Typography>
-          </Box>
-        </Box>
-        <ListItemButton
-          sx={{
-            borderRadius: 1,
-            "&:hover": {
-              backgroundColor: "action.hover",
-            },
-          }}
+        <ListItem sx={{ px: 0 }}>
+          <ListItemAvatar>
+            <Avatar sx={{ bgcolor: "#0f766e" }}>{avatarText}</Avatar>
+          </ListItemAvatar>
+          <ListItemText
+            primary={userName || "User"}
+            secondary={userRole || "Role"}
+            primaryTypographyProps={{ fontWeight: "medium" }}
+            secondaryTypographyProps={{ variant: "caption" }}
+          />
+        </ListItem>
+        <Button
+          variant="outlined"
+          color="primary"
+          startIcon={<Logout fontSize="small" />}
           onClick={handleLogout}
+          fullWidth
+          sx={{ mt: 1 }}
         >
-          <ListItemIcon sx={{ minWidth: 40 }}>
-            <MuiIcons.Logout fontSize="small" />
-          </ListItemIcon>
-          <ListItemText primary="Logout" />
-        </ListItemButton>
+          Logout
+        </Button>
       </Box>
-    </Box>
+    </div>
   )
 
   return (
-    <Box sx={{ display: "flex", minHeight: "100vh" }}>
-      {isMobile && (
-        <AppBar
-          position="fixed"
-          sx={{
-            width: "100%",
-            backgroundColor: "background.paper",
-            boxShadow: 1,
-          }}
-        >
-          <Toolbar>
-            <IconButton
-              color="inherit"
-              aria-label="open drawer"
-              edge="start"
-              onClick={handleDrawerToggle}
-              sx={{ mr: 2, color: "text.primary" }}
-            >
-              <MuiIcons.Menu />
-            </IconButton>
-            <Typography variant="h6" noWrap component="div" color="primary.main">
-              MoneySquad
-            </Typography>
-          </Toolbar>
-        </AppBar>
-      )}
-
-      <Box component="nav" sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }} aria-label="mailbox folders">
-        {/* Mobile drawer */}
+    <Box sx={{ display: "flex" }}>
+      <CssBaseline />
+      <IconButton
+        color="inherit"
+        aria-label="open drawer"
+        edge="start"
+        onClick={handleDrawerToggle}
+        sx={{ mr: 2, display: { sm: "none" }, position: "fixed", top: 10, left: 10, zIndex: 1100 }}
+      >
+        <MenuIcon />
+      </IconButton>
+      <Box component="nav" sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }} aria-label="mailbox folders">
         <Drawer
           variant="temporary"
           open={mobileOpen}
           onClose={handleDrawerToggle}
           ModalProps={{
-            keepMounted: true, // Better open performance on mobile
+            keepMounted: true, // Better open performance on mobile.
           }}
           sx={{
-            display: { xs: "block", md: "none" },
+            display: { xs: "block", sm: "none" },
             "& .MuiDrawer-paper": { boxSizing: "border-box", width: drawerWidth },
           }}
         >
           {drawer}
         </Drawer>
-
-        {/* Desktop drawer */}
         <Drawer
           variant="permanent"
           sx={{
-            display: { xs: "none", md: "block" },
+            display: { xs: "none", sm: "block" },
             "& .MuiDrawer-paper": { boxSizing: "border-box", width: drawerWidth },
           }}
           open
@@ -211,15 +205,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, menuItems, 
           {drawer}
         </Drawer>
       </Box>
-
       <Box
         component="main"
         sx={{
           flexGrow: 1,
-          width: { md: `calc(100% - ${drawerWidth}px)` },
-          backgroundColor: "background.default",
-          minHeight: "100vh",
-          mt: { xs: 7, md: 0 },
+          p: 3,
+          width: { sm: `calc(100% - ${drawerWidth}px)` },
         }}
       >
         {children}

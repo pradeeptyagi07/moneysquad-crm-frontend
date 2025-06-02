@@ -1,9 +1,8 @@
 "use client"
 
 import type React from "react"
-
 import { Navigate, useLocation } from "react-router-dom"
-import { useAuth } from "../../hooks/useAuth"
+import { useAppSelector } from "../../hooks/useAppSelector"
 
 interface ProtectedRouteProps {
   allowedRoles: string[]
@@ -11,7 +10,8 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles, children }) => {
-  const { userRole, isAuthenticated } = useAuth()
+  // Use Redux state instead of auth context
+  const { isAuthenticated, userRole } = useAppSelector((state) => state.auth)
   const location = useLocation()
 
   if (!isAuthenticated) {

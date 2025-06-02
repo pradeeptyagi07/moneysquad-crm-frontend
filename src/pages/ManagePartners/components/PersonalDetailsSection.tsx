@@ -1,12 +1,13 @@
-import type React from "react"
-import { Box, Typography, Paper, Grid, Divider } from "@mui/material"
-import type { Partner } from "../types/partnerTypes"
+import type React from "react";
+import { Box, Typography, Paper, Grid, Divider } from "@mui/material";
 
 interface PersonalDetailsSectionProps {
-  partner: Partner
+  partner: Partner;
 }
 
 const PersonalDetailsSection: React.FC<PersonalDetailsSectionProps> = ({ partner }) => {
+  const personal = partner.personalInfo || {};
+
   return (
     <Paper
       sx={{
@@ -54,7 +55,7 @@ const PersonalDetailsSection: React.FC<PersonalDetailsSectionProps> = ({ partner
             Gender
           </Typography>
           <Typography variant="body1" sx={{ fontWeight: 500, mb: 2 }}>
-            {partner.gender}
+            {personal.gender || "—"}
           </Typography>
         </Grid>
 
@@ -63,11 +64,13 @@ const PersonalDetailsSection: React.FC<PersonalDetailsSectionProps> = ({ partner
             Date of Birth
           </Typography>
           <Typography variant="body1" sx={{ fontWeight: 500, mb: 2 }}>
-            {new Date(partner.dateOfBirth).toLocaleDateString("en-IN", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-            })}
+            {personal.dateOfBirth
+              ? new Date(personal.dateOfBirth).toLocaleDateString("en-IN", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })
+              : "—"}
           </Typography>
         </Grid>
 
@@ -76,7 +79,7 @@ const PersonalDetailsSection: React.FC<PersonalDetailsSectionProps> = ({ partner
             Employment Type
           </Typography>
           <Typography variant="body1" sx={{ fontWeight: 500, mb: 2 }}>
-            {partner.employmentType}
+            {personal.employmentType || "—"}
           </Typography>
         </Grid>
 
@@ -85,7 +88,7 @@ const PersonalDetailsSection: React.FC<PersonalDetailsSectionProps> = ({ partner
             Emergency Contact
           </Typography>
           <Typography variant="body1" sx={{ fontWeight: 500, mb: 2 }}>
-            {partner.emergencyContact}
+            {personal.emergencyContactNumber || "—"}
           </Typography>
         </Grid>
 
@@ -94,7 +97,7 @@ const PersonalDetailsSection: React.FC<PersonalDetailsSectionProps> = ({ partner
             Focus Product
           </Typography>
           <Typography variant="body1" sx={{ fontWeight: 500, mb: 2 }}>
-            {partner.focusProduct}
+            {personal.focusProduct || "—"}
           </Typography>
         </Grid>
 
@@ -103,12 +106,16 @@ const PersonalDetailsSection: React.FC<PersonalDetailsSectionProps> = ({ partner
             Partner Role
           </Typography>
           <Typography variant="body1" sx={{ fontWeight: 500, mb: 2 }}>
-            {partner.role === "leadSharing" ? "Lead Sharing" : "File Sharing"}
+            {personal.roleSelection === "leadSharing"
+              ? "Lead Sharing"
+              : personal.roleSelection === "fileSharing"
+              ? "File Sharing"
+              : "—"}
           </Typography>
         </Grid>
       </Grid>
     </Paper>
-  )
-}
+  );
+};
 
-export default PersonalDetailsSection
+export default PersonalDetailsSection;

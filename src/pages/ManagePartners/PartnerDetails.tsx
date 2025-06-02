@@ -48,7 +48,6 @@ import PersonalDetailsSection from "./components/PersonalDetailsSection"
 import AddressDetailsSection from "./components/AddressDetailsSection"
 import BankDetailsSection from "./components/BankDetailsSection"
 import DocumentsSection from "./components/DocumentsSection"
-import type { Partner } from "./types/partnerTypes"
 
 interface TabPanelProps {
   children?: React.ReactNode

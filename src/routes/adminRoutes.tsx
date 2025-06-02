@@ -10,13 +10,14 @@ import Commissions from "../pages/Commissions/Commissions"
 import Settings from "../pages/Settings/Settings"
 import ManagePartners from "../pages/ManagePartners/ManagePartners"
 import PartnerDetails from "../pages/ManagePartners/PartnerDetails"
-import { useAuth } from "../hooks/useAuth"
 import type { JSX } from "react/jsx-runtime"
 import TeamManagement from "../pages/TeamManagement/TeamManagement"
+import { useAppSelector } from "../hooks/useAppSelector"
 
 // Protected route component specific to admin role
 const AdminRoute = ({ children }: { children: JSX.Element }) => {
-  const { isAuthenticated, userRole } = useAuth()
+  // Use Redux state instead of auth context
+  const { isAuthenticated, userRole } = useAppSelector((state) => state.auth)
 
   if (!isAuthenticated) {
     return <Navigate to="/" replace />

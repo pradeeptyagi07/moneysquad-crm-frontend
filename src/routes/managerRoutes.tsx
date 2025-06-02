@@ -7,12 +7,13 @@ import ManagerOverview from "../pages/Overview/ManagerOverview"
 import Leads from "../pages/Leads/Leads"
 import Commissions from "../pages/Commissions/Commissions"
 import Settings from "../pages/Settings/Settings"
-import { useAuth } from "../hooks/useAuth"
 import type { JSX } from "react/jsx-runtime"
+import { useAppSelector } from "../hooks/useAppSelector"
 
 // Protected route component specific to manager role
 const ManagerRoute = ({ children }: { children: JSX.Element }) => {
-  const { isAuthenticated, userRole } = useAuth()
+  // Use Redux state instead of auth context
+  const { isAuthenticated, userRole } = useAppSelector((state) => state.auth)
 
   if (!isAuthenticated) {
     return <Navigate to="/" replace />
@@ -45,11 +46,7 @@ const managerRoutes: RouteObject[] = [
       {
         path: "leads",
         element: <Leads />,
-      },
-      {
-        path: "commissions",
-        element: <Commissions />,
-      },
+      },     
       {
         path: "settings",
         element: <Settings />,

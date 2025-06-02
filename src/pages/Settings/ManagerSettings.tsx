@@ -3,10 +3,9 @@
 import type React from "react"
 import { useState } from "react"
 import { Box, Tab, Tabs, Typography, Paper } from "@mui/material"
-import { Person, Security, Notifications } from "@mui/icons-material"
+import { Person, Security } from "@mui/icons-material"
 import ProfileSection from "./components/ProfileSection"
 import SecuritySection from "./components/SecuritySection"
-import NotificationsSection from "./components/NotificationsSection"
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -90,18 +89,15 @@ const ManagerSettings: React.FC<ManagerSettingsProps> = ({ user }) => {
           }}
         >
           <Tab icon={<Person />} label="Profile" iconPosition="start" {...a11yProps(0)} sx={{ px: 3 }} />
-          <Tab icon={<Notifications />} label="Notifications" iconPosition="start" {...a11yProps(1)} sx={{ px: 3 }} />
-          <Tab icon={<Security />} label="Security" iconPosition="start" {...a11yProps(2)} sx={{ px: 3 }} />
+          <Tab icon={<Security />} label="Security" iconPosition="start" {...a11yProps(1)} sx={{ px: 3 }} />
         </Tabs>
       </Box>
 
       <TabPanel value={value} index={0}>
         <ProfileSection user={user} isAdmin={false} isManager={true} />
       </TabPanel>
+
       <TabPanel value={value} index={1}>
-        <NotificationsSection user={user} />
-      </TabPanel>
-      <TabPanel value={value} index={2}>
         <SecuritySection user={user} />
       </TabPanel>
     </Paper>

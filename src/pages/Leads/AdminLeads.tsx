@@ -1,19 +1,15 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState, useEffect } from "react"
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Box,
   Typography,
   Button,
   Grid,
-  Card,
-  CardContent,
-  Avatar,
-  useTheme,
-  alpha,
-  Snackbar,
-  Alert,
+  Paper,
+  TextField,
+  InputAdornment,
+  MenuItem,
   Table,
   TableBody,
   TableCell,
@@ -21,551 +17,352 @@ import {
   TableHead,
   TableRow,
   TablePagination,
-  Paper,
-  Chip,
   IconButton,
   Menu,
-  MenuItem,
-  ListItemIcon,
-  ListItemText,
+  Chip,
+  Avatar,
   Dialog,
   DialogTitle,
   DialogContent,
-  TextField,
-  InputAdornment,
-} from "@mui/material"
+  Snackbar,
+  Alert,
+  useTheme,
+} from "@mui/material";
 import {
   Add,
-  Person,
-  Business,
-  MoreVert,
-  Visibility,
-  Assignment,
-  Edit,
-  History,
-  Delete,
   Search,
   FilterAlt,
   Clear,
-} from "@mui/icons-material"
-import { useAuth } from "../../hooks/useAuth"
-import type { Lead, LeadStatus } from "../../data/leadTypes"
-import { mockLeads } from "../../data/mockLeads"
-import { formatCurrency, getStatusColor, getStatusIcon } from "./utils/leadUtils"
+  MoreVert,
+  Person,
+  Business,
+  Visibility,
+  Edit,
+  Assignment,
+  History,
+  Delete,
+  AttachMoney,
+  FileCopy,
+} from "@mui/icons-material";
+import { useAppDispatch } from "../../hooks/useAppDispatch";
+import { useAppSelector } from "../../hooks/useAppSelector";
+import { useAuth } from "../../hooks/useAuth";
+import {
+  createLead,
+  fetchAllLeads,
+  updateLead,
+  clearLeadState,
+} from "../../store/slices/leadSLice";
+import {
+  formatCurrency,
+  getStatusColor,
+  getStatusIcon,
+} from "./utils/leadUtils";
+import LeadForm from "./components/LeadForm";
+import LeadDetailsDialog from "./components/LeadDetailsDialog";
+import AssignLeadDialog from "./components/AssignLeadDialog";
+import StatusUpdateDialog from "./components/StatusUpdateDialog";
+import LeadTimelineDialog from "./components/LeadTimelineDialog";
+import DisbursementDialog from "./components/DisbursementDialog";
+import LeadDeleteDialog from "./components/LeadDeleteDialog";
 
-// Import components
-import LeadDetailsDialog from "./components/LeadDetailsDialog"
-import LeadTimelineDialog from "./components/LeadTimelineDialog"
-import StatusUpdateDialog from "./components/StatusUpdateDialog"
-import AssignLeadDialog from "./components/AssignLeadDialog"
-import LeadForm from "./components/LeadForm"
+const LeadsTable: React.FC = () => {
+  const theme = useTheme();
+  const dispatch = useAppDispatch();
+  const { userRole } = useAuth();
+  const { leads: apiLeads, success, error } = useAppSelector((s) => s.leads);
 
-const AdminLeads: React.FC = () => {
-  const theme = useTheme()
-  const { userName } = useAuth()
+  // Dialog / selection state
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [assignOpen, setAssignOpen] = useState(false);
+  const [statusOpen, setStatusOpen] = useState(false);
+  const [timelineOpen, setTimelineOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [disbursementOpen, setDisbursementOpen] = useState(false);
+  const [duplicateMode, setDuplicateMode] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
-  // State for leads data
-  const [leads, setLeads] = useState<Lead[]>([])
-  const [filteredLeads, setFilteredLeads] = useState<Lead[]>([])
+  // Selection
+  const [selectedRow, setSelectedRow] = useState<any>(null);
+  const [selectedDbId, setSelectedDbId] = useState<string | null>(null);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [menuDbId, setMenuDbId] = useState<string | null>(null);
 
-  // State for pagination
-  const [page, setPage] = useState(0)
-  const [rowsPerPage, setRowsPerPage] = useState(10)
-
-  // State for selected lead and dialogs
-  const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
-  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
-  const [timelineDialogOpen, setTimelineDialogOpen] = useState(false)
-  const [statusDialogOpen, setStatusDialogOpen] = useState(false)
-  const [assignDialogOpen, setAssignDialogOpen] = useState(false)
-  const [createDialogOpen, setCreateDialogOpen] = useState(false)
-  const [editDialogOpen, setEditDialogOpen] = useState(false)
-
-  // State for action menu
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
-  const [menuLead, setMenuLead] = useState<Lead | null>(null)
-
-  // State for snackbar
+  // Snackbar
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
-    severity: "success" as "success" | "error" | "info" | "warning",
-  })
+    severity: "success" as any,
+  });
 
-  // State for filters
-  const [statusFilter, setStatusFilter] = useState("all")
-  const [loanTypeFilter, setLoanTypeFilter] = useState("all")
-  const [partnerFilter, setPartnerFilter] = useState("all")
-  const [searchTerm, setSearchTerm] = useState("")
+  // Filters & pagination
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [loanTypeFilter, setLoanTypeFilter] = useState("all");
+  const [partnerFilter, setPartnerFilter] = useState("all");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  // Load mock data
+  // Fetch
   useEffect(() => {
-    setLeads(mockLeads)
-    setFilteredLeads(mockLeads)
+    dispatch(fetchAllLeads());
+  }, [dispatch]);
 
-    // Initialize filters from URL params if needed
-    // This is optional but useful for bookmarking filtered views
-    const params = new URLSearchParams(window.location.search)
-    const statusParam = params.get("status")
-    const loanTypeParam = params.get("loanType")
-    const searchParam = params.get("search")
-
-    if (statusParam) setStatusFilter(statusParam)
-    if (loanTypeParam) setLoanTypeFilter(loanTypeParam)
-    if (searchParam) setSearchTerm(searchParam)
-  }, [])
-
-  // Pagination handlers
-  const handleChangePage = (event: unknown, newPage: number) => {
-    setPage(newPage)
-  }
-
-  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setRowsPerPage(Number.parseInt(event.target.value, 10))
-    setPage(0)
-  }
-
-  // Action menu handlers
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, lead: Lead) => {
-    setAnchorEl(event.currentTarget)
-    setMenuLead(lead)
-  }
-
-  const handleMenuClose = () => {
-    setAnchorEl(null)
-    setMenuLead(null)
-  }
-
-  // Dialog handlers
-  const handleOpenDetailsDialog = (lead: Lead) => {
-    setSelectedLead(lead)
-    setDetailsDialogOpen(true)
-    handleMenuClose()
-  }
-
-  const handleOpenCreateDialog = () => {
-    setCreateDialogOpen(true)
-  }
-
-  const handleOpenAssignDialog = (lead: Lead) => {
-    setSelectedLead(lead)
-    setAssignDialogOpen(true)
-    handleMenuClose()
-  }
-
-  const handleOpenStatusDialog = (lead: Lead) => {
-    setSelectedLead(lead)
-    setStatusDialogOpen(true)
-    handleMenuClose()
-  }
-
-  const handleOpenTimelineDialog = (lead: Lead) => {
-    setSelectedLead(lead)
-    setTimelineDialogOpen(true)
-    handleMenuClose()
-  }
-
-  const handleOpenEditDialog = (lead: Lead) => {
-    setSelectedLead(lead)
-    setEditDialogOpen(true)
-    handleMenuClose()
-  }
-
-  // Lead actions
-  const handleCreateLead = (leadData: Partial<Lead>) => {
-    const newLead: Lead = {
-      id: `LEAD${Math.floor(Math.random() * 10000)}`,
-      applicantName: leadData.applicantName || "",
-      applicantProfile: leadData.applicantProfile || "Salaried",
-      businessName: leadData.businessName || "",
-      mobileNumber: leadData.mobileNumber || "",
-      email: leadData.email || "",
-      pincode: leadData.pincode || "",
-      loanType: leadData.loanType || "",
-      loanAmount: leadData.loanAmount || 0,
-      status: "pending",
-      createdBy: "Admin User",
-      createdAt: new Date().toISOString(),
-      assignedTo: "",
-      assignedToId: "",
-      lender: "",
-      comments: leadData.comments || "",
-      timeline: [
-        {
-          status: "created",
-          timestamp: new Date().toISOString(),
-          comment: "Lead created by admin",
-          updatedBy: userName,
-        },
-      ],
+  // Close on success
+  useEffect(() => {
+    if (success === "Lead updated!" && editOpen) {
+      setEditOpen(false);
+      setSnackbar({ open: true, message: success, severity: "success" });
+      dispatch(clearLeadState());
     }
-
-    setLeads([newLead, ...leads])
-    setCreateDialogOpen(false)
-    setSnackbar({
-      open: true,
-      message: "Lead created successfully",
-      severity: "success",
-    })
-  }
-
-  const handleEditLead = (leadData: Partial<Lead>) => {
-    if (!selectedLead) return
-
-    const updatedLeads = leads.map((lead) => {
-      if (lead.id === selectedLead.id) {
-        return {
-          ...lead,
-          ...leadData,
-          updatedAt: new Date().toISOString(),
-          timeline: [
-            ...lead.timeline,
-            {
-              status: "updated",
-              timestamp: new Date().toISOString(),
-              comment: "Lead details updated",
-              updatedBy: userName,
-            },
-          ],
-        }
-      }
-      return lead
-    })
-
-    setLeads(updatedLeads)
-    setFilteredLeads(
-      filteredLeads.map((lead) => {
-        if (lead.id === selectedLead.id) {
-          return updatedLeads.find((l) => l.id === selectedLead.id) || lead
-        }
-        return lead
-      }),
-    )
-    setEditDialogOpen(false)
-    setSnackbar({
-      open: true,
-      message: "Lead updated successfully",
-      severity: "success",
-    })
-  }
-
-  const handleAssignLead = (leadId: string, managerId: string, managerName: string) => {
-    const updatedLeads = leads.map((lead) => {
-      if (lead.id === leadId) {
-        return {
-          ...lead,
-          assignedTo: managerName,
-          assignedToId: managerId,
-          status: lead.status === "pending" ? "login" : lead.status,
-          timeline: [
-            ...lead.timeline,
-            {
-              status: "assigned",
-              timestamp: new Date().toISOString(),
-              comment: `Assigned to ${managerName}`,
-              updatedBy: userName,
-            },
-          ],
-        }
-      }
-      return lead
-    })
-
-    setLeads(updatedLeads)
-    setAssignDialogOpen(false)
-    setSnackbar({
-      open: true,
-      message: "Lead assigned successfully",
-      severity: "success",
-    })
-  }
-
-  const handleUpdateStatus = (leadId: string, newStatus: LeadStatus, comment: string) => {
-    const updatedLeads = leads.map((lead) => {
-      if (lead.id === leadId) {
-        return {
-          ...lead,
-          status: newStatus,
-          updatedAt: new Date().toISOString(),
-          timeline: [
-            ...lead.timeline,
-            {
-              status: newStatus,
-              timestamp: new Date().toISOString(),
-              comment: comment,
-              updatedBy: userName,
-            },
-          ],
-        }
-      }
-      return lead
-    })
-
-    setLeads(updatedLeads)
-    setStatusDialogOpen(false)
-    setSnackbar({
-      open: true,
-      message: `Lead status updated to ${newStatus}`,
-      severity: "success",
-    })
-  }
-
-  const handleDeleteLead = (leadId: string) => {
-    const updatedLeads = leads.filter((lead) => lead.id !== leadId)
-    setLeads(updatedLeads)
-    handleMenuClose()
-    setSnackbar({
-      open: true,
-      message: "Lead deleted successfully",
-      severity: "success",
-    })
-  }
-
-  // Filter functions
-  const applyFilters = () => {
-    let filtered = [...leads]
-
-    // Apply status filter
-    if (statusFilter !== "all") {
-      filtered = filtered.filter((lead) => lead.status === statusFilter)
+    if (duplicateMode && success === "Lead created!" && editOpen) {
+      setEditOpen(false);
+      setDuplicateMode(false);
+      setSnackbar({
+        open: true,
+        message: "Lead duplicated!",
+        severity: "success",
+      });
+      dispatch(clearLeadState());
     }
+  }, [success, editOpen, dispatch, duplicateMode]);
 
-    // Apply loan type filter
-    if (loanTypeFilter !== "all") {
-      filtered = filtered.filter((lead) => lead.loanType === loanTypeFilter)
-    }
+  // Map rows
+  const rows = useMemo(
+    () =>
+      apiLeads.map((l) => ({
+        dbId: l.id!,
+        displayId: l.leadId || l.id,
+        partner: l.parnetId?.basicInfo?.fullName || "NA",
+        manager: l.manager,
+        status: l.status || "NA",
+        createdAt: l.createdAt || "",
+        applicantName: l.applicant.name,
+        applicantProfile: l.applicant.profile,
+        email: l.applicant.email,
+        loanType: l.loan.type,
+        loanAmount:
+          typeof l.loan.amount === "string" ? +l.loan.amount : l.loan.amount,
+      })),
+    [apiLeads]
+  );
 
-    // Apply partner filter
-    if (partnerFilter !== "all") {
-      filtered = filtered.filter((lead) => lead.createdBy === partnerFilter)
-    }
-
-    // Apply search term
+  // Filters
+  const filteredRows = useMemo(() => {
+    let f = rows.slice();
+    if (statusFilter !== "all") f = f.filter((r) => r.status === statusFilter);
+    if (loanTypeFilter !== "all")
+      f = f.filter((r) => r.loanType === loanTypeFilter);
+    if (partnerFilter !== "all")
+      f = f.filter((r) => r.partner === partnerFilter);
     if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase()
-      filtered = filtered.filter(
-        (lead) =>
-          lead.id.toLowerCase().includes(searchLower) ||
-          lead.applicantName.toLowerCase().includes(searchLower) ||
-          lead.email.toLowerCase().includes(searchLower) ||
-          lead.mobileNumber.includes(searchTerm),
-      )
+      const s = searchTerm.toLowerCase();
+      f = f.filter(
+        (r) =>
+          r.displayId.toLowerCase().includes(s) ||
+          r.applicantName.toLowerCase().includes(s) ||
+          r.email.toLowerCase().includes(s)
+      );
+    }
+    return f;
+  }, [rows, statusFilter, loanTypeFilter, partnerFilter, searchTerm]);
+
+  // Menu
+  const handleMenuOpen = (e: React.MouseEvent<HTMLElement>, dbId: string) => {
+    e.stopPropagation();
+    setMenuDbId(dbId);
+    setAnchorEl(e.currentTarget);
+  };
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setMenuDbId(null);
+  };
+
+  // Action openers
+  const openDetails = (dbId: string) => {
+    setSelectedDbId(dbId);
+    setDetailsOpen(true);
+    handleMenuClose();
+  };
+  const openEdit = () => {
+    if (!menuDbId) return;
+    setSelectedRow(apiLeads.find((l) => l.id === menuDbId)!);
+    setEditOpen(true);
+    handleMenuClose();
+  };
+  const openDuplicate = () => {
+    if (!menuDbId) return;
+    const lead = apiLeads.find((l) => l.id === menuDbId)!;
+    setSelectedRow(lead);
+    setDuplicateMode(true);
+    setEditOpen(true);
+    handleMenuClose();
+  };
+  const openAssign = () => {
+    if (!menuDbId) return;
+    setSelectedRow(apiLeads.find((l) => l.id === menuDbId)!);
+    setAssignOpen(true);
+    handleMenuClose();
+  };
+  const openStatus = () => {
+    if (!menuDbId) return;
+    setSelectedRow(apiLeads.find((l) => l.id === menuDbId)!);
+    setStatusOpen(true);
+    handleMenuClose();
+  };
+  const openTimeline = () => {
+    if (!menuDbId) return;
+    const lead = apiLeads.find((l) => l.id === menuDbId);
+    if (!lead) return;
+    setSelectedRow(lead);
+    setTimelineOpen(true);
+    handleMenuClose();
+  };
+  const openDisbursement = () => {
+    if (!menuDbId) return;
+    setSelectedRow(apiLeads.find((l) => l.id === menuDbId)!);
+    setDisbursementOpen(true);
+    handleMenuClose();
+  };
+  const handleDeleteLead = () => {
+    const lead = apiLeads.find((l) => l.id === menuDbId)!;
+    setSelectedRow(lead);
+    setDeleteOpen(true);
+    handleMenuClose();
+  };
+
+  // Handlers
+  const handleCreateLead = async (data: any) => {
+    // if we're duplicating, take the original partnerId from the selected lead
+    const partnerId = duplicateMode
+      ? selectedRow.parnetId._id
+      : userRole !== "admin"
+      ? JSON.parse(localStorage.getItem("user") || "{}").id
+      : data.partnerId;
+
+    if (!partnerId) {
+      return setSnackbar({
+        open: true,
+        message: "Partner ID missing",
+        severity: "error",
+      });
     }
 
-    setFilteredLeads(filtered)
-    setPage(0) // Reset to first page when filtering
-  }
+    const payload = {
+      partnerId,
+      leadData: {
+        applicant: {
+          name: data.applicantName,
+          profile: data.applicantProfile,
+          // include businessName when profile === "Business"
+          ...(data.applicantProfile === "Business" && {
+            businessName: data.businessName,
+          }),
 
-  const resetFilters = () => {
-    setStatusFilter("all")
-    setLoanTypeFilter("all")
-    setPartnerFilter("all")
-    setSearchTerm("")
-    setFilteredLeads(leads)
-  }
+          mobile: data.mobileNumber,
+          email: data.email,
+          pincode: data.pincode,
+        },
+        loan: {
+          type: data.loanType,
+          amount: String(data.loanAmount),
+          comments: data.comments,
+        },
+      },
+    };
 
-  // Snackbar close
-  const handleCloseSnackbar = () => {
-    setSnackbar({
-      ...snackbar,
-      open: false,
-    })
-  }
+    try {
+      await dispatch(createLead(payload)).unwrap();
+      dispatch(fetchAllLeads());
+      setSnackbar({
+        open: true,
+        message: duplicateMode ? "Lead duplicated!" : "Lead created!",
+        severity: "success",
+      });
+      setCreateOpen(false);
+    } catch (err: any) {
+      setSnackbar({
+        open: true,
+        message: `Error: ${err.message}`,
+        severity: "error",
+      });
+    }
+  };
+  const handleEditLead = async (data: any) => {
+    if (!selectedRow) return;
+    const payload = {
+      leadId: selectedRow.id,
+      leadData: {
+        applicant: {
+          name: data.applicantName,
+          profile: data.applicantProfile,
+                // include businessName when profile === "Business"
+       ...(data.applicantProfile === "Business" && {
+          businessName: data.businessName,
+        }),
 
-  // Calculate statistics
-  const getTotalLeads = () => leads.length
-  const getPendingLeads = () => leads.filter((lead) => lead.status === "pending").length
-  const getApprovedLeads = () => leads.filter((lead) => lead.status === "approved").length
-  const getDisbursedLeads = () => leads.filter((lead) => lead.status === "disbursed").length
+          mobile: data.mobileNumber,
+          email: data.email,
+          pincode: data.pincode,
+        },
+        loan: {
+          type: data.loanType,
+          amount: String(data.loanAmount),
+          comments: data.comments,
+        },
+        lenderType: data.lenderType,
+      },
+    };
+    try {
+      await dispatch(updateLead(payload)).unwrap();
+      dispatch(fetchAllLeads());
+      setSnackbar({
+        open: true,
+        message: "Lead updated!",
+        severity: "success",
+      });
+      setEditOpen(false);
+    } catch (err: any) {
+      setSnackbar({ open: true, message: `Error: ${err}`, severity: "error" });
+    }
+  };
 
   return (
     <Box>
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
+      {/* Header */}
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={3}
+      >
         <Typography variant="h4">Lead Management</Typography>
         <Button
           variant="contained"
           startIcon={<Add />}
-          onClick={handleOpenCreateDialog}
-          sx={{
-            borderRadius: 2,
-            boxShadow: `0 4px 14px 0 ${theme.palette.primary.main}30`,
-          }}
+          onClick={() => setCreateOpen(true)}
         >
           Create New Lead
         </Button>
       </Box>
 
-      {/* Statistics Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card
-            sx={{
-              borderRadius: 2,
-              background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)} 0%, ${alpha(
-                theme.palette.primary.main,
-                0.05,
-              )} 100%)`,
-              border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
-            }}
-          >
-            <CardContent sx={{ p: 2.5 }}>
-              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  Total Leads
-                </Typography>
-                <Avatar
-                  sx={{
-                    bgcolor: alpha(theme.palette.primary.main, 0.1),
-                    color: theme.palette.primary.main,
-                    width: 40,
-                    height: 40,
-                  }}
-                >
-                  <Person />
-                </Avatar>
-              </Box>
-              <Typography variant="h4" sx={{ mt: 1, mb: 0.5, fontWeight: 600 }}>
-                {getTotalLeads()}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                From all partners
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <Card
-            sx={{
-              borderRadius: 2,
-              background: `linear-gradient(135deg, ${alpha(theme.palette.warning.main, 0.1)} 0%, ${alpha(
-                theme.palette.warning.main,
-                0.05,
-              )} 100%)`,
-              border: `1px solid ${alpha(theme.palette.warning.main, 0.1)}`,
-            }}
-          >
-            <CardContent sx={{ p: 2.5 }}>
-              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  Pending
-                </Typography>
-                <Avatar
-                  sx={{
-                    bgcolor: alpha(theme.palette.warning.main, 0.1),
-                    color: theme.palette.warning.main,
-                    width: 40,
-                    height: 40,
-                  }}
-                >
-                  {getStatusIcon("pending")}
-                </Avatar>
-              </Box>
-              <Typography variant="h4" sx={{ mt: 1, mb: 0.5, fontWeight: 600 }}>
-                {getPendingLeads()}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Awaiting assignment
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <Card
-            sx={{
-              borderRadius: 2,
-              background: `linear-gradient(135deg, ${alpha(theme.palette.success.main, 0.1)} 0%, ${alpha(
-                theme.palette.success.main,
-                0.05,
-              )} 100%)`,
-              border: `1px solid ${alpha(theme.palette.success.main, 0.1)}`,
-            }}
-          >
-            <CardContent sx={{ p: 2.5 }}>
-              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  Approved
-                </Typography>
-                <Avatar
-                  sx={{
-                    bgcolor: alpha(theme.palette.success.main, 0.1),
-                    color: theme.palette.success.main,
-                    width: 40,
-                    height: 40,
-                  }}
-                >
-                  {getStatusIcon("approved")}
-                </Avatar>
-              </Box>
-              <Typography variant="h4" sx={{ mt: 1, mb: 0.5, fontWeight: 600 }}>
-                {getApprovedLeads()}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Ready for disbursal
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <Card
-            sx={{
-              borderRadius: 2,
-              background: `linear-gradient(135deg, ${alpha(theme.palette.info.main, 0.1)} 0%, ${alpha(
-                theme.palette.info.main,
-                0.05,
-              )} 100%)`,
-              border: `1px solid ${alpha(theme.palette.info.main, 0.1)}`,
-            }}
-          >
-            <CardContent sx={{ p: 2.5 }}>
-              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  Disbursed
-                </Typography>
-                <Avatar
-                  sx={{
-                    bgcolor: alpha(theme.palette.info.main, 0.1),
-                    color: theme.palette.info.main,
-                    width: 40,
-                    height: 40,
-                  }}
-                >
-                  {getStatusIcon("disbursed")}
-                </Avatar>
-              </Box>
-              <Typography variant="h4" sx={{ mt: 1, mb: 0.5, fontWeight: 600 }}>
-                {getDisbursedLeads()}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Successfully completed
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-
       {/* Filters */}
       <Paper sx={{ p: 3, mb: 4, borderRadius: 2 }}>
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          Filter Leads
-        </Typography>
-        <Grid container spacing={2}>
+        <Grid container spacing={2} alignItems="center">
           <Grid item xs={12} sm={6} md={3}>
             <TextField
               select
               fullWidth
+              size="small"
               label="Status"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              size="small"
             >
-              <MenuItem value="all">All Statuses</MenuItem>
+              <MenuItem value="all">All</MenuItem>
               <MenuItem value="pending">Pending</MenuItem>
               <MenuItem value="login">Login</MenuItem>
               <MenuItem value="approved">Approved</MenuItem>
-              <MenuItem value="rejected">Rejected</MenuItem>
               <MenuItem value="disbursed">Disbursed</MenuItem>
               <MenuItem value="closed">Closed</MenuItem>
               <MenuItem value="expired">Expired</MenuItem>
@@ -575,44 +372,29 @@ const AdminLeads: React.FC = () => {
             <TextField
               select
               fullWidth
+              size="small"
               label="Loan Type"
               value={loanTypeFilter}
               onChange={(e) => setLoanTypeFilter(e.target.value)}
-              size="small"
             >
-              <MenuItem value="all">All Loan Types</MenuItem>
-              <MenuItem value="Personal Loan">Personal Loan</MenuItem>
-              <MenuItem value="Business Loan">Business Loan</MenuItem>
-              <MenuItem value="Home Loan">Home Loan</MenuItem>
-              <MenuItem value="Car Loan">Car Loan</MenuItem>
-              <MenuItem value="Education Loan">Education Loan</MenuItem>
+              <MenuItem value="all">All</MenuItem>
+              <MenuItem value="PL-Term Loan">PL-Term Loan</MenuItem>
+              <MenuItem value="PL-Overdraft">PL-Overdraft</MenuItem>
+              <MenuItem value="BL-Term Loan">BL-Term Loan</MenuItem>
+              <MenuItem value="BL-Overdraft">CBL-Overdraft</MenuItem>
+              <MenuItem value="SEPL-Term Loan">SEPL-Term Loan</MenuItem>
+              <MenuItem value="SEPL-Overdraft">SEPL-Overdraft</MenuItem>
             </TextField>
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <TextField
-              select
-              fullWidth
-              label="Partner"
-              value={partnerFilter}
-              onChange={(e) => setPartnerFilter(e.target.value)}
-              size="small"
-            >
-              <MenuItem value="all">All Partners</MenuItem>
-              {Array.from(new Set(leads.map((lead) => lead.createdBy))).map((partner) => (
-                <MenuItem key={partner} value={partner}>
-                  {partner}
-                </MenuItem>
-              ))}
-            </TextField>
-          </Grid>
+
           <Grid item xs={12} sm={6} md={3}>
             <TextField
               fullWidth
+              size="small"
               label="Search"
-              placeholder="Name, Email, ID..."
+              placeholder="Name, Email…"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              size="small"
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -623,149 +405,267 @@ const AdminLeads: React.FC = () => {
             />
           </Grid>
         </Grid>
-        <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
-          <Button variant="outlined" size="small" startIcon={<FilterAlt />} onClick={applyFilters} sx={{ mr: 1 }}>
-            Apply Filters
-          </Button>
-          <Button variant="text" size="small" startIcon={<Clear />} onClick={resetFilters}>
+        <Box display="flex" justifyContent="flex-end" mt={2}>
+          <Button
+            size="small"
+            startIcon={<Clear />}
+            onClick={() => {
+              setStatusFilter("all");
+              setLoanTypeFilter("all");
+              setPartnerFilter("all");
+              setSearchTerm("");
+            }}
+          >
             Reset
           </Button>
         </Box>
       </Paper>
 
-      {/* Leads Table */}
+      {/* Table */}
       <Paper sx={{ width: "100%", overflow: "hidden", borderRadius: 2, mb: 4 }}>
-        <TableContainer sx={{ maxHeight: 600 }}>
-          <Table stickyHeader aria-label="leads table">
+        <TableContainer sx={{ maxHeight: 520 }}>
+          <Table stickyHeader>
             <TableHead>
               <TableRow>
-                <TableCell sx={{ fontWeight: 600 }}>Lead ID</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Applicant</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Loan Details</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Partner</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Manager</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Created</TableCell>
-                <TableCell sx={{ fontWeight: 600 }} align="right">
-                  Actions
-                </TableCell>
+                <TableCell>Lead ID</TableCell>
+                <TableCell>Applicant</TableCell>
+                <TableCell>Loan Details</TableCell>
+                <TableCell>Partner</TableCell>
+                <TableCell>Manager</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Created</TableCell>
+                <TableCell align="right">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredLeads.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((lead) => (
-                <TableRow
-                  key={lead.id}
-                  hover
-                  sx={{
-                    "&:last-child td, &:last-child th": { border: 0 },
-                    cursor: "pointer",
-                    "&:hover": {
-                      backgroundColor: alpha(theme.palette.primary.main, 0.05),
-                    },
-                  }}
-                  onClick={() => handleOpenDetailsDialog(lead)}
-                >
-                  <TableCell>
-                    <Typography variant="body2" fontWeight={500}>
-                      {lead.id}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Box sx={{ display: "flex", alignItems: "center" }}>
-                      <Avatar
-                        sx={{
-                          width: 32,
-                          height: 32,
-                          bgcolor: alpha(theme.palette.primary.main, 0.1),
-                          color: theme.palette.primary.main,
-                          mr: 1.5,
-                        }}
-                      >
-                        {lead.applicantProfile === "Business" ? (
-                          <Business fontSize="small" />
-                        ) : (
-                          <Person fontSize="small" />
-                        )}
-                      </Avatar>
-                      <Box>
-                        <Typography variant="body2" fontWeight={500}>
-                          {lead.applicantName}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
-                          {lead.email}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">{lead.loanType}</Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
-                      {formatCurrency(lead.loanAmount)}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">{lead.createdBy}</Typography>
-                  </TableCell>
-                  <TableCell>
-                    {lead.assignedTo ? (
-                      <Typography variant="body2">{lead.assignedTo}</Typography>
-                    ) : (
-                      <Chip
-                        label="Unassigned"
-                        size="small"
-                        sx={{
-                          bgcolor: alpha(theme.palette.warning.main, 0.1),
-                          color: theme.palette.warning.main,
-                          fontWeight: 500,
-                        }}
-                      />
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      icon={getStatusIcon(lead.status)}
-                      label={lead.status.charAt(0).toUpperCase() + lead.status.slice(1)}
-                      size="small"
-                      sx={{
-                        bgcolor: alpha(getStatusColor(lead.status, theme), 0.1),
-                        color: getStatusColor(lead.status, theme),
-                        fontWeight: 500,
-                        "& .MuiChip-icon": {
-                          color: getStatusColor(lead.status, theme),
-                        },
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">{new Date(lead.createdAt).toLocaleDateString()}</Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
-                      {new Date(lead.createdAt).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="right">
-                    <IconButton
-                      size="small"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleMenuOpen(e, lead)
-                      }}
-                    >
-                      <MoreVert />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {filteredLeads.length === 0 && (
+              {filteredRows.slice(
+                page * rowsPerPage,
+                page * rowsPerPage + rowsPerPage
+              ).length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} align="center" sx={{ py: 3 }}>
-                    <Typography variant="body1" color="text.secondary">
-                      No leads found matching your filters
-                    </Typography>
+                  <TableCell colSpan={8} align="center">
+                    No leads available. Please create a new lead to proceed.
                   </TableCell>
                 </TableRow>
+              ) : (
+                filteredRows
+                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                  .map((r) => {
+                    // filter menu items per role/status
+                    const rawMenu = [
+                      {
+                        icon: <Visibility fontSize="small" />,
+                        label: "View Details",
+                        action: () => openDetails(r.dbId),
+                      },
+                      {
+                        icon: <Edit fontSize="small" />,
+                        label: "Edit Lead",
+                        action: openEdit,
+                      },
+                      {
+                        icon: <FileCopy fontSize="small" />,
+                        label: "Duplicate Lead",
+                        action: openDuplicate,
+                      },
+                      {
+                        icon: <Assignment fontSize="small" />,
+                        label: "Assign Lead",
+                        action: openAssign,
+                      },
+                      {
+                        icon: <Edit fontSize="small" />,
+                        label: "Update Status",
+                        action: openStatus,
+                      },
+                      {
+                        icon: <History fontSize="small" />,
+                        label: "View Timeline",
+                        action: openTimeline,
+                      },
+                      {
+                        icon: <AttachMoney fontSize="small" />,
+                        label: "Disbursement Details",
+                        action: openDisbursement,
+                      },
+                      {
+                        icon: <Delete fontSize="small" />,
+                        label: "Delete Lead",
+                        action: handleDeleteLead,
+                      },
+                    ];
+
+                    // Start with all eight
+                    let menuItems = [...rawMenu];
+
+                    // 1) Disbursement only when disbursed
+                    if (r.status !== "disbursed") {
+                      menuItems = menuItems.filter(
+                        (i) => i.label !== "Disbursement Details"
+                      );
+                    }
+
+                    // 2) Role‐based filtering
+                    if (userRole === "admin") {
+                      // no further filtering
+                    } else if (userRole === "manager") {
+                      // never delete
+                      menuItems = menuItems.filter(
+                        (i) => i.label !== "Delete Lead"
+                      );
+                      // once disbursed, also hide edit
+                      if (r.status === "disbursed") {
+                        menuItems = menuItems.filter(
+                          (i) => i.label !== "Edit Lead"
+                        );
+                      }
+                    } else if (userRole === "partner") {
+                      // always hide duplicate, disbursement, assign, update‐status
+                      menuItems = menuItems.filter(
+                        (i) =>
+                          ![
+                            "Duplicate Lead",
+                            "Disbursement Details",
+                            "Assign Lead",
+                            "Update Status",
+                          ].includes(i.label)
+                      );
+                      // if a manager is assigned, also hide edit & delete
+                      if (r.manager) {
+                        menuItems = menuItems.filter(
+                          (i) => !["Edit Lead", "Delete Lead"].includes(i.label)
+                        );
+                      }
+                    }
+
+                    return (
+                      <TableRow hover key={r.dbId}>
+                        <TableCell>{r.displayId}</TableCell>
+                        <TableCell>
+                          <Box display="flex" alignItems="center">
+                            <Avatar
+                              sx={{
+                                width: 32,
+                                height: 32,
+                                mr: 1,
+                                bgcolor: theme.palette.primary.light,
+                                color: theme.palette.primary.main,
+                              }}
+                            >
+                              {r.applicantProfile === "Business" ? (
+                                <Business fontSize="small" />
+                              ) : (
+                                <Person fontSize="small" />
+                              )}
+                            </Avatar>
+                            <Box>
+                              <Typography fontWeight={500}>
+                                {r.applicantName}
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
+                                {r.email}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Typography>{r.loanType}</Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {formatCurrency(r.loanAmount)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>{r.partner}</TableCell>
+                        <TableCell>
+                          {r.manager ? (
+                            <Chip
+                              label={r.manager}
+                              variant="outlined"
+                              color="primary"
+                              size="small"
+                              sx={{ fontWeight: 500 }}
+                            />
+                          ) : (
+                            <Chip
+                              label="Unassigned"
+                              variant="outlined"
+                              size="small"
+                              sx={{
+                                borderColor: theme.palette.grey[300],
+                                color: theme.palette.text.disabled,
+                                fontWeight: 500,
+                              }}
+                            />
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            icon={getStatusIcon(r.status)}
+                            label={
+                              r.status.charAt(0).toUpperCase() +
+                              r.status.slice(1)
+                            }
+                            size="small"
+                            sx={{
+                              bgcolor: getStatusColor(r.status, theme) + "20",
+                              color: getStatusColor(r.status, theme),
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          {r.createdAt
+                            ? new Date(r.createdAt).toLocaleString()
+                            : "NA"}
+                        </TableCell>
+                        <TableCell align="right">
+                          <IconButton
+                            size="small"
+                            onClick={(e) => handleMenuOpen(e, r.dbId)}
+                          >
+                            <MoreVert />
+                          </IconButton>
+                          <Menu
+                            anchorEl={anchorEl}
+                            open={Boolean(anchorEl) && menuDbId === r.dbId}
+                            onClose={handleMenuClose}
+                            PaperProps={{ sx: { borderRadius: 2 } }}
+                          >
+                            {menuItems.map(({ icon, label, action }) => (
+                              <MenuItem
+                                key={label}
+                                onClick={action}
+                                sx={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  px: 2,
+                                  py: 1,
+                                  gap: 1,
+                                  "&:hover": {
+                                    backgroundColor: theme.palette.action.hover,
+                                  },
+                                }}
+                              >
+                                {React.cloneElement(icon as any, {
+                                  sx: { color: theme.palette.primary.main },
+                                })}
+                                <Typography
+                                  variant="body2"
+                                  sx={{
+                                    fontWeight: 500,
+                                    color: theme.palette.text.primary,
+                                  }}
+                                >
+                                  {label}
+                                </Typography>
+                              </MenuItem>
+                            ))}
+                          </Menu>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
               )}
             </TableBody>
           </Table>
@@ -773,139 +673,117 @@ const AdminLeads: React.FC = () => {
         <TablePagination
           rowsPerPageOptions={[10, 25, 50]}
           component="div"
-          count={filteredLeads.length}
+          count={filteredRows.length}
           rowsPerPage={rowsPerPage}
           page={page}
-          onPageChange={handleChangePage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
+          onPageChange={(_, newPage) => setPage(newPage)}
+          onRowsPerPageChange={(e) => {
+            setRowsPerPage(+e.target.value);
+            setPage(0);
+          }}
         />
       </Paper>
 
-      {/* Action Menu */}
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleMenuClose}
-        PaperProps={{
-          sx: { width: 200, borderRadius: 2, boxShadow: theme.shadows[3] },
-        }}
-      >
-        <MenuItem onClick={() => menuLead && handleOpenDetailsDialog(menuLead)}>
-          <ListItemIcon>
-            <Visibility fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>View Details</ListItemText>
-        </MenuItem>
-        <MenuItem onClick={() => menuLead && handleOpenEditDialog(menuLead)}>
-          <ListItemIcon>
-            <Edit fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Edit Lead</ListItemText>
-        </MenuItem>
-        {menuLead && !menuLead.assignedTo && (
-          <MenuItem onClick={() => menuLead && handleOpenAssignDialog(menuLead)}>
-            <ListItemIcon>
-              <Assignment fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Assign Lead</ListItemText>
-          </MenuItem>
-        )}
-        <MenuItem onClick={() => menuLead && handleOpenStatusDialog(menuLead)}>
-          <ListItemIcon>
-            <Edit fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Update Status</ListItemText>
-        </MenuItem>
-        <MenuItem onClick={() => menuLead && handleOpenTimelineDialog(menuLead)}>
-          <ListItemIcon>
-            <History fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>View Timeline</ListItemText>
-        </MenuItem>
-        <MenuItem onClick={() => menuLead && handleDeleteLead(menuLead.id)} sx={{ color: theme.palette.error.main }}>
-          <ListItemIcon>
-            <Delete fontSize="small" color="error" />
-          </ListItemIcon>
-          <ListItemText>Delete Lead</ListItemText>
-        </MenuItem>
-      </Menu>
-
       {/* Dialogs */}
-      {selectedLead && (
-        <>
-          <LeadDetailsDialog open={detailsDialogOpen} onClose={() => setDetailsDialogOpen(false)} lead={selectedLead} />
-          <AssignLeadDialog
-            open={assignDialogOpen}
-            onClose={() => setAssignDialogOpen(false)}
-            lead={selectedLead}
-            onAssign={handleAssignLead}
-          />
-          <StatusUpdateDialog
-            open={statusDialogOpen}
-            onClose={() => setStatusDialogOpen(false)}
-            lead={selectedLead}
-            onUpdateStatus={handleUpdateStatus}
-          />
-          <LeadTimelineDialog
-            open={timelineDialogOpen}
-            onClose={() => setTimelineDialogOpen(false)}
-            lead={selectedLead}
-          />
-        </>
-      )}
-
-      {/* Create Lead Dialog */}
       <Dialog
-        open={createDialogOpen}
-        onClose={() => setCreateDialogOpen(false)}
-        maxWidth="md"
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
         fullWidth
-        PaperProps={{ sx: { borderRadius: 2 } }}
+        maxWidth="md"
       >
-        <DialogTitle>
-          <Typography variant="h6">Create New Lead</Typography>
-        </DialogTitle>
-        <DialogContent dividers>
-          <LeadForm onSubmit={handleCreateLead} onCancel={() => setCreateDialogOpen(false)} />
+        <DialogTitle>Create New Lead</DialogTitle>
+        <DialogContent>
+          <LeadForm
+            onSubmit={handleCreateLead}
+            onCancel={() => setCreateOpen(false)}
+          />
         </DialogContent>
       </Dialog>
-
-      {/* Edit Lead Dialog */}
       <Dialog
-        open={editDialogOpen}
-        onClose={() => setEditDialogOpen(false)}
-        maxWidth="md"
+        open={editOpen}
+        onClose={() => {
+          setEditOpen(false);
+          setDuplicateMode(false);
+        }}
         fullWidth
-        PaperProps={{ sx: { borderRadius: 2 } }}
+        maxWidth="md"
       >
         <DialogTitle>
-          <Typography variant="h6">Edit Lead</Typography>
+          {duplicateMode ? "Duplicate Lead" : "Edit Lead"}
         </DialogTitle>
-        <DialogContent dividers>
-          {selectedLead && (
+        <DialogContent>
+          {selectedRow && (
             <LeadForm
-              onSubmit={handleEditLead}
-              onCancel={() => setEditDialogOpen(false)}
-              initialData={selectedLead}
-              isEdit={true}
+              initialData={selectedRow}
+              isEdit={!duplicateMode}
+              isDuplicate={duplicateMode}
+              onSubmit={duplicateMode ? handleCreateLead : handleEditLead}
+              onCancel={() => {
+                setEditOpen(false);
+                setDuplicateMode(false);
+              }}
             />
           )}
         </DialogContent>
       </Dialog>
+      {selectedRow && (
+        <AssignLeadDialog
+          open={assignOpen}
+          onClose={() => setAssignOpen(false)}
+          lead={selectedRow}
+        />
+      )}
+      {selectedRow && (
+        <StatusUpdateDialog
+          open={statusOpen}
+          onClose={() => setStatusOpen(false)}
+          lead={selectedRow}
+        />
+      )}
+      {selectedRow && (
+        <LeadTimelineDialog
+          open={timelineOpen}
+          onClose={() => setTimelineOpen(false)}
+          lead={selectedRow}
+        />
+      )}
+      <LeadDetailsDialog
+        open={detailsOpen}
+        onClose={() => setDetailsOpen(false)}
+        leadId={selectedDbId!}
+      />
+      {selectedRow && (
+        <DisbursementDialog
+          open={disbursementOpen}
+          onClose={() => setDisbursementOpen(false)}
+          lead={selectedRow}
+        />
+      )}
+      {selectedRow && (
+        <LeadDeleteDialog
+          open={deleteOpen}
+          onClose={() => setDeleteOpen(false)}
+          leadId={selectedRow.id}
+          leadName={selectedRow.applicant.name}
+        />
+      )}
 
       {/* Snackbar */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={5000}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
       >
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} variant="filled" sx={{ width: "100%" }}>
+        <Alert
+          onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+          severity={snackbar.severity}
+        >
           {snackbar.message}
         </Alert>
       </Snackbar>
     </Box>
-  )
-}
+  );
+};
 
-export default AdminLeads
+export default LeadsTable;

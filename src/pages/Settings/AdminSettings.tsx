@@ -3,10 +3,10 @@
 import type React from "react"
 import { useState } from "react"
 import { Box, Tab, Tabs, Typography, Paper } from "@mui/material"
-import { Person, Notifications, Security } from "@mui/icons-material"
+import { Person, Security, AccountBalance } from "@mui/icons-material"
 import ProfileSection from "./components/ProfileSection"
-import NotificationsSection from "./components/NotificationsSection"
 import SecuritySection from "./components/SecuritySection"
+import LenderLoanType from "./components/LenderLoanType"
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -37,14 +37,10 @@ function a11yProps(index: number) {
   }
 }
 
-interface AdminSettingsProps {
-  user: any
-}
-
-const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
+const AdminSettings: React.FC = () => {
   const [value, setValue] = useState(0)
 
-  const handleChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleChange = (_event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue)
   }
 
@@ -56,7 +52,8 @@ const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
         borderRadius: 2,
         overflow: "hidden",
         background: "linear-gradient(to right, #f7f9fc, #ffffff)",
-        boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025)",
+        boxShadow:
+          "0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025)",
       }}
     >
       <Box
@@ -90,19 +87,19 @@ const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
           }}
         >
           <Tab icon={<Person />} label="Profile" iconPosition="start" {...a11yProps(0)} sx={{ px: 3 }} />
-          <Tab icon={<Notifications />} label="Notifications" iconPosition="start" {...a11yProps(1)} sx={{ px: 3 }} />
-          <Tab icon={<Security />} label="Security" iconPosition="start" {...a11yProps(2)} sx={{ px: 3 }} />
+          <Tab icon={<Security />} label="Security" iconPosition="start" {...a11yProps(1)} sx={{ px: 3 }} />
+          <Tab icon={<AccountBalance />} label="Lender & Loan Types" iconPosition="start" {...a11yProps(2)} sx={{ px: 3 }} />
         </Tabs>
       </Box>
 
       <TabPanel value={value} index={0}>
-        <ProfileSection user={user} isAdmin={true} />
+        <ProfileSection />
       </TabPanel>
       <TabPanel value={value} index={1}>
-        <NotificationsSection user={user} />
+        <SecuritySection />
       </TabPanel>
       <TabPanel value={value} index={2}>
-        <SecuritySection user={user} />
+        <LenderLoanType />
       </TabPanel>
     </Paper>
   )

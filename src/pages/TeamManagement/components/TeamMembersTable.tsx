@@ -1,6 +1,5 @@
 "use client"
 
-import type React from "react"
 import { useState } from "react"
 import {
   Box,
@@ -20,15 +19,16 @@ import {
   ListItemIcon,
   ListItemText,
   Tooltip,
+  Pagination,
 } from "@mui/material"
-import { MoreVert, Edit, Delete, Visibility, CheckCircle, Cancel } from "@mui/icons-material"
-import type { TeamMember } from "../types/teamTypes"
+import { MoreVert, Edit, Delete, Visibility } from "@mui/icons-material"
+import type { Manager } from "../../../store/slices/teamSLice"
 
 interface TeamMembersTableProps {
-  teamMembers: TeamMember[]
-  onEdit: (member: TeamMember) => void
-  onDelete: (member: TeamMember) => void
-  onViewDetails: (member: TeamMember) => void
+  teamMembers: Manager[]
+  onEdit: (member: Manager) => void
+  onDelete: (member: Manager) => void
+  onViewDetails: (member: Manager) => void
   onStatusChange: (memberId: string, newStatus: "active" | "inactive") => void
 }
 
@@ -37,12 +37,13 @@ const TeamMembersTable: React.FC<TeamMembersTableProps> = ({
   onEdit,
   onDelete,
   onViewDetails,
-  onStatusChange,
 }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
-  const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null)
+  const [selectedMember, setSelectedMember] = useState<Manager | null>(null)
+  const [page, setPage] = useState(1)
+  const rowsPerPage = 5
 
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, member: TeamMember) => {
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, member: Manager) => {
     setAnchorEl(event.currentTarget)
     setSelectedMember(member)
   }
@@ -53,33 +54,25 @@ const TeamMembersTable: React.FC<TeamMembersTableProps> = ({
   }
 
   const handleEdit = () => {
-    if (selectedMember) {
-      onEdit(selectedMember)
-    }
+    if (selectedMember) onEdit(selectedMember)
     handleMenuClose()
   }
 
   const handleDelete = () => {
-    if (selectedMember) {
-      onDelete(selectedMember)
-    }
+    if (selectedMember) onDelete(selectedMember)
     handleMenuClose()
   }
 
   const handleViewDetails = () => {
-    if (selectedMember) {
-      onViewDetails(selectedMember)
-    }
+    if (selectedMember) onViewDetails(selectedMember)
     handleMenuClose()
   }
 
-  const handleToggleStatus = () => {
-    if (selectedMember) {
-      const newStatus = selectedMember.status === "active" ? "inactive" : "active"
-      onStatusChange(selectedMember.id, newStatus)
-    }
-    handleMenuClose()
+  const handlePageChange = (_: React.ChangeEvent<unknown>, value: number) => {
+    setPage(value)
   }
+
+  const paginatedMembers = teamMembers.slice((page - 1) * rowsPerPage, page * rowsPerPage)
 
   return (
     <>
@@ -91,79 +84,94 @@ const TeamMembersTable: React.FC<TeamMembersTableProps> = ({
           <TableHead sx={{ backgroundColor: "grey.50" }}>
             <TableRow>
               <TableCell sx={{ fontWeight: 600 }}>Manager</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Role</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Location</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Contact</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Performance</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Created</TableCell>
               <TableCell align="right" sx={{ fontWeight: 600 }}>
                 Actions
               </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {teamMembers.map((member) => (
-              <TableRow key={member.id} hover>
-                <TableCell>
-                  <Box sx={{ display: "flex", alignItems: "center" }}>
-                    <Avatar src={member.profileImage} alt={member.name} sx={{ width: 40, height: 40, mr: 2 }} />
-                    <Box>
-                      <Typography variant="body1" fontWeight={500}>
-                        {member.name}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        ID: {member.id}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </TableCell>
-                <TableCell>{member.role}</TableCell>
-                <TableCell>{member.location}</TableCell>
-                <TableCell>
-                  <Typography variant="body2">{member.email}</Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {member.mobile}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Chip
-                    label={member.status === "active" ? "Active" : "Inactive"}
-                    size="small"
-                    sx={{
-                      backgroundColor: member.status === "active" ? "success.lighter" : "grey.200",
-                      color: member.status === "active" ? "success.dark" : "text.secondary",
-                      fontWeight: 600,
-                    }}
-                  />
-                </TableCell>
-                <TableCell>
-                  {member.conversionRate ? (
-                    <Box>
-                      <Typography variant="body2" fontWeight={500}>
-                        {member.conversionRate}% Conversion
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {member.completedLeads}/{member.assignedLeads} Leads
-                      </Typography>
-                    </Box>
-                  ) : (
-                    <Typography variant="body2" color="text.secondary">
-                      No data
-                    </Typography>
-                  )}
-                </TableCell>
-                <TableCell align="right">
-                  <Tooltip title="More options">
-                    <IconButton size="small" onClick={(e) => handleMenuOpen(e, member)}>
-                      <MoreVert />
-                    </IconButton>
-                  </Tooltip>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
+  {paginatedMembers.length === 0 ? (
+    <TableRow>
+      <TableCell colSpan={6} align="center">
+        No members found. Please create one to move forward.
+      </TableCell>
+    </TableRow>
+  ) : (
+    paginatedMembers.map((member) => (
+      <TableRow key={member._id} hover>
+        <TableCell>
+          <Box sx={{ display: "flex", alignItems: "center" }}>
+            <Avatar
+              src="/professional-person.png"
+              alt="avatar"
+              sx={{ width: 40, height: 40, mr: 2 }}
+            />
+            <Box>
+              <Typography variant="body1" fontWeight={500}>
+                {member.firstName} {member.lastName}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                ID: {member.managerId || "N/A"}
+              </Typography>
+            </Box>
+          </Box>
+        </TableCell>
+        <TableCell>{member.location}</TableCell>
+        <TableCell>
+          <Typography variant="body2">{member.email}</Typography>
+          <Typography variant="caption" color="text.secondary">
+            {member.mobile}
+          </Typography>
+        </TableCell>
+        <TableCell>
+          <Chip
+            label={member.status === "active" ? "Active" : "Inactive"}
+            size="small"
+            sx={{
+              backgroundColor:
+                member.status === "active" ? "success.lighter" : "grey.200",
+              color:
+                member.status === "active" ? "success.dark" : "text.secondary",
+              fontWeight: 600,
+            }}
+          />
+        </TableCell>
+        <TableCell>
+          <Typography variant="caption" color="text.secondary">
+            {new Date(member.createdAt).toLocaleDateString()}
+          </Typography>
+        </TableCell>
+        <TableCell align="right">
+          <Tooltip title="More options">
+            <IconButton
+              size="small"
+              onClick={(e) => handleMenuOpen(e, member)}
+            >
+              <MoreVert />
+            </IconButton>
+          </Tooltip>
+        </TableCell>
+      </TableRow>
+    ))
+  )}
+</TableBody>
+
         </Table>
       </TableContainer>
+
+      <Box display="flex" justifyContent="center" mt={3}>
+        <Pagination
+          count={Math.ceil(teamMembers.length / rowsPerPage)}
+          page={page}
+          onChange={handlePageChange}
+          color="primary"
+          shape="rounded"
+        />
+      </Box>
 
       <Menu
         anchorEl={anchorEl}
@@ -188,16 +196,6 @@ const TeamMembersTable: React.FC<TeamMembersTableProps> = ({
             <Edit fontSize="small" />
           </ListItemIcon>
           <ListItemText>Edit</ListItemText>
-        </MenuItem>
-        <MenuItem onClick={handleToggleStatus}>
-          <ListItemIcon>
-            {selectedMember?.status === "active" ? (
-              <Cancel fontSize="small" color="error" />
-            ) : (
-              <CheckCircle fontSize="small" color="success" />
-            )}
-          </ListItemIcon>
-          <ListItemText>{selectedMember?.status === "active" ? "Deactivate" : "Activate"}</ListItemText>
         </MenuItem>
         <MenuItem onClick={handleDelete} sx={{ color: "error.main" }}>
           <ListItemIcon>

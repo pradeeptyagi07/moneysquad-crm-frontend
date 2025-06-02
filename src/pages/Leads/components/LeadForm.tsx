@@ -1,7 +1,7 @@
-"use client"
+// src/pages/Leads/components/LeadForm.tsx
+"use client";
 
-import type React from "react"
-import { useState } from "react"
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Button,
@@ -14,141 +14,199 @@ import {
   Select,
   TextField,
   Typography,
-} from "@mui/material"
-import type { Lead, ApplicantProfile } from "../../../data/leadTypes"
+  CircularProgress,
+} from "@mui/material";
+import { useAppDispatch } from "../../../hooks/useAppDispatch";
+import { useAppSelector } from "../../../hooks/useAppSelector";
+import { fetchAllPartners } from "../../../store/slices/managePartnerSlice";
+import {
+  fetchLoanTypes,
+  fetchLenders,
+} from "../../../store/slices/lenderLoanSlice";
+import { useAuth } from "../../../hooks/useAuth";
+import type { Lead } from "../../../store/slices/leadSLice";
 
 interface LeadFormProps {
-  onSubmit: (data: Partial<Lead>) => void
-  onCancel: () => void
-  initialData?: Lead
-  isEdit?: boolean
+  initialData?: Lead;
+  isEdit?: boolean;
+  isDuplicate?: boolean;
+  onSubmit: (data: any) => void;
+  onCancel: () => void;
 }
 
-const LeadForm: React.FC<LeadFormProps> = ({ onSubmit, onCancel, initialData, isEdit = false }) => {
-  const [formData, setFormData] = useState<Partial<Lead>>({
-    applicantName: initialData?.applicantName || "",
-    applicantProfile: initialData?.applicantProfile || "Salaried",
-    businessName: initialData?.businessName || "",
-    mobileNumber: initialData?.mobileNumber || "",
-    email: initialData?.email || "",
-    pincode: initialData?.pincode || "",
-    loanType: initialData?.loanType || "",
-    loanAmount: initialData?.loanAmount || 0,
-    comments: initialData?.comments || "",
-    ...initialData,
-  })
+const LeadForm: React.FC<LeadFormProps> = ({
+  initialData,
+  isEdit = false,
+  isDuplicate = false,
+  onSubmit,
+  onCancel,
+}) => {
+  const dispatch = useAppDispatch();
+  const { userRole } = useAuth();
+  console.log("initaildata", initialData);
 
-  const [errors, setErrors] = useState<Record<string, string>>({})
+  // partners (only on create + admin)
+  const partners = useAppSelector((s) => s.managePartners.partners);
+  // loanTypes + lenders
+  const {
+    loanTypes,
+    lenders,
+    loading: llLoading,
+    error: llError,
+  } = useAppSelector((s) => s.lenderLoan);
 
-  const loanTypes = [
-    "Personal Loan",
-    "Home Loan",
-    "Business Loan",
-    "Car Loan",
-    "Education Loan",
-    "Gold Loan",
-    "Loan Against Property",
-  ]
+  // form state
+  const [formData, setFormData] = useState<any>({
+    partnerId: initialData?.partner ?? "",
+    applicantName: initialData?.applicant?.name ?? "",
+    applicantProfile: initialData?.applicant?.profile ?? "Salaried",
+    businessName:
+      initialData?.applicant?.profile === "Business"
+        ? initialData.applicant.name
+        : "",
+    mobileNumber: initialData?.applicant?.mobile ?? "",
+    email: initialData?.applicant?.email ?? "",
+    pincode: initialData?.applicant?.pincode ?? "",
+    loanType: initialData?.loan?.type ?? "",
+    loanAmount: initialData?.loan?.amount ?? 0,
+    comments: initialData?.loan?.comments ?? "",
+    lenderType: initialData?.lenderType ?? "",
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const applicantProfiles: ApplicantProfile[] = ["Salaried", "Self-Employed", "Business", "Student", "Retired"]
+  // load dynamic lists
+  useEffect(() => {
+    dispatch(fetchLoanTypes());
+    // fetch lenders on edit or duplicate
+    if (isEdit || isDuplicate) dispatch(fetchLenders());
+  }, [dispatch, isEdit, isDuplicate]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
-    const { name, value } = e.target
-    if (!name) return
+  // partners only if admin + create/duplicate false
+  useEffect(() => {
+    if (userRole === "admin" && !isEdit && !isDuplicate) {
+      dispatch(fetchAllPartners());
+    }
+  }, [dispatch, userRole, isEdit, isDuplicate]);
 
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }))
-
-    // Clear error when field is edited
+  // handle change
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>
+  ) => {
+    const { name, value } = e.target as any;
+    setFormData((f: any) => ({ ...f, [name]: value }));
     if (errors[name]) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: "",
-      }))
+      setErrors((e) => ({ ...e, [name]: "" }));
     }
-  }
+  };
 
-  const validateForm = (): boolean => {
-    const newErrors: Record<string, string> = {}
-    let isValid = true
+  // validation
+  const validate = (): boolean => {
+    const errs: any = {};
+    let ok = true;
 
-    // Required fields
-    if (!formData.applicantName?.trim()) {
-      newErrors.applicantName = "Applicant name is required"
-      isValid = false
+    if (!formData.applicantName.trim()) {
+      errs.applicantName = "Required";
+      ok = false;
     }
-
-    if (formData.applicantProfile === "Business" && !formData.businessName?.trim()) {
-      newErrors.businessName = "Business name is required"
-      isValid = false
+    if (
+      formData.applicantProfile === "Business" &&
+      !formData.businessName.trim()
+    ) {
+      errs.businessName = "Required";
+      ok = false;
     }
-
-    if (!formData.mobileNumber?.trim()) {
-      newErrors.mobileNumber = "Mobile number is required"
-      isValid = false
-    } else if (!/^[6-9]\d{9}$/.test(formData.mobileNumber)) {
-      newErrors.mobileNumber = "Enter a valid 10-digit mobile number"
-      isValid = false
+    if (!/^[6-9]\d{9}$/.test(formData.mobileNumber)) {
+      errs.mobileNumber = "Enter valid mobile";
+      ok = false;
     }
-
-    if (!formData.email?.trim()) {
-      newErrors.email = "Email is required"
-      isValid = false
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = "Enter a valid email address"
-      isValid = false
+    if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      errs.email = "Enter valid email";
+      ok = false;
     }
-
-    if (!formData.pincode?.trim()) {
-      newErrors.pincode = "Pincode is required"
-      isValid = false
-    } else if (!/^\d{6}$/.test(formData.pincode)) {
-      newErrors.pincode = "Enter a valid 6-digit pincode"
-      isValid = false
+    if (!/^\d{6}$/.test(formData.pincode)) {
+      errs.pincode = "Enter 6 digit pincode";
+      ok = false;
     }
-
     if (!formData.loanType) {
-      newErrors.loanType = "Loan type is required"
-      isValid = false
+      errs.loanType = "Required";
+      ok = false;
+    }
+    if (!(formData.loanAmount > 0)) {
+      errs.loanAmount = "Must be > 0";
+      ok = false;
+    }
+    // partner required on create, not on edit/duplicate
+    if (
+      !isEdit &&
+      !isDuplicate &&
+      userRole === "admin" &&
+      !formData.partnerId
+    ) {
+      errs.partnerId = "Select partner";
+      ok = false;
+    }
+    // lenderType required on edit or duplicate
+    if ((isEdit || isDuplicate) && !formData.lenderType) {
+      errs.lenderType = "Select lender";
+      ok = false;
     }
 
-    if (!formData.loanAmount) {
-      newErrors.loanAmount = "Loan amount is required"
-      isValid = false
-    } else if (formData.loanAmount <= 0) {
-      newErrors.loanAmount = "Loan amount must be greater than 0"
-      isValid = false
-    }
-
-    setErrors(newErrors)
-    return isValid
-  }
+    setErrors(errs);
+    return ok;
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (validateForm()) {
-      onSubmit(formData)
-    }
-  }
+    e.preventDefault();
+    if (!validate()) return;
+    onSubmit(formData);
+  };
 
   return (
     <Box component="form" onSubmit={handleSubmit}>
-      <Typography variant="h6" sx={{ mb: 3 }}>
-        {isEdit ? "Edit Lead Information" : "New Lead Information"}
+      <Typography variant="h6" mb={3}>
+        {isDuplicate
+          ? "Duplicate Lead"
+          : isEdit
+          ? "Edit Lead Information"
+          : "New Lead Information"}
       </Typography>
+
       <Grid container spacing={3}>
+        {/* partner selector */}
+        {userRole === "admin" && !isEdit && !isDuplicate && (
+          <Grid item xs={12} md={6}>
+            <FormControl fullWidth error={!!errors.partnerId}>
+              <InputLabel>Partner</InputLabel>
+              <Select
+                name="partnerId"
+                value={formData.partnerId}
+                label="Partner"
+                onChange={handleChange}
+                required
+              >
+                {partners.map((p) => (
+                  <MenuItem key={p._id} value={p._id}>
+                    {p.basicInfo?.fullName || p.partnerId}
+                  </MenuItem>
+                ))}
+              </Select>
+              {errors.partnerId && (
+                <FormHelperText>{errors.partnerId}</FormHelperText>
+              )}
+            </FormControl>
+          </Grid>
+        )}
+
+        {/* Applicant Info */}
         <Grid item xs={12}>
           <Typography variant="subtitle1" fontWeight={600}>
             Applicant Information
           </Typography>
         </Grid>
-
         <Grid item xs={12} md={6}>
           <TextField
             fullWidth
-            label="Applicant Name"
+            label="Name"
             name="applicantName"
             value={formData.applicantName}
             onChange={handleChange}
@@ -157,26 +215,29 @@ const LeadForm: React.FC<LeadFormProps> = ({ onSubmit, onCancel, initialData, is
             required
           />
         </Grid>
-
         <Grid item xs={12} md={6}>
-          <FormControl fullWidth error={!!errors.applicantProfile}>
-            <InputLabel>Applicant Profile</InputLabel>
+          <FormControl fullWidth>
+            <InputLabel>Profile</InputLabel>
             <Select
               name="applicantProfile"
               value={formData.applicantProfile}
-              label="Applicant Profile"
+              label="Profile"
               onChange={handleChange}
             >
-              {applicantProfiles.map((profile) => (
-                <MenuItem key={profile} value={profile}>
-                  {profile}
+              {[
+                "Salaried",
+                "Self-Employed",
+                "Business",
+                "Student",
+                "Retired",
+              ].map((p) => (
+                <MenuItem key={p} value={p}>
+                  {p}
                 </MenuItem>
               ))}
             </Select>
-            {errors.applicantProfile && <FormHelperText>{errors.applicantProfile}</FormHelperText>}
           </FormControl>
         </Grid>
-
         {formData.applicantProfile === "Business" && (
           <Grid item xs={12} md={6}>
             <TextField
@@ -191,7 +252,6 @@ const LeadForm: React.FC<LeadFormProps> = ({ onSubmit, onCancel, initialData, is
             />
           </Grid>
         )}
-
         <Grid item xs={12} md={6}>
           <TextField
             fullWidth
@@ -203,17 +263,15 @@ const LeadForm: React.FC<LeadFormProps> = ({ onSubmit, onCancel, initialData, is
             helperText={errors.mobileNumber}
             required
             InputProps={{
-              startAdornment: <InputAdornment position="start">+91</InputAdornment>,
+              startAdornment: <InputAdornment>+91</InputAdornment>,
             }}
           />
         </Grid>
-
         <Grid item xs={12} md={6}>
           <TextField
             fullWidth
             label="Email"
             name="email"
-            type="email"
             value={formData.email}
             onChange={handleChange}
             error={!!errors.email}
@@ -221,7 +279,6 @@ const LeadForm: React.FC<LeadFormProps> = ({ onSubmit, onCancel, initialData, is
             required
           />
         </Grid>
-
         <Grid item xs={12} md={6}>
           <TextField
             fullWidth
@@ -235,25 +292,30 @@ const LeadForm: React.FC<LeadFormProps> = ({ onSubmit, onCancel, initialData, is
           />
         </Grid>
 
+        {/* Loan Info */}
         <Grid item xs={12}>
-          <Typography variant="subtitle1" fontWeight={600} sx={{ mt: 2 }}>
+          <Typography variant="subtitle1" fontWeight={600}>
             Loan Information
           </Typography>
         </Grid>
-
         <Grid item xs={12} md={6}>
-          <FormControl fullWidth error={!!errors.loanType}>
-            <InputLabel>Loan Type</InputLabel>
-            <Select name="loanType" value={formData.loanType} label="Loan Type" onChange={handleChange} required>
-              {loanTypes.map((type) => (
-                <MenuItem key={type} value={type}>
-                  {type}
-                </MenuItem>
-              ))}
-            </Select>
-            {errors.loanType && <FormHelperText>{errors.loanType}</FormHelperText>}
-          </FormControl>
-        </Grid>
+  <FormControl fullWidth>
+    <InputLabel>Loan Type</InputLabel>
+    <Select
+      name="loanType"
+      value={formData.loanType}
+      label="Loan Type"
+      onChange={handleChange}
+      required
+    >
+      {loanTypes.map((lt) => (
+        <MenuItem key={lt._id} value={lt.name}>
+          {lt.name}
+        </MenuItem>
+      ))}
+    </Select>
+  </FormControl>
+</Grid>
 
         <Grid item xs={12} md={6}>
           <TextField
@@ -266,12 +328,42 @@ const LeadForm: React.FC<LeadFormProps> = ({ onSubmit, onCancel, initialData, is
             error={!!errors.loanAmount}
             helperText={errors.loanAmount}
             required
-            InputProps={{
-              startAdornment: <InputAdornment position="start">₹</InputAdornment>,
-            }}
+            InputProps={{ startAdornment: <InputAdornment>₹</InputAdornment> }}
           />
         </Grid>
 
+        {/* Lender Type on edit or duplicate */}
+        {(isEdit || isDuplicate) && (
+          <Grid item xs={12} md={6}>
+            <FormControl fullWidth error={!!errors.lenderType}>
+              <InputLabel>Lender Type</InputLabel>
+              {llLoading ? (
+                <CircularProgress size={24} />
+              ) : llError ? (
+                <Typography color="error">{llError}</Typography>
+              ) : (
+                <Select
+                  name="lenderType"
+                  value={formData.lenderType}
+                  label="Lender Type"
+                  onChange={handleChange}
+                  required
+                >
+                  {lenders.map((l) => (
+                    <MenuItem key={l._id} value={l.name}>
+                      {l.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              )}
+              {errors.lenderType && (
+                <FormHelperText>{errors.lenderType}</FormHelperText>
+              )}
+            </FormControl>
+          </Grid>
+        )}
+
+        {/* Comments */}
         <Grid item xs={12}>
           <TextField
             fullWidth
@@ -284,19 +376,24 @@ const LeadForm: React.FC<LeadFormProps> = ({ onSubmit, onCancel, initialData, is
           />
         </Grid>
 
+        {/* Actions */}
         <Grid item xs={12}>
-          <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, mt: 2 }}>
+          <Box display="flex" justifyContent="flex-end" gap={2} mt={2}>
             <Button variant="outlined" onClick={onCancel}>
               Cancel
             </Button>
-            <Button type="submit" variant="contained" sx={{ mr: 2 }}>
-              {isEdit ? "Update Lead" : "Create Lead"}
+            <Button type="submit" variant="contained">
+              {isDuplicate
+                ? "Duplicate Lead"
+                : isEdit
+                ? "Update Lead"
+                : "Create Lead"}
             </Button>
           </Box>
         </Grid>
       </Grid>
     </Box>
-  )
-}
+  );
+};
 
-export default LeadForm
+export default LeadForm;

@@ -1,12 +1,13 @@
 import type React from "react"
 import { Box, Typography, Paper, Grid, Divider } from "@mui/material"
-import type { Partner } from "../types/partnerTypes"
 
 interface AddressDetailsSectionProps {
   partner: Partner
 }
 
 const AddressDetailsSection: React.FC<AddressDetailsSectionProps> = ({ partner }) => {
+  const address = partner.addressDetails || {}
+
   return (
     <Paper
       sx={{
@@ -54,28 +55,28 @@ const AddressDetailsSection: React.FC<AddressDetailsSectionProps> = ({ partner }
             Address Line 1
           </Typography>
           <Typography variant="body1" sx={{ fontWeight: 500, mb: 2 }}>
-            {partner.addressLine1}
+            {address.addressLine1 || "-"}
           </Typography>
         </Grid>
 
-        {partner.addressLine2 && (
+        {address.addressLine2 && (
           <Grid item xs={12}>
             <Typography variant="body2" color="text.secondary">
               Address Line 2
             </Typography>
             <Typography variant="body1" sx={{ fontWeight: 500, mb: 2 }}>
-              {partner.addressLine2}
+              {address.addressLine2}
             </Typography>
           </Grid>
         )}
 
-        {partner.landmark && (
+        {address.landmark && (
           <Grid item xs={12} sm={6}>
             <Typography variant="body2" color="text.secondary">
               Landmark
             </Typography>
             <Typography variant="body1" sx={{ fontWeight: 500, mb: 2 }}>
-              {partner.landmark}
+              {address.landmark}
             </Typography>
           </Grid>
         )}
@@ -85,7 +86,7 @@ const AddressDetailsSection: React.FC<AddressDetailsSectionProps> = ({ partner }
             City
           </Typography>
           <Typography variant="body1" sx={{ fontWeight: 500, mb: 2 }}>
-            {partner.city}
+            {address.city || "-"}
           </Typography>
         </Grid>
 
@@ -94,7 +95,7 @@ const AddressDetailsSection: React.FC<AddressDetailsSectionProps> = ({ partner }
             Pincode
           </Typography>
           <Typography variant="body1" sx={{ fontWeight: 500, mb: 2 }}>
-            {partner.addressPincode}
+            {address.pincode || "-"}
           </Typography>
         </Grid>
 
@@ -103,7 +104,7 @@ const AddressDetailsSection: React.FC<AddressDetailsSectionProps> = ({ partner }
             Address Type
           </Typography>
           <Typography variant="body1" sx={{ fontWeight: 500, mb: 2 }}>
-            {partner.addressType}
+            {address.addressType || "-"}
           </Typography>
         </Grid>
       </Grid>

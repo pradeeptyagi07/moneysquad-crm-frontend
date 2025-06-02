@@ -1,20 +1,74 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { Card, CardContent, CardMedia, Typography, Box, Chip, Button, Grid, Zoom } from "@mui/material"
-import { Percent, Star } from "@mui/icons-material"
-import type { BankOffer } from "../types"
-// Import the loanTypeColors
-import { loanTypeColors } from "../types"
+import type React from "react";
+import {
+  Card,
+  CardContent,
+  Typography,
+  Box,
+  Chip,
+  Button,
+  Grid,
+  Zoom,
+  IconButton,
+  Menu,
+  MenuItem,
+} from "@mui/material";
+import { Percent, Star, Edit, Delete, MoreVert } from "@mui/icons-material";
+import { useState } from "react";
+import { useAuth } from "../../../hooks/useAuth";
+import {
+  loanTypeColors,
+  type BankOffer,
+} from "../../../store/slices/offersSlice";
 
 interface OfferCardProps {
-  offer: BankOffer
-  onViewDetails: (offer: BankOffer) => void
+  offer: BankOffer;
+  onViewDetails: (offer: BankOffer) => void;
+  onDeleteOffer?: (id: string) => void;
+  onEditOffer?: (offer: BankOffer) => void;
 }
 
-const OfferCard: React.FC<OfferCardProps> = ({ offer, onViewDetails }) => {
+const OfferCard: React.FC<OfferCardProps> = ({
+  offer,
+  onViewDetails,
+  onDeleteOffer,
+  onEditOffer,
+}) => {
+  const { userRole } = useAuth();
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const open = Boolean(anchorEl);
+
+  const handleMenuClick = (e: React.MouseEvent<HTMLElement>) => {
+    e.stopPropagation();
+    setAnchorEl(e.currentTarget);
+  };
+  const handleMenuClose = (e: React.MouseEvent<HTMLElement>) => {
+    e.stopPropagation();
+    setAnchorEl(null);
+  };
+  const handleEdit = (e: React.MouseEvent<HTMLElement>) => {
+    e.stopPropagation();
+    setAnchorEl(null);
+    onEditOffer?.(offer);
+  };
+  const handleDelete = (e: React.MouseEvent<HTMLElement>) => {
+    e.stopPropagation();
+    setAnchorEl(null);
+    onDeleteOffer?.(offer._id);
+  };
+
+  // grab colors for this loanType, or fallback
+  const { gradient, textColor } =
+    loanTypeColors[offer.loanType] ?? loanTypeColors.Other;
+
   return (
-    <Zoom in={true} style={{ transitionDelay: `${Number.parseInt(offer.id) * 100}ms` }}>
+    <Zoom
+      in
+      style={{
+        transitionDelay: `${parseInt(offer._id.slice(-4), 16) % 500}ms`,
+      }}
+    >
       <Card
         sx={{
           height: "100%",
@@ -22,77 +76,83 @@ const OfferCard: React.FC<OfferCardProps> = ({ offer, onViewDetails }) => {
           overflow: "hidden",
           position: "relative",
           transition: "all 0.3s ease",
-          boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
+          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.06)",
+          bgcolor: "white",
           "&:hover": {
-            transform: "translateY(-8px)",
-            boxShadow: "0 12px 28px rgba(0, 0, 0, 0.12)",
+            transform: "translateY(-4px)",
+            boxShadow: "0 8px 24px rgba(0, 0, 0, 0.08)",
           },
         }}
       >
-        {offer.isFeatured && (
+        {/* Banner Image */}
+        {offer.bankImage && (
           <Box
             sx={{
-              position: "absolute",
-              top: 12,
-              right: 12,
-              zIndex: 2,
-              bgcolor: "rgba(245, 158, 11, 0.9)",
-              color: "white",
-              borderRadius: "50%",
-              width: 28,
-              height: 28,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              boxShadow: "0 2px 8px rgba(245, 158, 11, 0.4)",
+              position: "relative",
+              height: 160,
+              width: "100%",
+              overflow: "hidden",
             }}
           >
-            <Star fontSize="small" sx={{ fontSize: "0.9rem" }} />
+            <Box
+              component="img"
+              src={offer.bankImage}
+              alt={offer.bankName}
+              sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
+            {offer.isFeatured && (
+              <Box
+                sx={{
+                  position: "absolute",
+                  top: 10,
+                  right: 10,
+                  bgcolor: "#FFA000",
+                  width: 28,
+                  height: 28,
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+                  color: "white",
+                }}
+              >
+                <Star fontSize="small" />
+              </Box>
+            )}
           </Box>
         )}
 
-        <Box sx={{ position: "relative" }}>
-          <CardMedia
-            component="img"
-            height="100"
-            image={offer.logo}
-            alt={offer.bankName}
+        <CardContent sx={{ p: 2 }}>
+          <Typography
+            variant="subtitle2"
             sx={{
-              objectFit: "cover",
-              filter: "brightness(0.85)",
-            }}
-          />
-          <Box
-            sx={{
-              position: "absolute",
-              bottom: 0,
-              left: 0,
-              right: 0,
-              background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 100%)",
-              p: 1.5,
-              pt: 3,
+              fontWeight: 600,
+              fontSize: "0.85rem",
+              color: "#374151",
+              mb: 0.5,
             }}
           >
-            <Typography variant="subtitle2" sx={{ color: "white", fontWeight: 600 }}>
-              {offer.bankName}
-            </Typography>
-          </Box>
-        </Box>
+            {offer.bankName}
+          </Typography>
 
-        <CardContent sx={{ p: 2 }}>
-          <Box sx={{ mb: 1.5, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <Box
+            sx={{
+              mb: 1.5,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
             <Chip
               label={offer.loanType}
               size="small"
               sx={{
-                borderRadius: 1.5,
-                background:
-                  loanTypeColors[offer.loanType]?.gradient || "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
-                color: loanTypeColors[offer.loanType]?.textColor || "#ffffff",
+                borderRadius: 4,
+                background: gradient,
+                color: textColor,
                 fontWeight: 500,
                 fontSize: "0.7rem",
-                boxShadow: "0 2px 5px rgba(0, 0, 0, 0.1)",
-                border: "none",
               }}
             />
             <Typography
@@ -105,78 +165,44 @@ const OfferCard: React.FC<OfferCardProps> = ({ offer, onViewDetails }) => {
                 fontSize: "0.75rem",
               }}
             >
-              <Percent fontSize="small" sx={{ mr: 0.2, fontSize: "0.8rem" }} />
-              {offer.commission}
+              <Percent fontSize="small" sx={{ mr: 0.3 }} />
+              {offer.commissionPercent}%
             </Typography>
           </Box>
 
-          {offer.headline && (
+          {offer.offerHeadline && (
             <Typography
-              variant="subtitle2"
-              sx={{
-                mt: 1,
-                fontWeight: 600,
-                fontSize: "0.85rem",
-                lineHeight: 1.2,
-                height: 40,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                display: "-webkit-box",
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: "vertical",
-              }}
+              variant="subtitle1"
+              sx={{ fontWeight: 600, fontSize: "1rem", lineHeight: 1.3, mb: 1 }}
             >
-              {offer.headline}
+              {offer.offerHeadline}
             </Typography>
           )}
 
-          {offer.validity && (
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{
-                display: "block",
-                mb: 1.5,
-                fontSize: "0.7rem",
-              }}
-            >
-              Valid till: {offer.validity}
-            </Typography>
-          )}
-
-          <Box sx={{ mb: 1.5 }}>
+          <Box sx={{ mb: 1 }}>
             <Typography variant="caption" color="text.secondary">
               Interest Rate
             </Typography>
-            <Typography
-              variant="h6"
-              sx={{
-                fontWeight: 700,
-                background: "linear-gradient(135deg, #1e293b 0%, #334155 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                fontSize: "1.1rem",
-              }}
-            >
-              {offer.interestRate}
+            <Typography variant="h6" sx={{ fontWeight: 700 }}>
+              {offer.interestRate}%
             </Typography>
           </Box>
 
-          <Grid container spacing={1} sx={{ mb: 1.5 }}>
+          <Grid container spacing={1} sx={{ mb: 2 }}>
             <Grid item xs={6}>
               <Typography variant="caption" color="text.secondary">
                 Processing Fee
               </Typography>
-              <Typography variant="body2" fontWeight={500} fontSize="0.8rem">
-                {offer.processingFee}
+              <Typography variant="body2" fontWeight={500}>
+                ₹{offer.processingFee}
               </Typography>
             </Grid>
             <Grid item xs={6}>
               <Typography variant="caption" color="text.secondary">
                 Maximum Amount
               </Typography>
-              <Typography variant="body2" fontWeight={500} fontSize="0.8rem">
-                {offer.maxAmount}
+              <Typography variant="body2" fontWeight={500}>
+                ₹{offer.maximumAmount.toLocaleString()}
               </Typography>
             </Grid>
           </Grid>
@@ -186,25 +212,50 @@ const OfferCard: React.FC<OfferCardProps> = ({ offer, onViewDetails }) => {
             fullWidth
             onClick={() => onViewDetails(offer)}
             sx={{
-              py: 0.8,
-              borderRadius: 2,
+              py: 1,
+              borderRadius: 6,
               fontWeight: 600,
-              fontSize: "0.8rem",
-              boxShadow: "0 4px 12px rgba(37, 99, 235, 0.15)",
-              background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
-              transition: "all 0.3s ease",
-              "&:hover": {
-                boxShadow: "0 6px 16px rgba(37, 99, 235, 0.25)",
-                background: "linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%)",
-              },
+              fontSize: "0.9rem",
+              bgcolor: "#5E17EB",
+              "&:hover": { bgcolor: "#4A11C0" },
             }}
           >
             View Details
           </Button>
         </CardContent>
+
+        {userRole === "admin" && (
+          <Box sx={{ position: "absolute", top: 10, left: 10 }}>
+            <IconButton
+              size="small"
+              onClick={handleMenuClick}
+              sx={{ bgcolor: "#f0f0f0", "&:hover": { bgcolor: "#e0e0e0" } }}
+            >
+              <MoreVert fontSize="small" />
+            </IconButton>
+            <Menu
+              anchorEl={anchorEl}
+              open={open}
+              onClose={handleMenuClose}
+              onClick={(e) => e.stopPropagation()}
+              PaperProps={{
+                elevation: 3,
+                sx: { borderRadius: 2, minWidth: 120 },
+              }}
+            >
+              <MenuItem onClick={handleEdit}>
+                <Edit fontSize="small" sx={{ mr: 1, color: "#2196F3" }} /> Edit
+              </MenuItem>
+              <MenuItem onClick={handleDelete}>
+                <Delete fontSize="small" sx={{ mr: 1, color: "#F44336" }} />{" "}
+                Delete
+              </MenuItem>
+            </Menu>
+          </Box>
+        )}
       </Card>
     </Zoom>
-  )
-}
+  );
+};
 
-export default OfferCard
+export default OfferCard;

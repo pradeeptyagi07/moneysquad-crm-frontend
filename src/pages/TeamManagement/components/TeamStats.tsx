@@ -1,6 +1,5 @@
 import type React from "react"
 import { Box, Grid, Paper, Typography, Avatar } from "@mui/material"
-import type { TeamMember } from "../types/teamTypes"
 import { Groups, PersonAdd, PersonOff, Insights } from "@mui/icons-material"
 
 interface TeamStatsProps {

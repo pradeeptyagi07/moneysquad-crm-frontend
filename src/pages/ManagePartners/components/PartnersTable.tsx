@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import React from "react"
+import React, { useEffect } from "react";
 import {
   Box,
   Table,
@@ -32,7 +32,9 @@ import {
   Tabs,
   Tab,
   Divider,
-} from "@mui/material"
+  Snackbar,
+  Alert,
+} from "@mui/material";
 import {
   MoreVert,
   Visibility,
@@ -49,27 +51,29 @@ import {
   InsertDriveFile,
   Close,
   VerifiedUser,
-} from "@mui/icons-material"
-import type { Partner } from "../types/partnerTypes"
-import { mockLeads } from "../../../data/mockLeads"
-import BasicInfoSection from "../components/BasicInfoSection"
-import PersonalDetailsSection from "../components/PersonalDetailsSection"
-import AddressDetailsSection from "../components/AddressDetailsSection"
-import BankDetailsSection from "../components/BankDetailsSection"
-import DocumentsSection from "../components/DocumentsSection"
+} from "@mui/icons-material";
+import BasicInfoSection from "../components/BasicInfoSection";
+import PersonalDetailsSection from "../components/PersonalDetailsSection";
+import AddressDetailsSection from "../components/AddressDetailsSection";
+import BankDetailsSection from "../components/BankDetailsSection";
+import DocumentsSection from "../components/DocumentsSection";
+import { useAppDispatch } from "../../../hooks/useAppDispatch";
+import { useAppSelector } from "../../../hooks/useAppSelector";
+import { fetchPartnerById } from "../../../store/slices/managePartnerSlice";
+import { updatePartnerById } from "../../../store/slices/managePartnerSlice"; // Import the thunk
 
 interface PartnersTableProps {
-  partners: Partner[]
+  partners: Partner[];
 }
 
 interface TabPanelProps {
-  children?: React.ReactNode
-  index: number
-  value: number
+  children?: React.ReactNode;
+  index: number;
+  value: number;
 }
 
 const TabPanel = (props: TabPanelProps) => {
-  const { children, value, index, ...other } = props
+  const { children, value, index, ...other } = props;
 
   return (
     <div
@@ -81,126 +85,160 @@ const TabPanel = (props: TabPanelProps) => {
     >
       {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
     </div>
-  )
-}
+  );
+};
 
 const a11yProps = (index: number) => {
   return {
     id: `partner-detail-tab-${index}`,
     "aria-controls": `partner-detail-tabpanel-${index}`,
-  }
-}
+  };
+};
 
 const PartnersTable: React.FC<PartnersTableProps> = ({ partners }) => {
-  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null)
-  const [selectedPartnerId, setSelectedPartnerId] = React.useState<string | null>(null)
-  const [detailsDialogOpen, setDetailsDialogOpen] = React.useState(false)
-  const [editDialogOpen, setEditDialogOpen] = React.useState(false)
-  const [selectedPartner, setSelectedPartner] = React.useState<Partner | null>(null)
-  const [editedPartner, setEditedPartner] = React.useState<Partial<Partner>>({})
-  const [tabValue, setTabValue] = React.useState(0)
-  const [partnerLeads, setPartnerLeads] = React.useState<any[]>([])
-  const [showDocumentDialog, setShowDocumentDialog] = React.useState(false)
-  const [selectedDocument, setSelectedDocument] = React.useState<{ title: string; url: string } | null>(null)
+  console.log("partners", partners);
+  const dispatch = useAppDispatch();
 
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, partnerId: string) => {
-    setAnchorEl(event.currentTarget)
-    setSelectedPartnerId(partnerId)
-  }
+  const partnerDetails = useAppSelector(
+    (state) => state.managePartners.selectedPartner
+  );
+
+  console.log("partnerDetails in component →", partnerDetails);
+
+  console.log("partners", partners);
+  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const [selectedPartnerId, setSelectedPartnerId] = React.useState<
+    string | null
+  >(null);
+  const [detailsDialogOpen, setDetailsDialogOpen] = React.useState(false);
+  const [editDialogOpen, setEditDialogOpen] = React.useState(false);
+  const [selectedPartner, setSelectedPartner] = React.useState<Partner | null>(
+    null
+  );
+  const [editedPartner, setEditedPartner] = React.useState<Partial<Partner>>(
+    {}
+  );
+  const [tabValue, setTabValue] = React.useState(0);
+  const [partnerLeads, setPartnerLeads] = React.useState<any[]>([]);
+  const [showDocumentDialog, setShowDocumentDialog] = React.useState(false);
+  const [selectedDocument, setSelectedDocument] = React.useState<{
+    title: string;
+    url: string;
+  } | null>(null);
+  const [showSnackbar, setShowSnackbar] = React.useState(false);
+
+  const handleMenuOpen = (
+    event: React.MouseEvent<HTMLElement>,
+    partnerId: string
+  ) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedPartnerId(partnerId);
+  };
 
   const handleMenuClose = () => {
-    setAnchorEl(null)
-    setSelectedPartnerId(null)
-  }
+    setAnchorEl(null);
+    setSelectedPartnerId(null);
+  };
 
-  const handleViewDetails = (partnerId: string) => {
-    handleMenuClose()
-    const partner = partners.find((p) => p.partnerId === partnerId) || null
-    setSelectedPartner(partner)
+  const handleViewDetails = async (partnerId: string) => {
+    const partner = partners.find((p) => p.partnerId === partnerId);
+    if (partner?._id) {
+      console.log("Dispatching fetchPartnerById for:", partner._id);
+      setDetailsDialogOpen(true);
 
-    if (partner) {
-      // Get partner leads
-      const leads = mockLeads.filter((lead) => lead.createdBy === partner.fullName)
-      setPartnerLeads(leads)
+      const result = await dispatch(fetchPartnerById(partner._id));
+      console.log("Thunk result →", result);
     }
+  };
 
-    setDetailsDialogOpen(true)
-  }
+
 
   const handleEditPartner = (partnerId: string) => {
-    handleMenuClose()
-    const partner = partners.find((p) => p.partnerId === partnerId) || null
-    setSelectedPartner(partner)
-
+    handleMenuClose();
+    const partner = partners.find((p) => p.partnerId === partnerId) || null;
+    setSelectedPartner(partner);
+  
     if (partner) {
       setEditedPartner({
-        fullName: partner.fullName,
-        email: partner.email,
-        mobileNumber: partner.mobileNumber,
-        gender: partner.gender,
-        employmentType: partner.employmentType,
-        focusProduct: partner.focusProduct,
-        role: partner.role,
-      })
-      setEditDialogOpen(true)
+        email: partner.basicInfo?.email || "",
+        fullName: partner.basicInfo?.fullName || "",
+        mobileNumber: partner.basicInfo?.mobile || "",
+        gender: partner.personalInfo?.gender?.toLowerCase() || "",
+        employmentType: partner.personalInfo?.employmentType
+          ?.toLowerCase()
+          .replace(/\s+/g, "-") || "",
+        focusProduct: partner.personalInfo?.focusProduct
+          ?.toLowerCase()
+          .replace(/\s+/g, "-") || "",
+        role: partner.personalInfo?.roleSelection || "",
+      });
+      setEditDialogOpen(true);
     }
-  }
-
-  const handleToggleStatus = (partnerId: string, currentStatus: string) => {
-    handleMenuClose()
-    // In a real app, this would update the partner's status in the backend
-    console.log("Toggle status for partner:", partnerId, "Current status:", currentStatus)
-  }
+  };
+  
+  
 
   const handleCloseDetailsDialog = () => {
-    setDetailsDialogOpen(false)
-    setSelectedPartner(null)
-    setTabValue(0)
-  }
+    setDetailsDialogOpen(false);
+    setSelectedPartner(null);
+    setTabValue(0);
+  };
 
   const handleCloseEditDialog = () => {
-    setEditDialogOpen(false)
-    setEditedPartner({})
-  }
+    setEditDialogOpen(false);
+    setEditedPartner({});
+  };
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
-    setTabValue(newValue)
-  }
+    setTabValue(newValue);
+  };
 
-  const handleEditChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
-    const { name, value } = e.target
+  const handleEditChange = (
+    e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>
+  ) => {
+    const { name, value } = e.target;
     if (name) {
       setEditedPartner((prev) => ({
         ...prev,
         [name]: value,
-      }))
+      }));
     }
-  }
+  };
 
-  const handleEditSubmit = () => {
-    // In a real app, this would update the partner data in the backend
-    console.log("Updated partner data:", editedPartner)
+  const handleEditSubmit = async () => {
+    if (selectedPartner && selectedPartner._id) {
+      const updatePayload = {
+        partnerId: selectedPartner._id,
+        data: {
+          mobile: editedPartner.mobileNumber || "",
+          email: editedPartner.email || "",
+          fullName: editedPartner.fullName || "",
+          gender: editedPartner.gender || "",
+          employmentType: editedPartner.employmentType || "",
+          focusProduct: editedPartner.focusProduct || "",
+          roleSelection: editedPartner.role || "",
+        },
+      };
 
-    // Update local state for demo purposes
-    if (selectedPartner) {
-      setSelectedPartner({
-        ...selectedPartner,
-        ...editedPartner,
-      })
+      try {
+        await dispatch(updatePartnerById(updatePayload)).unwrap();
+        setShowSnackbar(true); // ✅ Show success notification
+        setEditDialogOpen(false);
+      } catch (error) {
+        console.error("Failed to update partner:", error);
+      }
     }
-
-    handleCloseEditDialog()
-  }
+  };
 
   const handleViewDocument = (title: string, url: string) => {
-    setSelectedDocument({ title, url })
-    setShowDocumentDialog(true)
-  }
+    setSelectedDocument({ title, url });
+    setShowDocumentDialog(true);
+  };
 
   const handleCloseDocumentDialog = () => {
-    setShowDocumentDialog(false)
-    setSelectedDocument(null)
-  }
+    setShowDocumentDialog(false);
+    setSelectedDocument(null);
+  };
 
   if (partners.length === 0) {
     return (
@@ -212,12 +250,15 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners }) => {
           Try adjusting your search or filters
         </Typography>
       </Box>
-    )
+    );
   }
 
   return (
     <>
-      <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: "none" }}>
+      <TableContainer
+        component={Paper}
+        sx={{ borderRadius: 2, boxShadow: "none" }}
+      >
         <Table sx={{ minWidth: 650 }}>
           <TableHead sx={{ bgcolor: "grey.50" }}>
             <TableRow>
@@ -238,12 +279,15 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners }) => {
               <TableRow key={partner.partnerId} hover>
                 <TableCell>
                   <Box sx={{ display: "flex", alignItems: "center" }}>
-                    <Avatar src={partner.profilePhoto} sx={{ mr: 2, bgcolor: "primary.main" }}>
+                    <Avatar
+                      src={partner.documents.profilePhoto}
+                      sx={{ mr: 2, bgcolor: "primary.main" }}
+                    >
                       <Person />
                     </Avatar>
                     <Box>
                       <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                        {partner.fullName}
+                        {partner.basicInfo.fullName}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
                         {partner.partnerId}
@@ -253,33 +297,63 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners }) => {
                 </TableCell>
                 <TableCell>
                   <Box>
-                    <Box sx={{ display: "flex", alignItems: "center", mb: 0.5 }}>
-                      <Email fontSize="small" sx={{ color: "text.secondary", mr: 1, fontSize: 14 }} />
-                      <Typography variant="body2">{partner.email}</Typography>
+                    <Box
+                      sx={{ display: "flex", alignItems: "center", mb: 0.5 }}
+                    >
+                      <Email
+                        fontSize="small"
+                        sx={{ color: "text.secondary", mr: 1, fontSize: 14 }}
+                      />
+                      <Typography variant="body2">
+                        {partner.basicInfo.email}
+                      </Typography>
                     </Box>
                     <Box sx={{ display: "flex", alignItems: "center" }}>
-                      <Phone fontSize="small" sx={{ color: "text.secondary", mr: 1, fontSize: 14 }} />
-                      <Typography variant="body2">{partner.mobileNumber}</Typography>
+                      <Phone
+                        fontSize="small"
+                        sx={{ color: "text.secondary", mr: 1, fontSize: 14 }}
+                      />
+                      <Typography variant="body2">
+                        {partner.basicInfo.mobile}
+                      </Typography>
                     </Box>
                   </Box>
                 </TableCell>
                 <TableCell>
-                  <Typography variant="body2">{partner.registrationType}</Typography>
+                  <Typography variant="body2">
+                    {partner.basicInfo.registeringAs}
+                  </Typography>
                 </TableCell>
                 <TableCell>
                   <Chip
-                    label={partner.role === "leadSharing" ? "Lead Sharing" : "File Sharing"}
+                    label={
+                      partner.role === "leadSharing"
+                        ? "Lead Sharing"
+                        : "File Sharing"
+                    }
                     size="small"
                     sx={{
-                      bgcolor: partner.role === "leadSharing" ? "primary.lighter" : "secondary.lighter",
-                      color: partner.role === "leadSharing" ? "primary.dark" : "secondary.dark",
+                      bgcolor:
+                        partner.role === "leadSharing"
+                          ? "primary.lighter"
+                          : "secondary.lighter",
+                      color:
+                        partner.role === "leadSharing"
+                          ? "primary.dark"
+                          : "secondary.dark",
                       fontWeight: 600,
                     }}
                   />
                 </TableCell>
                 <TableCell>
                   <Chip
-                    icon={partner.status === "active" ? <CheckCircle fontSize="small" /> : <Block fontSize="small" />}
+                    icon={
+                      partner.status === "active" ? (
+                        <CheckCircle fontSize="small" />
+                      ) : (
+                        <Block fontSize="small" />
+                      )
+                    }
                     label={partner.status === "active" ? "Active" : "Inactive"}
                     size="small"
                     color={partner.status === "active" ? "success" : "default"}
@@ -287,11 +361,13 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners }) => {
                   />
                 </TableCell>
                 <TableCell>
-                  <Typography variant="body2">{partner.leadCount || 0}</Typography>
+                  <Typography variant="body2">
+                    {partner.leadCount || 0}
+                  </Typography>
                 </TableCell>
                 <TableCell>
                   <Typography variant="body2">
-                    {new Date(partner.joinedOn).toLocaleDateString("en-IN", {
+                    {new Date(partner.createdAt).toLocaleDateString("en-IN", {
                       day: "2-digit",
                       month: "short",
                       year: "numeric",
@@ -323,42 +399,33 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners }) => {
           transformOrigin={{ horizontal: "right", vertical: "top" }}
           anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
         >
-          <MenuItem onClick={() => selectedPartnerId && handleViewDetails(selectedPartnerId)}>
+          <MenuItem
+            onClick={() => {
+              if (selectedPartnerId) {
+                handleViewDetails(selectedPartnerId);
+                handleMenuClose(); // ✅ close after action
+              }
+            }}
+          >
             <ListItemIcon>
               <Visibility fontSize="small" />
             </ListItemIcon>
             <ListItemText>View Details</ListItemText>
           </MenuItem>
-          <MenuItem onClick={() => selectedPartnerId && handleEditPartner(selectedPartnerId)}>
+
+          <MenuItem
+            onClick={() => {
+              if (selectedPartnerId) {
+                handleEditPartner(selectedPartnerId);
+                handleMenuClose(); // ✅ close after action
+              }
+            }}
+          >
             <ListItemIcon>
               <Edit fontSize="small" />
             </ListItemIcon>
             <ListItemText>Edit Partner</ListItemText>
           </MenuItem>
-          {selectedPartnerId && (
-            <MenuItem
-              onClick={() =>
-                selectedPartnerId &&
-                handleToggleStatus(
-                  selectedPartnerId,
-                  partners.find((p) => p.partnerId === selectedPartnerId)?.status || "",
-                )
-              }
-            >
-              <ListItemIcon>
-                {partners.find((p) => p.partnerId === selectedPartnerId)?.status === "active" ? (
-                  <Block fontSize="small" />
-                ) : (
-                  <CheckCircle fontSize="small" />
-                )}
-              </ListItemIcon>
-              <ListItemText>
-                {partners.find((p) => p.partnerId === selectedPartnerId)?.status === "active"
-                  ? "Mark as Inactive"
-                  : "Mark as Active"}
-              </ListItemText>
-            </MenuItem>
-          )}
         </Menu>
       </TableContainer>
 
@@ -373,7 +440,13 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners }) => {
         }}
       >
         <DialogTitle>
-          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
             <Box sx={{ display: "flex", alignItems: "center" }}>
               <Typography variant="h5" sx={{ fontWeight: 700 }}>
                 Partner Details
@@ -385,14 +458,15 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners }) => {
           </Box>
         </DialogTitle>
         <DialogContent dividers>
-          {selectedPartner && (
+          {partnerDetails && (
             <>
               <Paper
                 sx={{
                   p: 3,
                   borderRadius: 3,
                   mb: 4,
-                  background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
+                  background:
+                    "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
                   boxShadow: "0 4px 20px rgba(0, 0, 0, 0.05)",
                 }}
               >
@@ -400,7 +474,7 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners }) => {
                   <Grid item xs={12} md={8}>
                     <Box sx={{ display: "flex", alignItems: "center" }}>
                       <Avatar
-                        src={selectedPartner.profilePhoto}
+                        src={partnerDetails.documents?.profilePhoto}
                         sx={{
                           width: 80,
                           height: 80,
@@ -413,26 +487,51 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners }) => {
                         <Person sx={{ fontSize: 40 }} />
                       </Avatar>
                       <Box>
-                        <Box sx={{ display: "flex", alignItems: "center", mb: 0.5 }}>
-                          <Typography variant="h5" sx={{ fontWeight: 700, mr: 1 }}>
-                            {selectedPartner.fullName}
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            mb: 0.5,
+                          }}
+                        >
+                          <Typography
+                            variant="h5"
+                            sx={{ fontWeight: 700, mr: 1 }}
+                          >
+                            {partnerDetails.basicInfo?.fullName}
                           </Typography>
                           <Chip
                             size="small"
-                            label={selectedPartner.partnerId}
-                            sx={{ fontWeight: 600, bgcolor: "primary.lighter", color: "primary.dark" }}
+                            label={partnerDetails.partnerId}
+                            sx={{
+                              fontWeight: 600,
+                              bgcolor: "primary.lighter",
+                              color: "primary.dark",
+                            }}
                           />
                         </Box>
-                        <Box sx={{ display: "flex", alignItems: "center", mb: 0.5 }}>
-                          <Email fontSize="small" sx={{ color: "text.secondary", mr: 1 }} />
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            mb: 0.5,
+                          }}
+                        >
+                          <Email
+                            fontSize="small"
+                            sx={{ color: "text.secondary", mr: 1 }}
+                          />
                           <Typography variant="body2" color="text.secondary">
-                            {selectedPartner.email}
+                            {partnerDetails.email}
                           </Typography>
                         </Box>
                         <Box sx={{ display: "flex", alignItems: "center" }}>
-                          <Phone fontSize="small" sx={{ color: "text.secondary", mr: 1 }} />
+                          <Phone
+                            fontSize="small"
+                            sx={{ color: "text.secondary", mr: 1 }}
+                          />
                           <Typography variant="body2" color="text.secondary">
-                            {selectedPartner.mobileNumber}
+                            {partnerDetails.mobile}
                           </Typography>
                         </Box>
                       </Box>
@@ -450,13 +549,36 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners }) => {
                     >
                       <Box>
                         <Chip
-                          icon={selectedPartner.status === "active" ? <CheckCircle /> : <Block />}
-                          label={selectedPartner.status === "active" ? "Active" : "Inactive"}
-                          color={selectedPartner.status === "active" ? "success" : "default"}
+                          icon={
+                            partnerDetails.status === "active" ? (
+                              <CheckCircle />
+                            ) : (
+                              <Block />
+                            )
+                          }
+                          label={
+                            partnerDetails.status === "active"
+                              ? "Active"
+                              : "Inactive"
+                          }
+                          color={
+                            partnerDetails.status === "active"
+                              ? "success"
+                              : "default"
+                          }
                           sx={{ fontWeight: 600, mb: 1 }}
                         />
-                        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
-                          <VerifiedUser fontSize="small" sx={{ color: "success.main", mr: 1 }} />
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "flex-end",
+                          }}
+                        >
+                          <VerifiedUser
+                            fontSize="small"
+                            sx={{ color: "success.main", mr: 1 }}
+                          />
                           <Typography variant="body2" color="text.secondary">
                             Verified Partner
                           </Typography>
@@ -465,7 +587,9 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners }) => {
                       <Box sx={{ mt: 2 }}>
                         <Typography variant="body2" color="text.secondary">
                           Joined on{" "}
-                          {new Date(selectedPartner.joinedOn).toLocaleDateString("en-IN", {
+                          {new Date(
+                            partnerDetails.createdAt
+                          ).toLocaleDateString("en-IN", {
                             day: "2-digit",
                             month: "short",
                             year: "numeric",
@@ -496,8 +620,11 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners }) => {
                         <Typography variant="body2" color="text.secondary">
                           Registration Type
                         </Typography>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                          {selectedPartner.registrationType}
+                        <Typography
+                          variant="subtitle1"
+                          sx={{ fontWeight: 600 }}
+                        >
+                          {partnerDetails.basicInfo?.registeringAs}
                         </Typography>
                       </Box>
                     </Box>
@@ -519,8 +646,14 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners }) => {
                         <Typography variant="body2" color="text.secondary">
                           Partner Role
                         </Typography>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                          {selectedPartner.role === "leadSharing" ? "Lead Sharing" : "File Sharing"}
+                        <Typography
+                          variant="subtitle1"
+                          sx={{ fontWeight: 600 }}
+                        >
+                          {partnerDetails.personalInfo?.roleSelection ===
+                          "leadSharing"
+                            ? "Lead Sharing"
+                            : "File Sharing"}
                         </Typography>
                       </Box>
                     </Box>
@@ -542,31 +675,11 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners }) => {
                         <Typography variant="body2" color="text.secondary">
                           Location
                         </Typography>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                          {selectedPartner.city}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
-                    <Box sx={{ display: "flex", alignItems: "center" }}>
-                      <Box
-                        sx={{
-                          p: 1,
-                          borderRadius: 2,
-                          bgcolor: "info.lighter",
-                          color: "info.dark",
-                          mr: 2,
-                        }}
-                      >
-                        <InsertDriveFile />
-                      </Box>
-                      <Box>
-                        <Typography variant="body2" color="text.secondary">
-                          Total Leads
-                        </Typography>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                          {partnerLeads.length}
+                        <Typography
+                          variant="subtitle1"
+                          sx={{ fontWeight: 600 }}
+                        >
+                          {partnerDetails.addressDetails?.city}
                         </Typography>
                       </Box>
                     </Box>
@@ -603,95 +716,32 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners }) => {
                 <TabPanel value={tabValue} index={0}>
                   <Grid container spacing={4}>
                     <Grid item xs={12} md={6}>
-                      <BasicInfoSection partner={selectedPartner} />
+                      <BasicInfoSection partner={partnerDetails} />
                     </Grid>
                     <Grid item xs={12} md={6}>
-                      <PersonalDetailsSection partner={selectedPartner} />
+                      <PersonalDetailsSection partner={partnerDetails} />
                     </Grid>
                     <Grid item xs={12} md={6}>
-                      <AddressDetailsSection partner={selectedPartner} />
+                      <AddressDetailsSection partner={partnerDetails} />
                     </Grid>
                     <Grid item xs={12} md={6}>
-                      <BankDetailsSection partner={selectedPartner} />
+                      <BankDetailsSection partner={partnerDetails} />
                     </Grid>
                   </Grid>
                 </TabPanel>
 
                 <TabPanel value={tabValue} index={1}>
-                  <DocumentsSection partner={selectedPartner} onViewDocument={handleViewDocument} />
+                  <DocumentsSection
+                    partner={partnerDetails}
+                    onViewDocument={handleViewDocument}
+                  />
                 </TabPanel>
 
                 <TabPanel value={tabValue} index={2}>
                   <Box sx={{ textAlign: "center", py: 5 }}>
-                    <Typography variant="h5" color="text.primary" gutterBottom>
-                      Total Leads: {partnerLeads.length}
+                    <Typography variant="h6" color="text.secondary">
+                      No lead data available for this partner.
                     </Typography>
-
-                    {partnerLeads.length > 0 ? (
-                      <Box sx={{ mt: 3 }}>
-                        <Typography variant="body1" color="text.secondary" gutterBottom>
-                          Lead Summary
-                        </Typography>
-
-                        <Grid container spacing={3} sx={{ mt: 2, maxWidth: 800, mx: "auto" }}>
-                          {/* Pending Leads */}
-                          <Grid item xs={6} md={3}>
-                            <Paper sx={{ p: 2, textAlign: "center", borderRadius: 2 }}>
-                              <Typography variant="h6" color="warning.main">
-                                {partnerLeads.filter((lead) => lead.status === "pending").length}
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                Pending
-                              </Typography>
-                            </Paper>
-                          </Grid>
-
-                          {/* Approved Leads */}
-                          <Grid item xs={6} md={3}>
-                            <Paper sx={{ p: 2, textAlign: "center", borderRadius: 2 }}>
-                              <Typography variant="h6" color="success.main">
-                                {partnerLeads.filter((lead) => lead.status === "approved").length}
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                Approved
-                              </Typography>
-                            </Paper>
-                          </Grid>
-
-                          {/* Rejected Leads */}
-                          <Grid item xs={6} md={3}>
-                            <Paper sx={{ p: 2, textAlign: "center", borderRadius: 2 }}>
-                              <Typography variant="h6" color="error.main">
-                                {partnerLeads.filter((lead) => lead.status === "rejected").length}
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                Rejected
-                              </Typography>
-                            </Paper>
-                          </Grid>
-
-                          {/* Disbursed Leads */}
-                          <Grid item xs={6} md={3}>
-                            <Paper sx={{ p: 2, textAlign: "center", borderRadius: 2 }}>
-                              <Typography variant="h6" color="primary.main">
-                                {partnerLeads.filter((lead) => lead.status === "disbursed").length}
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                Disbursed
-                              </Typography>
-                            </Paper>
-                          </Grid>
-                        </Grid>
-
-                        <Typography variant="body2" color="text.secondary" sx={{ mt: 4, textAlign: "center" }}>
-                          For detailed lead information, please visit the Leads section.
-                        </Typography>
-                      </Box>
-                    ) : (
-                      <Typography variant="body1" color="text.secondary">
-                        This partner has not created any leads yet.
-                      </Typography>
-                    )}
                   </Box>
                 </TabPanel>
 
@@ -711,18 +761,6 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners }) => {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDetailsDialog}>Close</Button>
-          <Button
-            variant="contained"
-            startIcon={<Edit />}
-            onClick={() => {
-              handleCloseDetailsDialog()
-              if (selectedPartner) {
-                handleEditPartner(selectedPartner.partnerId)
-              }
-            }}
-          >
-            Edit Partner
-          </Button>
         </DialogActions>
       </Dialog>
 
@@ -737,7 +775,13 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners }) => {
         }}
       >
         <DialogTitle>
-          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
             <Box sx={{ display: "flex", alignItems: "center" }}>
               <Edit sx={{ mr: 1 }} />
               <Typography variant="h6">Edit Partner Details</Typography>
@@ -844,37 +888,83 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners }) => {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseEditDialog}>Cancel</Button>
-          <Button onClick={handleEditSubmit} variant="contained" color="primary" startIcon={<Save />}>
+          <Button
+            onClick={handleEditSubmit}
+            variant="contained"
+            color="primary"
+            startIcon={<Save />}
+          >
             Save Changes
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Document Viewer Dialog */}
-      <Dialog open={showDocumentDialog} onClose={handleCloseDocumentDialog} maxWidth="md" fullWidth>
-        <DialogTitle>
-          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <Typography variant="h6">{selectedDocument?.title}</Typography>
-            <IconButton onClick={handleCloseDocumentDialog}>
-              <Close />
-            </IconButton>
-          </Box>
-        </DialogTitle>
-        <DialogContent>
-          <Box sx={{ width: "100%", height: "500px", overflow: "auto" }}>
-            {/* In a real app, this would display the actual document */}
-            <img src="/document-preview.png" alt="Document Preview" style={{ width: "100%", height: "auto" }} />
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDocumentDialog}>Close</Button>
-          <Button variant="contained" color="primary">
-            Download
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </>
-  )
-}
+      <Dialog
+  open={showDocumentDialog}
+  onClose={handleCloseDocumentDialog}
+  maxWidth="md"
+  fullWidth
+>
+  <DialogTitle>
+    <Box
+      sx={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+      }}
+    >
+      <Typography variant="h6">{selectedDocument?.title}</Typography>
+      <IconButton onClick={handleCloseDocumentDialog}>
+        <Close />
+      </IconButton>
+    </Box>
+  </DialogTitle>
+  <DialogContent>
+    <Box sx={{ width: "100%", height: "500px", overflow: "auto" }}>
+      {selectedDocument?.url ? (
+        selectedDocument.url.toLowerCase().endsWith(".pdf") ? (
+          <iframe
+            src={selectedDocument.url}
+            title={selectedDocument.title}
+            width="100%"
+            height="100%"
+            style={{ border: "none" }}
+          />
+        ) : (
+          <img
+            src={selectedDocument.url}
+            alt={selectedDocument.title}
+            style={{ width: "100%", height: "auto" }}
+          />
+        )
+      ) : (
+        <Typography>No document selected</Typography>
+      )}
+    </Box>
+  </DialogContent>
+  <DialogActions>
+    <Button onClick={handleCloseDocumentDialog}>Close</Button>
+  </DialogActions>
+</Dialog>
 
-export default PartnersTable
+
+      <Snackbar
+        open={showSnackbar}
+        autoHideDuration={3000}
+        onClose={() => setShowSnackbar(false)}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setShowSnackbar(false)}
+          severity="success"
+          variant="outlined"
+        >
+          Partner details updated successfully!
+        </Alert>
+      </Snackbar>
+    </>
+  );
+};
+
+export default PartnersTable;
