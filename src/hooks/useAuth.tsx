@@ -3,12 +3,18 @@
 import type React from "react"
 import { createContext, useContext } from "react"
 import { useDispatch, useSelector } from "react-redux"
-import { loginUser, logoutUser, clearAuthError } from "../store/slices/authSlice"
+import {
+  loginUser,
+  logoutUser,
+  clearAuthError,
+} from "../store/slices/authSlice"
 import type { RootState } from "../store"
 
 interface AuthContextType {
   isAuthenticated: boolean
-  userRole: string
+  user: UserData | null
+  userId: string | null
+  userRole: string | null
   userName: string
   loading: boolean
   error: string | null
@@ -21,9 +27,13 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const dispatch = useDispatch()
-  const { isAuthenticated, userRole, userName, loading, error } = useSelector((state: RootState) => state.auth)
+  const { isAuthenticated, user, userRole, loading, error } = useSelector(
+    (state: RootState) => state.auth
+  )
 
-  // Login function that dispatches the Redux action
+  const userId = user?.id || null
+  const userName = `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim()
+
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       const resultAction = await dispatch(loginUser({ email, password }))
@@ -34,19 +44,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }
 
-  // Logout function that dispatches the Redux action
   const logout = () => {
     dispatch(logoutUser())
   }
 
-  // Clear error function
   const clearError = () => {
     dispatch(clearAuthError())
   }
 
-  // Provide the auth context
-  const value = {
+  const value: AuthContextType = {
     isAuthenticated,
+    user,
+    userId,
     userRole,
     userName,
     loading,

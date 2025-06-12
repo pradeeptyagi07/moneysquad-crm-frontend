@@ -15,6 +15,7 @@
     "@emotion/styled": "^11.14.0",
     "@mui/icons-material": "^5.15.6",
     "@mui/material": "^5.17.1",
+    "@mui/x-data-grid": "^8.5.1",
     "@mui/x-date-pickers": "^8.3.0",
     "@reduxjs/toolkit": "^2.8.2",
     "axios": "^1.9.0",

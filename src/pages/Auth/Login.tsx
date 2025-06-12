@@ -1,9 +1,8 @@
-"use client"
+// src/pages/Leads/components/Login.tsx
+"use client";
 
-import type React from "react"
-
-import { useState, useEffect } from "react"
-import { useNavigate, Link as RouterLink } from "react-router-dom"
+import React, { useState, useEffect } from "react";
+import { useNavigate, Link as RouterLink } from "react-router-dom";
 import {
   Box,
   Typography,
@@ -18,148 +17,163 @@ import {
   Link,
   Snackbar,
   Alert,
-} from "@mui/material"
-import { Visibility, VisibilityOff, Login as LoginIcon } from "@mui/icons-material"
-import { useDispatch, useSelector } from "react-redux"
-import { loginUser, clearAuthError } from "../../store/slices/authSlice"
-import type { RootState, AppDispatch } from "../../store"
+} from "@mui/material";
+import { Visibility, VisibilityOff, Login as LoginIcon } from "@mui/icons-material";
+import { useDispatch, useSelector } from "react-redux";
+import { loginUser, clearAuthError } from "../../store/slices/authSlice";
+import type { RootState, AppDispatch } from "../../store";
 
-const Login = () => {
-  const navigate = useNavigate()
-  const dispatch = useDispatch<AppDispatch>()
 
-  // Get auth state from Redux
-  const { isAuthenticated, userRole, loading, error } = useSelector((state: RootState) => state.auth)
+const Login: React.FC = () => {
+  const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
 
-  // Local state
-  const [showPassword, setShowPassword] = useState(false)
-  const [snackbarOpen, setSnackbarOpen] = useState(false)
-  const [snackbarMessage, setSnackbarMessage] = useState("")
-  const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">("success")
-  const [formData, setFormData] = useState({ emailOrMobile: "", password: "" })
-  const [formErrors, setFormErrors] = useState({ emailOrMobile: "", password: "" })
-  const [hasRedirected, setHasRedirected] = useState(false)
+  // Pull auth state from Redux
+  const { isAuthenticated, userRole, loading, error } = useSelector(
+    (state: RootState) => state.auth
+  );
 
-  // Show error in snackbar
+  // Local form/snackbar state
+  const [showPassword, setShowPassword] = useState(false);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">("success");
+  const [formData, setFormData] = useState({ emailOrMobile: "", password: "" });
+  const [formErrors, setFormErrors] = useState({ emailOrMobile: "", password: "" });
+  const [hasRedirected, setHasRedirected] = useState(false);
+
+  // Show any Redux error in a snackbar
   useEffect(() => {
     if (error) {
-      setSnackbarMessage(error)
-      setSnackbarSeverity("error")
-      setSnackbarOpen(true)
+      setSnackbarMessage(error);
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
     }
-  }, [error])
+  }, [error]);
 
-  // Handle successful login
+  // Once auth flips true, redirect based on role
   useEffect(() => {
     if (isAuthenticated && !hasRedirected) {
-      // Show success message
-      setSnackbarMessage("Login successful! Redirecting...")
-      setSnackbarSeverity("success")
-      setSnackbarOpen(true)
+      setSnackbarMessage("Login successful! Redirecting...");
+      setSnackbarSeverity("success");
+      setSnackbarOpen(true);
 
-      // Set flag to prevent multiple redirects
-      setHasRedirected(true)
-
-      // Redirect after delay
+      setHasRedirected(true);
       const timer = setTimeout(() => {
-        if (userRole === "admin") navigate("/admin")
-        else if (userRole === "manager") navigate("/manager")
-        else if (userRole === "partner") navigate("/partner")
-      }, 2000)
+        if (userRole === "admin") navigate("/admin");
+        else if (userRole === "manager") navigate("/manager");
+        else if (userRole === "partner") navigate("/partner");
+        else if (userRole === "associate") navigate("/associate");
 
-      return () => clearTimeout(timer)
+      }, 2000);
+
+      return () => clearTimeout(timer);
     }
-  }, [isAuthenticated, userRole, navigate, hasRedirected])
+  }, [isAuthenticated, userRole, navigate, hasRedirected]);
 
-  // Handle input change
+  // Update form fields
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData({ ...formData, [name]: value })
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
 
-    // Clear field error
+    // Clear field error if present
     if (formErrors[name as keyof typeof formErrors]) {
-      setFormErrors({ ...formErrors, [name]: "" })
+      setFormErrors((prev) => ({ ...prev, [name]: "" }));
     }
 
-    // Clear Redux error
-    if (error) dispatch(clearAuthError())
-  }
+    // Clear Redux error if it exists
+    if (error) dispatch(clearAuthError());
+  };
 
-  // Validate form
+  // Simple form validation
   const validateForm = () => {
-    const newErrors = { emailOrMobile: "", password: "" }
-    let isValid = true
-
+    const newErrors = { emailOrMobile: "", password: "" };
+    let isValid = true;
     if (!formData.emailOrMobile) {
-      newErrors.emailOrMobile = "Email or mobile number is required"
-      isValid = false
+      newErrors.emailOrMobile = "Email or mobile number is required";
+      isValid = false;
     }
-
     if (!formData.password) {
-      newErrors.password = "Password is required"
-      isValid = false
+      newErrors.password = "Password is required";
+      isValid = false;
     }
+    setFormErrors(newErrors);
+    return isValid;
+  };
 
-    setFormErrors(newErrors)
-    return isValid
-  }
-
-  // Handle login
+  // Called on button click or pressing Enter
   const handleLogin = (e: React.MouseEvent | React.KeyboardEvent) => {
-    e.preventDefault()
+    e.preventDefault();
+    if (!validateForm()) return;
 
-    if (!validateForm()) return
-
-    // Reset redirect flag
-    setHasRedirected(false)
+    // Reset redirect flag for the useEffect above to fire
+    setHasRedirected(false);
 
     dispatch(
       loginUser({
         email: formData.emailOrMobile,
         password: formData.password,
-      }),
-    )
-  }
+      })
+    );
+  };
 
-  // Handle key press
+  // If user presses Enter key
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
-      e.preventDefault()
-      handleLogin(e)
+      e.preventDefault();
+      handleLogin(e);
     }
-  }
+  };
 
   return (
     <Box
       sx={{
         minHeight: "100vh",
         display: "flex",
+        flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        background: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
         p: 2,
         position: "relative",
+        background: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
         overflow: "hidden",
-        "&::before": {
-          content: '""',
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundImage: "radial-gradient(circle at 25px 25px, #e2e8f0 2px, transparent 0)",
-          backgroundSize: "50px 50px",
-          opacity: 0.4,
-          zIndex: 0,
-        },
       }}
     >
-      {/* Snackbar */}
+      {/* Background circles (zIndex: 0) */}
+      <Box
+        sx={{
+          position: "absolute",
+          top: { xs: "-100px", md: "-150px" },
+          right: { xs: "-100px", md: "-150px" },
+          width: { xs: 200, md: 400 },
+          height: { xs: 200, md: 400 },
+          borderRadius: "50%",
+          background:
+            "linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(37, 99, 235, 0.05) 100%)",
+          zIndex: 0,
+        }}
+      />
+      <Box
+        sx={{
+          position: "absolute",
+          bottom: { xs: "-100px", md: "-150px" },
+          left: { xs: "-100px", md: "-150px" },
+          width: { xs: 200, md: 400 },
+          height: { xs: 200, md: 400 },
+          borderRadius: "50%",
+          background:
+            "linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(37, 99, 235, 0.1) 100%)",
+          zIndex: 0,
+        }}
+      />
+
+      {/* Snackbar (zIndex: 10) */}
       <Snackbar
         open={snackbarOpen}
         autoHideDuration={6000}
         onClose={() => setSnackbarOpen(false)}
         anchorOrigin={{ vertical: "top", horizontal: "center" }}
+        sx={{ zIndex: 10 }}
       >
         <Alert
           onClose={() => setSnackbarOpen(false)}
@@ -172,14 +186,12 @@ const Login = () => {
         </Alert>
       </Snackbar>
 
+      {/* Logo + “Partner Portal” (zIndex: 2) */}
       <Box
         sx={{
-          position: "absolute",
-          top: { xs: 16, md: 24 },
-          left: "50%",
-          transform: "translateX(-50%)",
+          zIndex: 2, // must be higher than the Card’s zIndex
+          mb: { xs: 3, md: 5 },
           textAlign: "center",
-          zIndex: 1
         }}
       >
         <Box
@@ -187,14 +199,16 @@ const Login = () => {
           src="/images/MoneySquad-logo.png"
           alt="MoneySquad"
           sx={{
-            height: { xs: 50, md: 60 },   // ← smaller logo
-            mb: 1
+            height: { xs: 40, sm: 50, md: 60 },
+            mb: 1,
+            mx: "auto",
+            display: "block",
           }}
         />
         <Typography
           variant="h6"
           sx={{
-            color: "primary.main",       // ← premium blue
+            color: "primary.main",
             fontWeight: 800,
             letterSpacing: 1,
           }}
@@ -203,45 +217,20 @@ const Login = () => {
         </Typography>
       </Box>
 
-      {/* Background elements */}
-      <Box
-        sx={{
-          position: "absolute",
-          top: { xs: -100, md: -150 },
-          right: { xs: -100, md: -150 },
-          width: { xs: 300, md: 400 },
-          height: { xs: 300, md: 400 },
-          borderRadius: "50%",
-          background: "linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(37, 99, 235, 0.05) 100%)",
-          zIndex: 0,
-        }}
-      />
-      <Box
-        sx={{
-          position: "absolute",
-          bottom: { xs: -100, md: -150 },
-          left: { xs: -100, md: -150 },
-          width: { xs: 300, md: 400 },
-          height: { xs: 300, md: 400 },
-          borderRadius: "50%",
-          background: "linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(37, 99, 235, 0.1) 100%)",
-          zIndex: 0,
-        }}
-      />
-
-      {/* Login Card */}
+      {/* Card (zIndex: 1) */}
       <Card
         sx={{
-          maxWidth: 450,
-          width: "100%",
+          zIndex: 1,
+          width: { xs: "90%", sm: 450 },
           borderRadius: 3,
           boxShadow: "0 10px 40px rgba(0, 0, 0, 0.1)",
-          overflow: "visible",
-          position: "relative",
           background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
+          position: "relative",
+          overflow: "visible",    // allow the icon to overflow
+          mt: { xs: 0, md: 2 },
         }}
       >
-        {/* Icon */}
+        {/* Floating Icon (half‐inside, half‐outside the Card) */}
         <Box
           sx={{
             position: "absolute",
@@ -281,7 +270,7 @@ const Login = () => {
           </Typography>
 
           {/* Login Form */}
-          <div onKeyDown={handleKeyDown}>
+          <Box component="form" onKeyDown={handleKeyDown}>
             <TextField
               fullWidth
               label="Email or Mobile Number"
@@ -290,10 +279,7 @@ const Login = () => {
               onChange={handleChange}
               error={!!formErrors.emailOrMobile}
               helperText={formErrors.emailOrMobile}
-              sx={{ mb: 3 }}
-              InputProps={{
-                sx: { borderRadius: 2 },
-              }}
+              sx={{ mb: 3, "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
             />
 
             <TextField
@@ -305,9 +291,8 @@ const Login = () => {
               onChange={handleChange}
               error={!!formErrors.password}
               helperText={formErrors.password}
-              sx={{ mb: 2 }}
+              sx={{ mb: 2, "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
               InputProps={{
-                sx: { borderRadius: 2 },
                 endAdornment: (
                   <InputAdornment position="end">
                     <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
@@ -355,19 +340,19 @@ const Login = () => {
             >
               {loading ? <CircularProgress size={24} color="inherit" /> : "Login"}
             </Button>
-          </div>
+          </Box>
 
-          <Divider sx={{ my: 4 }}>
-            <Typography variant="body2" color="text.secondary">
-              OR
-            </Typography>
-          </Divider>
+          <Divider sx={{ my: 4 }} />
 
+          <Typography variant="body2" align="center" color="text.secondary" sx={{ mb: 2 }}>
+            OR
+          </Typography>
+
+          {/* “Become a Partner” Section */}
           <Box sx={{ textAlign: "center" }}>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               New to MoneySquad?
             </Typography>
-
             <Button
               variant="outlined"
               fullWidth
@@ -389,7 +374,7 @@ const Login = () => {
         </CardContent>
       </Card>
     </Box>
-  )
-}
+  );
+};
 
-export default Login
+export default Login;

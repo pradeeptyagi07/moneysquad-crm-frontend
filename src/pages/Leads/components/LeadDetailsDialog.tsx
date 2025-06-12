@@ -18,18 +18,14 @@ import {
 } from "@mui/material";
 import { Close } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
-import { useAppDispatch } from "../../../hooks/useAppDispatch";
-import { useAppSelector } from "../../../hooks/useAppSelector";
-
-import {
-  fetchLeadById,
-  clearCurrentLead,
-} from "../../../store/slices/leadSLice";
 import {
   formatCurrency,
   getStatusColor,
   getStatusIcon,
 } from "../utils/leadUtils";
+import { clearCurrentLead, fetchLeadById } from "../../../store/slices/leadSLice";
+import { useAppDispatch } from "../../../hooks/useAppDispatch";
+import { useAppSelector } from "../../../hooks/useAppSelector";
 
 interface LeadDetailsDialogProps {
   open: boolean;
@@ -44,295 +40,262 @@ const LeadDetailsDialog: React.FC<LeadDetailsDialogProps> = ({
 }) => {
   const theme = useTheme();
   const dispatch = useAppDispatch();
-  const { currentLead: lead, loading } = useAppSelector((state) => state.leads);
+  const { currentLead: lead, loading } = useAppSelector((s) => s.leads);
 
-  // fetch when opened
   useEffect(() => {
-    if (open && leadId) {
-      dispatch(fetchLeadById(leadId));
-    }
+    if (open) dispatch(fetchLeadById(leadId));
     return () => {
       dispatch(clearCurrentLead());
     };
   }, [open, leadId, dispatch]);
 
+  if (!open) return null;
+
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
       <DialogTitle>
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Typography variant="h6">Lead Details</Typography>
-          <IconButton edge="end" onClick={onClose}>
+          <IconButton onClick={onClose} size="small">
             <Close />
           </IconButton>
         </Box>
       </DialogTitle>
-
       <DialogContent dividers>
         {loading || !lead ? (
-          <Box display="flex" justifyContent="center" alignItems="center" p={4}>
+          <Box p={4} textAlign="center">
             <CircularProgress />
           </Box>
         ) : (
           <Grid container spacing={3}>
+            {/* Lead ID & Status */}
             <Grid item xs={12}>
-              <Box sx={{ mb: 2 }}>
+              <Box mb={2}>
                 <Typography variant="overline" color="textSecondary">
                   Lead ID
                 </Typography>
-                <Typography variant="h6">{lead.leadId || lead.id}</Typography>
+                <Typography variant="h6">{lead.leadId}</Typography>
               </Box>
               <Chip
-                icon={getStatusIcon(lead.status!)}
-                label={
-                  lead.status
-                    ? lead.status.charAt(0).toUpperCase() + lead.status.slice(1)
-                    : "NA"
-                }
+                icon={getStatusIcon(lead.status)}
+                label={lead.status.charAt(0).toUpperCase() + lead.status.slice(1)}
                 sx={{
-                  bgcolor: `${getStatusColor(lead.status!, theme)}15`,
-                  color: getStatusColor(lead.status!, theme),
+                  bgcolor: `${getStatusColor(lead.status, theme)}15`,
+                  color: getStatusColor(lead.status, theme),
                   fontWeight: 500,
                   mb: 2,
                 }}
               />
             </Grid>
 
+            {/* Applicant Information */}
             <Grid item xs={12}>
-              <Typography variant="subtitle1" gutterBottom fontWeight={600}>
+              <Typography variant="subtitle1" fontWeight={600} gutterBottom>
                 Applicant Information
               </Typography>
-              <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
+              <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
                 <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6}>
+                  <Grid item xs={12} sm={4}>
                     <Typography variant="body2" color="textSecondary">
                       Name
                     </Typography>
-                    <Typography variant="body1">
-                      {lead.applicant.name}
-                    </Typography>
+                    <Typography variant="body1">{lead.applicantName}</Typography>
                   </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <Typography variant="body2" color="textSecondary">
-                      Profile
-                    </Typography>
-                    <Typography variant="body1">
-                      {lead.applicant.profile}
-                    </Typography>
-                  </Grid>
-                  {lead.profile === "Business" && lead.lenderType && (
-                    <Grid item xs={12} sm={6}>
+                  {lead.businessName && (
+                    <Grid item xs={12} sm={4}>
                       <Typography variant="body2" color="textSecondary">
                         Business Name
                       </Typography>
-                      <Typography variant="body1">{lead.lenderType}</Typography>
+                      <Typography variant="body1">{lead.businessName}</Typography>
                     </Grid>
                   )}
-                  <Grid item xs={12} sm={6}>
-                    <Typography variant="body2" color="textSecondary">
-                      Mobile Number
-                    </Typography>
-                    <Typography variant="body1">
-                      {lead.applicant.mobile}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
+                  <Grid item xs={12} sm={4}>
                     <Typography variant="body2" color="textSecondary">
                       Email
                     </Typography>
-                    <Typography variant="body1">
-                      {lead.applicant.email}
-                    </Typography>
+                    <Typography variant="body1">{lead.email}</Typography>
                   </Grid>
-                  <Grid item xs={12} sm={6}>
+                  <Grid item xs={12} sm={4}>
+                    <Typography variant="body2" color="textSecondary">
+                      Mobile
+                    </Typography>
+                    <Typography variant="body1">{lead.mobile}</Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
                     <Typography variant="body2" color="textSecondary">
                       Pincode
                     </Typography>
+                    <Typography variant="body1">{lead.pincode.pincode}</Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                    <Typography variant="body2" color="textSecondary">
+                      Location
+                    </Typography>
                     <Typography variant="body1">
-                      {lead.applicant.pincode}
+                      {lead.pincode.city}, {lead.pincode.state}
                     </Typography>
                   </Grid>
                 </Grid>
               </Paper>
             </Grid>
 
+            {/* Loan Details */}
             <Grid item xs={12}>
-              <Typography variant="subtitle1" gutterBottom fontWeight={600}>
+              <Typography variant="subtitle1" fontWeight={600} gutterBottom>
                 Loan Details
               </Typography>
-              <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
+              <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
                 <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6}>
+                  <Grid item xs={12} sm={4}>
                     <Typography variant="body2" color="textSecondary">
-                      Loan Type
+                      Type
                     </Typography>
                     <Typography variant="body1">{lead.loan.type}</Typography>
                   </Grid>
-                  <Grid item xs={12} sm={6}>
+                  <Grid item xs={12} sm={4}>
                     <Typography variant="body2" color="textSecondary">
-                      Loan Amount
+                      Amount
                     </Typography>
                     <Typography variant="body1" fontWeight={500}>
-                      {formatCurrency(
-                        typeof lead.loan.amount === "string"
-                          ? +lead.loan.amount
-                          : lead.loan.amount
-                      )}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <Typography variant="body2" color="textSecondary">
-                      Lender Type
-                    </Typography>
-                    <Typography variant="body1">
-                      {lead.lenderType || "Not Provided"}
+                      {formatCurrency(lead.loan.amount)}
                     </Typography>
                   </Grid>
                 </Grid>
               </Paper>
             </Grid>
+
+            {/* Disbursement Details */}
             {lead.disbursedData && (
-  <Grid item xs={12}>
-    <Typography variant="subtitle1" gutterBottom fontWeight={600}>
-      Disbursed Info
-    </Typography>
-    <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
-      <Grid container spacing={2}>
-        <Grid item xs={12} sm={6}>
-          <Typography variant="body2" color="textSecondary">
-            Loan Amount
-          </Typography>
-          <Typography variant="body1" fontWeight={500}>
-            {formatCurrency(lead.disbursedData.loanAmount)}
-          </Typography>
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <Typography variant="body2" color="textSecondary">
-            Tenure (Months)
-          </Typography>
-          <Typography variant="body1">
-            {lead.disbursedData.tenureMonths}
-          </Typography>
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <Typography variant="body2" color="textSecondary">
-            Interest Rate (PA)
-          </Typography>
-          <Typography variant="body1">
-            {lead.disbursedData.interestRatePA}%
-          </Typography>
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <Typography variant="body2" color="textSecondary">
-            Processing Fee
-          </Typography>
-          <Typography variant="body1">
-            {formatCurrency(lead.disbursedData.processingFee)}
-          </Typography>
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <Typography variant="body2" color="textSecondary">
-            Insurance Charges
-          </Typography>
-          <Typography variant="body1">
-            {formatCurrency(lead.disbursedData.insuranceCharges)}
-          </Typography>
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <Typography variant="body2" color="textSecondary">
-            Loan Scheme
-          </Typography>
-          <Typography variant="body1">
-            {lead.disbursedData.loanScheme}
-          </Typography>
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <Typography variant="body2" color="textSecondary">
-            LAN Number
-          </Typography>
-          <Typography variant="body1">
-            {lead.disbursedData.lanNumber}
-          </Typography>
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <Typography variant="body2" color="textSecondary">
-            Disbursed Date
-          </Typography>
-          <Typography variant="body1">
-            {new Date(lead.disbursedData.actualDisbursedDate).toLocaleDateString()}
-          </Typography>
-        </Grid>
-      </Grid>
-    </Paper>
-  </Grid>
-)}
+              <Grid item xs={12}>
+                <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+                  Disbursement Details
+                </Typography>
+                <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={4}>
+                      <Typography variant="body2" color="textSecondary">
+                        Amount
+                      </Typography>
+                      <Typography variant="body1">
+                        {formatCurrency(lead.disbursedData.loanAmount)}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                      <Typography variant="body2" color="textSecondary">
+                        Tenure (months)
+                      </Typography>
+                      <Typography variant="body1">
+                        {lead.disbursedData.tenureMonths}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                      <Typography variant="body2" color="textSecondary">
+                        Interest Rate (PA)
+                      </Typography>
+                      <Typography variant="body1">
+                        {lead.disbursedData.interestRatePA}%
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                      <Typography variant="body2" color="textSecondary">
+                        Processing Fee
+                      </Typography>
+                      <Typography variant="body1">
+                        {lead.disbursedData.processingFee}%
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                      <Typography variant="body2" color="textSecondary">
+                        Insurance Charges
+                      </Typography>
+                      <Typography variant="body1">
+                        {formatCurrency(lead.disbursedData.insuranceCharges)}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                      <Typography variant="body2" color="textSecondary">
+                        Scheme
+                      </Typography>
+                      <Typography variant="body1">
+                        {lead.disbursedData.loanScheme}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                      <Typography variant="body2" color="textSecondary">
+                        LAN Number
+                      </Typography>
+                      <Typography variant="body1">
+                        {lead.disbursedData.lanNumber}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                      <Typography variant="body2" color="textSecondary">
+                        Disbursed On
+                      </Typography>
+                      <Typography variant="body1">
+                        {new Date(lead.disbursedData.actualDisbursedDate).toLocaleDateString()}
+                      </Typography>
+                    </Grid>
+                  </Grid>
+                </Paper>
+              </Grid>
+            )}
 
-
+            {/* Assignment */}
             <Grid item xs={12}>
-              <Typography variant="subtitle1" gutterBottom fontWeight={600}>
-                Assignment Information
+              <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+                Assignment
               </Typography>
-              <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
+              <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
                 <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6}>
+                  <Grid item xs={12} sm={4}>
                     <Typography variant="body2" color="textSecondary">
                       Partner
                     </Typography>
                     <Typography variant="body1">
-                      {lead.partnerId?.basicInfo?.fullName || "NA"}
+                      {lead.partnerId.basicInfo.fullName}
                     </Typography>
                   </Grid>
-                  <Grid item xs={12} sm={6}>
+                  <Grid item xs={12} sm={4}>
                     <Typography variant="body2" color="textSecondary">
                       Manager
                     </Typography>
                     {lead.manager ? (
-                      <Typography variant="body1">{lead.manager}</Typography>
+                      <Typography variant="body1">
+                        {lead.manager.firstName} {lead.manager.lastName}
+                      </Typography>
                     ) : (
-                      <Chip
-                        size="small"
-                        label="Unassigned"
-                        variant="outlined"
-                        sx={{
-                          bgcolor: theme.palette.grey[100],
-                          color: theme.palette.text.secondary,
-                        }}
-                      />
+                      <Chip label="Unassigned" variant="outlined" />
                     )}
                   </Grid>
-                  <Grid item xs={12} sm={6}>
+                  <Grid item xs={12} sm={4}>
                     <Typography variant="body2" color="textSecondary">
                       Created At
                     </Typography>
                     <Typography variant="body1">
-                      {lead.createdAt
-                        ? new Date(lead.createdAt).toLocaleString()
-                        : "NA"}
+                      {new Date(lead.createdAt).toLocaleString()}
                     </Typography>
                   </Grid>
-                  {lead.updatedAt && (
-                    <Grid item xs={12} sm={6}>
-                      <Typography variant="body2" color="textSecondary">
-                        Last Updated
-                      </Typography>
-                      <Typography variant="body1">
-                        {new Date(lead.updatedAt).toLocaleString()}
-                      </Typography>
-                    </Grid>
-                  )}
+                  <Grid item xs={12} sm={4}>
+                    <Typography variant="body2" color="textSecondary">
+                      Last Status Update
+                    </Typography>
+                    <Typography variant="body1">
+                      {new Date(lead.statusUpdatedAt).toLocaleString()}
+                    </Typography>
+                  </Grid>
                 </Grid>
               </Paper>
             </Grid>
 
+            {/* Comments */}
             <Grid item xs={12}>
-              <Typography variant="subtitle1" gutterBottom fontWeight={600}>
-                Additional Information
+              <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+                Comments
               </Typography>
-              <Paper variant="outlined" sx={{ p: 2 }}>
+              <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
                 <Typography variant="body2" color="textSecondary">
-                  Comments
-                </Typography>
-                <Typography variant="body1" sx={{ mt: 1 }}>
-                  {lead.loan.comments || "No comments provided"}
+                  {lead.comments || "No comments."}
                 </Typography>
               </Paper>
             </Grid>
@@ -341,7 +304,9 @@ const LeadDetailsDialog: React.FC<LeadDetailsDialogProps> = ({
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={onClose}>Close</Button>
+        <Button onClick={onClose} color="primary">
+          Close
+        </Button>
       </DialogActions>
     </Dialog>
   );

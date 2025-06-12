@@ -10,9 +10,27 @@ export interface LenderOrLoan {
   __v?: number
 }
 
+// Matrix entry returned by GET /api/matrix
+export interface MatrixEntry {
+  lenderId: string
+  lenderName: string
+  loanTypeId: string
+  loanTypeName: string
+  enabled: boolean
+}
+
+// Payload for toggling matrix rows
+export interface MatrixTogglePayload {
+  lenderId: string
+  loanTypeId: string
+  enabled: boolean
+}
+
 interface LenderLoanState {
   lenders: LenderOrLoan[]
   loanTypes: LenderOrLoan[]
+  matrix: MatrixEntry[]
+  lendersByLoanType: LenderOrLoan[]
   loading: boolean
   error: string | null
   success: string | null
@@ -21,11 +39,14 @@ interface LenderLoanState {
 const initialState: LenderLoanState = {
   lenders: [],
   loanTypes: [],
+  matrix: [],
+  lendersByLoanType: [],
   loading: false,
   error: null,
   success: null,
 }
 
+// Existing thunks
 export const fetchLoanTypes = createAsyncThunk<
   LenderOrLoan[],
   void,
@@ -98,6 +119,66 @@ export const createLender = createAsyncThunk<
   }
 )
 
+// New thunks for matrix operations
+export const fetchMatrix = createAsyncThunk<
+  MatrixEntry[],
+  void,
+  { rejectValue: string }
+>(
+  "lenderLoan/fetchMatrix",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.get("/matrix")
+      return response.data.data as MatrixEntry[]
+    } catch (err: any) {
+      return rejectWithValue(
+        err.response?.data?.message || "Failed to fetch matrix"
+      )
+    }
+  }
+)
+
+export const toggleMatrix = createAsyncThunk<
+  MatrixTogglePayload[],
+  MatrixTogglePayload[],
+  { rejectValue: string }
+>(
+  "lenderLoan/toggleMatrix",
+  async (payload, { rejectWithValue }) => {
+    try {
+      const formData = new FormData()
+      // Send entire array as JSON in a field
+      formData.append('data', JSON.stringify(payload))
+      await axiosInstance.patch("/matrix/toggle", formData)
+      return payload
+    } catch (err: any) {
+      return rejectWithValue(
+        err.response?.data?.message || "Failed to toggle matrix entries"
+      )
+    }
+  }
+)
+
+export const fetchLendersByLoanType = createAsyncThunk<
+  LenderOrLoan[],
+  string,
+  { rejectValue: string }
+>(
+  "lenderLoan/fetchLendersByLoanType",
+  async (loanTypeId, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.get(
+        `/matrix/lenders/${loanTypeId}`
+      )
+      return response.data.data as LenderOrLoan[]
+    } catch (err: any) {
+      return rejectWithValue(
+        err.response?.data?.message || "Failed to fetch lenders by loan type"
+      )
+    }
+  }
+)
+
 const lenderLoanSlice = createSlice({
   name: "lenderLoan",
   initialState,
@@ -109,6 +190,7 @@ const lenderLoanSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      // existing handlers
       .addCase(fetchLoanTypes.fulfilled, (state, { payload }) => {
         state.loanTypes = payload
         state.loading = false
@@ -127,6 +209,29 @@ const lenderLoanSlice = createSlice({
         state.success = "Lender created successfully!"
         state.loading = false
       })
+      // new matrix handlers
+      .addCase(fetchMatrix.fulfilled, (state, { payload }) => {
+        state.matrix = payload
+        state.loading = false
+      })
+      .addCase(toggleMatrix.fulfilled, (state, { payload }) => {
+        // update local matrix entries
+        payload.forEach((item) => {
+          const idx = state.matrix.findIndex(
+            (e) => e.lenderId === item.lenderId && e.loanTypeId === item.loanTypeId
+          )
+          if (idx !== -1) {
+            state.matrix[idx].enabled = item.enabled
+          }
+        })
+        state.success = "Matrix updated successfully!"
+        state.loading = false
+      })
+      .addCase(fetchLendersByLoanType.fulfilled, (state, { payload }) => {
+        state.lendersByLoanType = payload
+        state.loading = false
+      })
+      // generic matchers
       .addMatcher(
         (action) => action.type.endsWith("/pending"),
         (state) => {

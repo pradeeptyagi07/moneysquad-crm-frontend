@@ -1,7 +1,7 @@
 // src/pages/Leads/components/LeadTimelineDialog.tsx
-"use client"
+"use client";
 
-import React, { useEffect } from "react"
+import React, { useEffect } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -13,31 +13,35 @@ import {
   IconButton,
   Paper,
   CircularProgress,
-} from "@mui/material"
-import { Close } from "@mui/icons-material"
-import { useTheme } from "@mui/material/styles"
-import { useAppDispatch } from "../../../hooks/useAppDispatch"
-import { useAppSelector } from "../../../hooks/useAppSelector"
-import { clearTimeline, fetchLeadTimeline } from "../../../store/slices/leadSLice"
-import { getStatusColor, getStatusIcon } from "../utils/leadUtils"
+} from "@mui/material";
+import { Close } from "@mui/icons-material";
+import { useTheme } from "@mui/material/styles";
+import { useAppDispatch } from "../../../hooks/useAppDispatch";
+import { useAppSelector } from "../../../hooks/useAppSelector";
+import {
+  clearTimeline,
+  fetchLeadTimeline,
+} from "../../../store/slices/leadSLice";
+import { getStatusColor, getStatusIcon } from "../utils/leadUtils";
 
 interface LeadTimelineDialogProps {
-  open: boolean
-  onClose: () => void
-  lead: string
+  open: boolean;
+  onClose: () => void;
+  lead: string;
 }
 
 interface TimelineEvent {
-  _id: string
-  leadId: string
-  applicantName: string
-  status: string
-  message: string
-  rejectImage: string | null
-  rejectReason: string | null
-  rejectComment: string | null
-  createdAt: string
-  __v: number
+  _id: string;
+  leadId: string;
+  applicantName: string;
+  status: string;
+  message: string;
+  rejectImage: string | null;
+  rejectReason: string | null;
+  rejectComment: string | null;
+  closeReason: string | null;
+  createdAt: string;
+  __v: number;
 }
 
 const LeadTimelineDialog: React.FC<LeadTimelineDialogProps> = ({
@@ -45,25 +49,25 @@ const LeadTimelineDialog: React.FC<LeadTimelineDialogProps> = ({
   onClose,
   lead,
 }) => {
-  const theme = useTheme()
-  const dispatch = useAppDispatch()
-  const { currentTimeline: timeline, loading } = useAppSelector(s => s.leads)
+  const theme = useTheme();
+  const dispatch = useAppDispatch();
+  const { currentTimeline: timeline, loading } = useAppSelector((s) => s.leads);
 
   // Fetch timeline on open; clear on close
   useEffect(() => {
-    if (open && lead) dispatch(fetchLeadTimeline(lead.leadId))
+    if (open && lead) dispatch(fetchLeadTimeline(lead.leadId));
     return () => {
-      dispatch(clearTimeline())
-    }
-  }, [open, lead, dispatch])
+      dispatch(clearTimeline());
+    };
+  }, [open, lead, dispatch]);
 
   // Flatten & sort newest→oldest
   const events: TimelineEvent[] = timeline
-    ? Object.values(timeline).filter(Boolean) as TimelineEvent[]
-    : []
+    ? (Object.values(timeline).filter(Boolean) as TimelineEvent[])
+    : [];
   const sortedEvents = events.sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  )
+  );
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
@@ -122,7 +126,8 @@ const LeadTimelineDialog: React.FC<LeadTimelineDialogProps> = ({
                 {/* Event card */}
                 <Paper variant="outlined" sx={{ flex: 1, p: 2 }}>
                   <Typography variant="subtitle2">
-                    {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
+                    {event.status.charAt(0).toUpperCase() +
+                      event.status.slice(1)}
                   </Typography>
 
                   {/* Message */}
@@ -159,8 +164,21 @@ const LeadTimelineDialog: React.FC<LeadTimelineDialogProps> = ({
                     </Box>
                   )}
 
+                  {/* Close details (only when closed) */}
+                  {event.status.toLowerCase() === "closed" && (
+                    <Box sx={{ mt: 1 }}>
+                      {event.closeReason && (
+                        <Typography variant="body2" color="warning.main">
+                          <strong>Close Reason:</strong> {event.closeReason}
+                        </Typography>
+                      )}
+                    </Box>
+                  )}
+
                   {/* Timestamp */}
-                  <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 1 }}>
+                  <Box
+                    sx={{ display: "flex", justifyContent: "flex-end", mt: 1 }}
+                  >
                     <Typography variant="caption" color="textSecondary">
                       {new Date(event.createdAt).toLocaleString()}
                     </Typography>
@@ -182,7 +200,7 @@ const LeadTimelineDialog: React.FC<LeadTimelineDialogProps> = ({
         <Button onClick={onClose}>Close</Button>
       </DialogActions>
     </Dialog>
-  )
-}
+  );
+};
 
-export default LeadTimelineDialog
+export default LeadTimelineDialog;

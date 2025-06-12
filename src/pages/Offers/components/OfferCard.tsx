@@ -1,6 +1,6 @@
 "use client";
 
-import type React from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -14,13 +14,9 @@ import {
   Menu,
   MenuItem,
 } from "@mui/material";
-import { Percent, Star, Edit, Delete, MoreVert } from "@mui/icons-material";
-import { useState } from "react";
+import { Star, Edit, Delete, MoreVert } from "@mui/icons-material";
 import { useAuth } from "../../../hooks/useAuth";
-import {
-  loanTypeColors,
-  type BankOffer,
-} from "../../../store/slices/offersSlice";
+import { loanTypeColors, type BankOffer } from "../../../store/slices/offersSlice";
 
 interface OfferCardProps {
   offer: BankOffer;
@@ -37,7 +33,30 @@ const OfferCard: React.FC<OfferCardProps> = ({
 }) => {
   const { userRole } = useAuth();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const open = Boolean(anchorEl);
+  const openMenu = Boolean(anchorEl);
+  const [timeLeft, setTimeLeft] = useState("");
+
+  // Calculate time remaining
+  useEffect(() => {
+    if (!offer.offerValidity) return;
+    const update = () => {
+      const diff = new Date(offer.offerValidity).getTime() - Date.now();
+      if (diff <= 0) {
+        setTimeLeft("Expired");
+        return;
+      }
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+      const mins = Math.floor((diff / (1000 * 60)) % 60);
+      setTimeLeft(`${days}d ${hours}h ${mins}m`);
+    };
+    update();
+    const timer = setInterval(update, 60000);
+    return () => clearInterval(timer);
+  }, [offer.offerValidity]);
+
+  const isExpired = !!offer.offerValidity && new Date(offer.offerValidity) < new Date();
+  const { gradient, textColor } = loanTypeColors[offer.loanType] || loanTypeColors.Other;
 
   const handleMenuClick = (e: React.MouseEvent<HTMLElement>) => {
     e.stopPropagation();
@@ -58,200 +77,151 @@ const OfferCard: React.FC<OfferCardProps> = ({
     onDeleteOffer?.(offer._id);
   };
 
-  // grab colors for this loanType, or fallback
-  const { gradient, textColor } =
-    loanTypeColors[offer.loanType] ?? loanTypeColors.Other;
-
   return (
-    <Zoom
-      in
-      style={{
-        transitionDelay: `${parseInt(offer._id.slice(-4), 16) % 500}ms`,
-      }}
-    >
+    <Zoom in style={{ transitionDelay: `0ms` }}>
       <Card
+        onClick={() => !isExpired && onViewDetails(offer)}
         sx={{
-          height: "100%",
+          height: '100%',
           borderRadius: 3,
-          overflow: "hidden",
-          position: "relative",
-          transition: "all 0.3s ease",
-          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.06)",
-          bgcolor: "white",
-          "&:hover": {
-            transform: "translateY(-4px)",
-            boxShadow: "0 8px 24px rgba(0, 0, 0, 0.08)",
-          },
+          boxShadow: '0 6px 18px rgba(0,0,0,0.1)',
+          transition: 'transform 0.3s',
+          '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 10px 30px rgba(0,0,0,0.15)' },
+          opacity: isExpired ? 0.5 : 1,
+          position: 'relative',
+          overflow: 'hidden',
         }}
       >
-        {/* Banner Image */}
+        {/* Image Section */}
         {offer.bankImage && (
-          <Box
-            sx={{
-              position: "relative",
-              height: 160,
-              width: "100%",
-              overflow: "hidden",
-            }}
-          >
+          <Box sx={{ position: 'relative', height: 180, width: '100%' }}>
             <Box
               component="img"
               src={offer.bankImage}
               alt={offer.bankName}
-              sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+              sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
+            {/* Featured Pulse */}
             {offer.isFeatured && (
               <Box
                 sx={{
-                  position: "absolute",
-                  top: 10,
-                  right: 10,
-                  bgcolor: "#FFA000",
-                  width: 28,
-                  height: 28,
-                  borderRadius: "50%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
-                  color: "white",
+                  position: 'absolute',
+                  top: 12,
+                  right: 12,
+                  width: 36,
+                  height: 36,
+                  borderRadius: '50%',
+                  bgcolor: 'warning.main',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  animation: 'featurePulse 2s ease-in-out infinite',
+                  '@keyframes featurePulse': {
+                    '0%': { transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(255,193,7,0.4)' },
+                    '50%': { transform: 'scale(1.2)', boxShadow: '0 0 0 12px rgba(255,193,7,0)' },
+                    '100%': { transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(255,193,7,0.4)' },
+                  },
                 }}
               >
-                <Star fontSize="small" />
+                <Star sx={{ color: 'common.white', fontSize: 20 }} />
               </Box>
             )}
           </Box>
         )}
 
+        {/* Validity & Timer */}
+        {offer.offerValidity && (
+          <Box sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            px: 2,
+            py: 1,
+            bgcolor: 'grey.50',
+            borderBottom: '1px solid rgba(0,0,0,0.08)',
+          }}>
+            <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
+              {timeLeft}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+              Valid until {new Date(offer.offerValidity).toLocaleDateString()}
+            </Typography>
+          </Box>
+        )}
+
+        {/* Content */}
         <CardContent sx={{ p: 2 }}>
-          <Typography
-            variant="subtitle2"
-            sx={{
-              fontWeight: 600,
-              fontSize: "0.85rem",
-              color: "#374151",
-              mb: 0.5,
-            }}
-          >
+          <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
             {offer.bankName}
           </Typography>
-
-          <Box
-            sx={{
-              mb: 1.5,
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
             <Chip
               label={offer.loanType}
               size="small"
               sx={{
-                borderRadius: 4,
+                px: 1,
+                borderRadius: 2,
+                fontWeight: 600,
                 background: gradient,
                 color: textColor,
-                fontWeight: 500,
-                fontSize: "0.7rem",
               }}
             />
-            <Typography
-              variant="body2"
-              sx={{
-                color: "success.main",
-                fontWeight: 600,
-                display: "flex",
-                alignItems: "center",
-                fontSize: "0.75rem",
-              }}
-            >
-              <Percent fontSize="small" sx={{ mr: 0.3 }} />
-              {offer.commissionPercent}%
-            </Typography>
           </Box>
-
-          {offer.offerHeadline && (
-            <Typography
-              variant="subtitle1"
-              sx={{ fontWeight: 600, fontSize: "1rem", lineHeight: 1.3, mb: 1 }}
-            >
-              {offer.offerHeadline}
-            </Typography>
-          )}
-
-          <Box sx={{ mb: 1 }}>
-            <Typography variant="caption" color="text.secondary">
-              Interest Rate
-            </Typography>
-            <Typography variant="h6" sx={{ fontWeight: 700 }}>
-              {offer.interestRate}%
-            </Typography>
-          </Box>
-
+          <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+            {offer.offerHeadline}
+          </Typography>
           <Grid container spacing={1} sx={{ mb: 2 }}>
             <Grid item xs={6}>
-              <Typography variant="caption" color="text.secondary">
-                Processing Fee
-              </Typography>
-              <Typography variant="body2" fontWeight={500}>
-                ₹{offer.processingFee}
-              </Typography>
+              <Typography variant="caption" color="text.secondary">Interest Rate</Typography>
+              <Typography variant="body1" sx={{ fontWeight: 700 }}>{offer.interestRate}%</Typography>
             </Grid>
             <Grid item xs={6}>
-              <Typography variant="caption" color="text.secondary">
-                Maximum Amount
-              </Typography>
-              <Typography variant="body2" fontWeight={500}>
-                ₹{offer.maximumAmount.toLocaleString()}
-              </Typography>
+              <Typography variant="caption" color="text.secondary">Processing Fee</Typography>
+              <Typography variant="body1" sx={{ fontWeight: 700 }}>₹{offer.processingFee}</Typography>
             </Grid>
           </Grid>
-
           <Button
-            variant="contained"
             fullWidth
-            onClick={() => onViewDetails(offer)}
-            sx={{
-              py: 1,
-              borderRadius: 6,
-              fontWeight: 600,
-              fontSize: "0.9rem",
-              bgcolor: "#5E17EB",
-              "&:hover": { bgcolor: "#4A11C0" },
-            }}
+            variant="contained"
+            disabled={isExpired}
+            sx={{ mt: 1, borderRadius: 3, textTransform: 'none' }}
           >
             View Details
           </Button>
         </CardContent>
 
-        {userRole === "admin" && (
-          <Box sx={{ position: "absolute", top: 10, left: 10 }}>
+        {/* Admin Menu */}
+        {userRole === 'admin' && (
+          <>  
             <IconButton
               size="small"
               onClick={handleMenuClick}
-              sx={{ bgcolor: "#f0f0f0", "&:hover": { bgcolor: "#e0e0e0" } }}
+              sx={{
+                pointerEvents: 'auto',
+                zIndex: 2,
+                position: 'absolute',
+                top: 12,
+                left: 12,
+                bgcolor: 'grey.100',
+              }}
             >
               <MoreVert fontSize="small" />
             </IconButton>
             <Menu
               anchorEl={anchorEl}
-              open={open}
+              open={openMenu}
               onClose={handleMenuClose}
-              onClick={(e) => e.stopPropagation()}
-              PaperProps={{
-                elevation: 3,
-                sx: { borderRadius: 2, minWidth: 120 },
-              }}
+              onClick={e => e.stopPropagation()}
+              PaperProps={{ sx: { borderRadius: 2, pointerEvents: 'auto' } }}
             >
               <MenuItem onClick={handleEdit}>
-                <Edit fontSize="small" sx={{ mr: 1, color: "#2196F3" }} /> Edit
+                <Edit fontSize="small" sx={{ mr: 1 }} /> Edit
               </MenuItem>
               <MenuItem onClick={handleDelete}>
-                <Delete fontSize="small" sx={{ mr: 1, color: "#F44336" }} />{" "}
-                Delete
+                <Delete fontSize="small" sx={{ mr: 1 }} /> Delete
               </MenuItem>
             </Menu>
-          </Box>
+          </>
         )}
       </Card>
     </Zoom>

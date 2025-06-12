@@ -1,0 +1,64 @@
+// src/routes/associateRoutes.tsx
+
+"use client";
+
+import type { RouteObject } from "react-router-dom";
+import { Navigate } from "react-router-dom";
+import AssociateLayout from "../components/Layout/AssociateLayout";
+import AssociateOverview from "../pages/Overview/AssociateOverview";
+import Leads from "../pages/Leads/Leads";
+import Offers from "../pages/Offers/Offers";
+import Settings from "../pages/Settings/Settings";
+import { useAppSelector } from "../hooks/useAppSelector";
+import type { JSX } from "react/jsx-runtime";
+
+// Protected route component specific to associate role
+const AssociateRoute = ({ children }: { children: JSX.Element }) => {
+  const { isAuthenticated, userRole } = useAppSelector((state) => state.auth);
+
+  if (!isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (userRole !== "associate") {
+    return <Navigate to={`/${userRole}`} replace />;
+  }
+
+  return children;
+};
+
+const associateRoutes: RouteObject[] = [
+  {
+    path: "/associate",
+    element: (
+      <AssociateRoute>
+        <AssociateLayout />
+      </AssociateRoute>
+    ),
+    children: [
+      {
+        index: true,
+        element: <AssociateOverview />,
+      },
+      {
+        path: "overview",
+        element: <AssociateOverview />,
+      },
+      {
+        path: "leads",
+        element: <Leads />,
+      },
+   
+      {
+        path: "offers",
+        element: <Offers />,
+      },
+      {
+        path: "settings",
+        element: <Settings />,
+      },
+    ],
+  },
+];
+
+export default associateRoutes;

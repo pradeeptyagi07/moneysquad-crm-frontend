@@ -13,8 +13,9 @@ const AdminLayout = () => {
     { text: "Leads", icon: "People", path: "/admin/leads" },
     { text: "Offers", icon: "LocalOffer", path: "/admin/offers" },
     { text: "Commissions", icon: "AttachMoney", path: "/admin/commissions" },
+    { text: "Partner Management", icon: "Groups", path: "/admin/manage-partners" },
+
     { text: "Team Management", icon: "Groups", path: "/admin/team-management" },
-    { text: "Manage Partners", icon: "SupervisorAccount", path: "/admin/manage-partners" },
     { text: "Settings", icon: "Settings", path: "/admin/settings" },
   ]
 

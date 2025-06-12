@@ -116,16 +116,14 @@ export const sendOtp = createAsyncThunk<boolean, string, { rejectValue: string }
   "auth/sendOtp",
   async (email: string, { rejectWithValue }) => {
     try {
-      const formData = new FormData();
-      formData.append("email", email);
-      await axiosInstance.post("/auth/send-opt", formData);
+      await axiosInstance.post("/auth/send-opt", { email });
       return true;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || "Failed to send OTP");
     }
   }
 );
-
+// Forgot Password
 // Forgot Password
 export const forgotPassword = createAsyncThunk<
   boolean,
@@ -135,16 +133,14 @@ export const forgotPassword = createAsyncThunk<
   "auth/forgotPassword",
   async (data: { email: string; otp: string }, { rejectWithValue }) => {
     try {
-      const formData = new FormData();
-      formData.append("email", data.email);
-      formData.append("otp", data.otp);
-      await axiosInstance.post("/auth/forgot-password", formData);
+      await axiosInstance.post("/auth/forgot-password", data);
       return true;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || "Failed to reset password with OTP");
     }
   }
 );
+
 
 // Auth slice
 const authSlice = createSlice({

@@ -22,6 +22,7 @@ export interface LeadTimelineEvent {
   rejectImage: string | null;
   rejectReason: string | null;
   rejectComment: string | null;
+  closeReason: string | null;
   createdAt: string;
   __v: number;
 }
@@ -34,35 +35,63 @@ export interface LeadTimeline {
   [key: string]: LeadTimelineEvent | undefined;
 }
 
-export interface Lead {
-  _id?: string;
-  id?: string;
-  leadId?: string;
-  partnerId?: {
-    _id: string;
-    basicInfo: { fullName: string };
-  };
-  manager?: string | null;
-  status?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  applicant: {
-    name: string;
-    businessName: string;
-    profile: string;
-    mobile: string;
-    email: string;
-    pincode: string;
-    _id?: string;
-  };
-  loan: {
-    type: string;
-    amount: number | string;
-    comments: string;
-    _id?: string;
-  };
-  lenderType?: string;
+// --- 3. New helper types to match response ---
+export interface Pincode {
+  pincode: string;
+  state: string;
+  city: string;
+  _id: string;
 }
+
+export interface Loan {
+  type: string;
+  amount: number;
+  _id: string;
+}
+
+export interface Partner {
+  _id: string;
+  partnerId: string;
+  basicInfo: { fullName: string };
+}
+
+// --- 4. Updated Lead type matching new API ---
+export interface Manager {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  managerId: string;
+}
+
+export interface Associate {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  associateDisplayId: string;
+}
+
+// --- 4. Updated Lead type matching new API ---
+export interface Lead {
+  id: string;                          
+  leadId: string;                      
+  applicantName: string;
+  applicantProfile: string;
+  email: string;
+  mobile: string;
+  pincode: Pincode;
+  comments: string;
+  loan: Loan;
+  lenderType: string | null;
+  partnerId: Partner;
+  manager: Manager | null;             // ← updated
+  associate: Associate | null;         // ← already object
+  status: string;
+  createdAt: string;
+  disbursedData: DisbursementData | null;
+  statusUpdatedAt: string;
+  businessName: string;
+}
+
 
 interface LeadState {
   leads: Lead[];
@@ -83,6 +112,7 @@ const initialState: LeadState = {
 };
 
 enum Endpoints {
+  DUPLICATE = "/lead/duplicate",
   CREATE = "/lead/create",
   UPDATE = "/lead/update",
   ASSIGN = "/lead/assign-manager",
@@ -92,35 +122,114 @@ enum Endpoints {
   FETCH_ONE = "/lead",
   DISBURSE = "/lead/disbursed",
   TIMELINE = "/lead/timeline",
+  DISBURSE_UPDATE = "/lead/disbursed",
+
 }
+
+
 
 // Create Lead
 export const createLead = createAsyncThunk<
   Lead,
-  { partnerId: string; leadData: any },
+  {
+    applicantName: string
+    applicantProfile: string
+    mobile: string
+    email: string
+    pincode: string
+    loantType: string
+    loanAmount: string
+    comments?: string
+    businessName?: string
+    city: string
+    state: string
+    partnerId?: string
+    assignto?: string
+  },
   { rejectValue: string }
->("leads/create", async ({ partnerId, leadData }, { rejectWithValue }) => {
-  try {
-    const formData = new FormData();
-    formData.append("applicant.name", leadData.applicant.name);
-    formData.append("applicant.profile", leadData.applicant.profile);
-    formData.append("applicant.businessName", leadData.applicant.businessName);
+>(
+  "leads/create",
+  async (formValues, { rejectWithValue }) => {
+    try {
+      const formData = new FormData();
+      formData.append("applicantName", formValues.applicantName);
+      formData.append("applicantProfile", formValues.applicantProfile);
+      formData.append("mobile", formValues.mobile);
+      formData.append("email", formValues.email);
+      formData.append("pincode", formValues.pincode);
+      formData.append("loantType", formValues.loantType);
+      formData.append("loanAmount", formValues.loanAmount);
+      if (formValues.comments) {
+        formData.append("comments", formValues.comments);
+      }
+      if (formValues.businessName) {
+        formData.append("businessName", formValues.businessName);
+      }
+      formData.append("city", formValues.city);
+      formData.append("state", formValues.state);
+      if (formValues.partnerId) {
+        formData.append("partnerId", formValues.partnerId);
+      }
+      if (formValues.assignto) {
+        formData.append("assignto", formValues.assignto);
+      }
 
-    formData.append("applicant.mobile", leadData.applicant.mobile);
-    formData.append("applicant.email", leadData.applicant.email);
-    formData.append("applicant.pincode", leadData.applicant.pincode);
-    formData.append("loan.type", leadData.loan.type);
-    formData.append("loan.amount", String(leadData.loan.amount));
-    formData.append("loan.comments", leadData.loan.comments);
-    const { data } = await axiosInstance.post(
-      `${Endpoints.CREATE}/${partnerId}`,
-      formData
-    );
-    return data.data as Lead;
-  } catch (err: any) {
-    return rejectWithValue(err.response?.data?.message || "Create failed");
+      const { data } = await axiosInstance.post(Endpoints.CREATE, formData);
+      return data.data as Lead;
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data?.message || "Create failed");
+    }
   }
-});
+);
+
+
+// Duplicate Lead
+export const duplicateLead = createAsyncThunk<
+  Lead,
+  {
+    applicantName: string;
+    applicantProfile: string;
+    mobile: string;
+    email: string;
+    pincode: string;
+    loantType: string;
+    loanAmount: string;
+    comments: string;
+    businessName: string;
+    city: string;
+    state: string;
+    partnerId: string;
+    assignto: string;
+    lenderType: string;
+  },
+  { rejectValue: string }
+>(
+  "leads/duplicate",
+  async (formValues, { rejectWithValue }) => {
+    try {
+      const formData = new FormData();
+      formData.append("applicantName", formValues.applicantName);
+      formData.append("applicantProfile", formValues.applicantProfile);
+      formData.append("mobile", formValues.mobile);
+      formData.append("email", formValues.email);
+      formData.append("pincode", formValues.pincode);
+      formData.append("loantType", formValues.loantType);
+      formData.append("loanAmount", formValues.loanAmount);
+      formData.append("comments", formValues.comments);
+      formData.append("businessName", formValues.businessName);
+      formData.append("city", formValues.city);
+      formData.append("state", formValues.state);
+      formData.append("partnerId", formValues.partnerId);
+      formData.append("assignto", formValues.assignto);
+      formData.append("lenderType", formValues.lenderType);
+
+      const { data } = await axiosInstance.post(Endpoints.DUPLICATE, formData);
+      return data.data as Lead;
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data?.message || "Duplicate failed");
+    }
+  }
+);
 
 // Disburse Lead
 // store/slices/leadSlice.ts
@@ -161,6 +270,37 @@ export const disburseLead = createAsyncThunk<
   }
 });
 
+// New “Edit Disbursement” (PUT)
+export const editDisbursement = createAsyncThunk<
+  Lead,
+  { leadId: string; disbData: DisbursementData },
+  { rejectValue: string }
+>("leads/editDisbursement", async ({ leadId, disbData }, { rejectWithValue }) => {
+  try {
+    const formData = new FormData();
+    formData.append("loanAmount", String(disbData.loanAmount));
+    formData.append("tenureMonths", String(disbData.tenureMonths));
+    formData.append("interestRatePA", String(disbData.interestRatePA));
+    formData.append("processingFee", String(disbData.processingFee));
+    formData.append("insuranceCharges", String(disbData.insuranceCharges));
+    formData.append("loanScheme", disbData.loanScheme);
+    formData.append("lanNumber", disbData.lanNumber);
+    formData.append("actualDisbursedDate", disbData.actualDisbursedDate);
+
+    const response = await axiosInstance.put(
+      `${Endpoints.DISBURSE_UPDATE}/${leadId}`,
+      formData
+    );
+    if (!response.data.success || !response.data.form) {
+      return rejectWithValue("Edit disbursement failed on server");
+    }
+    const updatedLead = response.data.form as Lead;
+    return { ...updatedLead, id: updatedLead._id };
+  } catch (err: any) {
+    return rejectWithValue(err.response?.data?.message || "Edit disbursement failed");
+  }
+});
+
 
 // Assign Lead
 export const assignLead = createAsyncThunk<
@@ -185,36 +325,71 @@ export const assignLead = createAsyncThunk<
 });
 
 // Update Lead
+// src/store/slices/leadSlice.ts
+
+// Update Lead
 export const updateLead = createAsyncThunk<
   Lead,
-  { leadId: string; leadData: any },
+  {
+    leadId: string;
+    applicantName: string;
+    applicantProfile: string;
+    mobile: string;
+    email: string;
+    pincode: string;
+    loantType: string;
+    loanAmount: string;
+    comments: string;
+    businessName: string;
+    city: string;
+    state: string;
+    partnerId: string;
+    assignto: string;
+    lenderType: string;
+  },
   { rejectValue: string }
->("leads/update", async ({ leadId, leadData }, { rejectWithValue }) => {
-  try {
-    const formData = new FormData();
-    formData.append("applicant.name", leadData.applicant.name);
-    formData.append("applicant.profile", leadData.applicant.profile);
-    formData.append("applicant.mobile", leadData.applicant.mobile);
-    formData.append("applicant.email", leadData.applicant.email);
-    formData.append("applicant.pincode", leadData.applicant.pincode);
-    formData.append("loan.type", leadData.loan.type);
-    formData.append("loan.amount", leadData.loan.amount);
-    formData.append("loan.comments", leadData.loan.comments);
-    if (leadData.lenderType) formData.append("lenderType", leadData.lenderType);
-    const response = await axiosInstance.put(
-      `${Endpoints.UPDATE}/${leadId}`,
-      formData
-    );
-    const updatedLead = response.data.lead as Lead;
-    return { ...updatedLead, id: updatedLead._id };
-  } catch (err: any) {
-    return rejectWithValue(
-      err.response?.data?.message || "Failed to update lead"
-    );
+>(
+  "leads/update",
+  async (formValues, { rejectWithValue }) => {
+    try {
+      const formData = new FormData();
+      // Applicant fields
+      formData.append("applicantName", formValues.applicantName);
+      formData.append("applicantProfile", formValues.applicantProfile);
+      formData.append("mobile", formValues.mobile);
+      formData.append("email", formValues.email);
+      formData.append("pincode", formValues.pincode);
+      // Business (optional but here mandatory)
+      formData.append("businessName", formValues.businessName);
+      // Loan fields
+      formData.append("loantType", formValues.loantType);
+      formData.append("loanAmount", formValues.loanAmount);
+      formData.append("comments", formValues.comments);
+      // Location fields
+      formData.append("city", formValues.city);
+      formData.append("state", formValues.state);
+      // Assignment fields
+      formData.append("partnerId", formValues.partnerId);
+      formData.append("assignto", formValues.assignto);
+      // Lender type
+      formData.append("lenderType", formValues.lenderType);
+
+      const response = await axiosInstance.put(
+        `${Endpoints.UPDATE}/${formValues.leadId}`,
+        formData
+      );
+      const updatedLead = response.data.lead as Lead;
+      return { ...updatedLead, id: updatedLead._id };
+    } catch (err: any) {
+      return rejectWithValue(
+        err.response?.data?.message || "Failed to update lead"
+      );
+    }
   }
-});
+);
 
 // Update Lead Status
+// ↓ UPDATED updateLeadStatus thunk:
 export const updateLeadStatus = createAsyncThunk<
   { leadId: string; status: string },
   {
@@ -224,26 +399,39 @@ export const updateLeadStatus = createAsyncThunk<
       comment: string;
       rejectReason?: string;
       rejectImage?: File;
+      approvedAmount?: string;  // ← new
+      closeReason?: string;     // ← new
     };
   },
   { rejectValue: string }
->("leads/updateStatus", async ({ leadId, statusData }, { rejectWithValue }) => {
-  try {
-    const formData = new FormData();
-    formData.append("action", statusData.action);
-    formData.append("comment", statusData.comment);
-    if (statusData.rejectReason)
-      formData.append("rejectReason", statusData.rejectReason);
-    if (statusData.rejectImage)
-      formData.append("rejectImage", statusData.rejectImage);
-    await axiosInstance.put(`${Endpoints.UPDATE_STATUS}/${leadId}`, formData);
-    return { leadId, status: statusData.action };
-  } catch (err: any) {
-    return rejectWithValue(
-      err.response?.data?.message || "Failed to update status"
-    );
+>(
+  "leads/updateStatus",
+  async ({ leadId, statusData }, { rejectWithValue }) => {
+    try {
+      const formData = new FormData();
+      formData.append("action", statusData.action);
+      formData.append("comment", statusData.comment);
+      if (statusData.rejectReason)
+        formData.append("rejectReason", statusData.rejectReason);
+      if (statusData.rejectImage)
+        formData.append("rejectImage", statusData.rejectImage);
+      if (statusData.approvedAmount)
+        formData.append("approvedAmount", statusData.approvedAmount);
+      if (statusData.closeReason)
+        formData.append("closeReason", statusData.closeReason);
+
+      await axiosInstance.put(
+        `${Endpoints.UPDATE_STATUS}/${leadId}`,
+        formData
+      );
+      return { leadId, status: statusData.action };
+    } catch (err: any) {
+      return rejectWithValue(
+        err.response?.data?.message || "Failed to update status"
+      );
+    }
   }
-});
+);
 
 // Delete Lead
 export const deleteLead = createAsyncThunk<
@@ -329,6 +517,11 @@ const leadSlice = createSlice({
         state.success = "Lead created!";
         state.loading = false;
       })
+      .addCase(duplicateLead.fulfilled, (state, { payload }) => {
+        state.leads.unshift(payload);
+        state.success = "Lead duplicated!";
+        state.loading = false;
+      })
       .addCase(disburseLead.fulfilled, (state, { payload }) => {
         const idx = state.leads.findIndex((l) => l.id === payload.id);
         if (idx >= 0) state.leads[idx] = payload;
@@ -370,7 +563,7 @@ const leadSlice = createSlice({
       .addCase(fetchLeadTimeline.fulfilled, (state, { payload }) => {
         state.currentTimeline = payload;
         state.loading = false;
-      })
+      })   
       .addMatcher(
         (action) => action.type.endsWith("/pending"),
         (state) => {

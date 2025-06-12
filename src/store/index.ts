@@ -7,6 +7,8 @@ import lenderLoanReducer from "./slices/lenderLoanSlice" // ✅ Import your new 
 import signupPartnerReducer from "./slices/signupPartnerSlice" // ✅ Import your new slice
 import managePartnersReducer from "./slices/managePartnerSlice" // ✅ Import your new slice
 import leadsReducer from "./slices/leadSLice" // ✅ Import your new slice
+import associateReducer from "./slices/associateSlice" // ✅ Import your new slice
+
 
 export const store = configureStore({
   reducer: {
@@ -17,6 +19,7 @@ export const store = configureStore({
     signupPartner:signupPartnerReducer,
     managePartners: managePartnersReducer, // ✅ this key must match useAppSelector
     leads:leadsReducer,
+    associate:associateReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

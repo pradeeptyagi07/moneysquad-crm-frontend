@@ -1,7 +1,7 @@
-// src/pages/Leads/components/DisbursementDialog.tsx
+// src/components/Leads/DisbursementDialog.tsx
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -17,16 +17,16 @@ import {
   Alert,
   MenuItem,
   CircularProgress,
+  Paper,
 } from "@mui/material";
 import { Close } from "@mui/icons-material";
 import { useAppDispatch } from "../../../hooks/useAppDispatch";
-import { disburseLead } from "../../../store/slices/leadSLice";
-import type { Lead } from "../../../store/slices/leadSLice";
+import { disburseLead, editDisbursement, fetchAllLeads, Lead } from "../../../store/slices/leadSLice";
 
 interface DisbursementData {
   loanAmount: number;
-  tenure: number;
-  interestRate: number;
+  tenureMonths: number;
+  interestRatePA: number;
   processingFee: number;
   insuranceCharges: number;
   loanScheme: string;
@@ -37,7 +37,7 @@ interface DisbursementData {
 interface DisbursementDialogProps {
   open: boolean;
   onClose: () => void;
-  lead: Lead;
+  lead: Lead | null;
 }
 
 const loanSchemeOptions = ["Fresh", "Top-up", "Other"];
@@ -47,19 +47,18 @@ const DisbursementDialog: React.FC<DisbursementDialogProps> = ({
   onClose,
   lead,
 }) => {
+  // Hooks always at the top
   const dispatch = useAppDispatch();
-
   const [form, setForm] = useState<DisbursementData>({
     loanAmount: 0,
-    tenure: 0,
-    interestRate: 0,
+    tenureMonths: 0,
+    interestRatePA: 0,
     processingFee: 0,
     insuranceCharges: 0,
     loanScheme: "",
     lanNumber: "",
     actualDisbursedDate: "",
   });
-
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
@@ -67,54 +66,74 @@ const DisbursementDialog: React.FC<DisbursementDialogProps> = ({
     severity: "success" | "error";
   }>({ open: false, message: "", severity: "success" });
 
-  const handleChange = (
-    field: keyof DisbursementData,
-    value: string | number
-  ) => {
+  // Always call useEffect unconditionally
+  useEffect(() => {
+    if (lead?.disbursedData) {
+      setForm({
+        loanAmount: lead.disbursedData.loanAmount,
+        tenureMonths: lead.disbursedData.tenureMonths,
+        interestRatePA: lead.disbursedData.interestRatePA,
+        processingFee: lead.disbursedData.processingFee,
+        insuranceCharges: lead.disbursedData.insuranceCharges,
+        loanScheme: lead.disbursedData.loanScheme,
+        lanNumber: lead.disbursedData.lanNumber,
+        actualDisbursedDate: lead.disbursedData.actualDisbursedDate.slice(0, 10),
+      });
+    } else {
+      // Reset when opening for new disbursement
+      setForm({
+        loanAmount: 0,
+        tenureMonths: 0,
+        interestRatePA: 0,
+        processingFee: 0,
+        insuranceCharges: 0,
+        loanScheme: "",
+        lanNumber: "",
+        actualDisbursedDate: "",
+      });
+    }
+    setSnackbar((s) => ({ ...s, open: false }));
+    setLoading(false);
+  }, [lead]);
+
+  // Early return after hooks
+  if (!open || !lead) {
+    return null;
+  }
+
+  const isEdit = Boolean(lead.disbursedData);
+  const title = isEdit ? "Edit Disbursement" : "New Disbursement";
+  const submitLabel = isEdit ? "Update" : "Save";
+
+  const handleChange = (field: keyof DisbursementData, value: string | number) => {
     setForm((prev) => ({
       ...prev,
-      [field]:
-        typeof prev[field] === "number" ? Number(value) : (value as string),
+      [field]: typeof prev[field] === "number" ? Number(value) : (value as string),
     }));
   };
 
-  const isFormValid = Object.values(form).every((value) =>
-    typeof value === "number" ? value > 0 : value.trim() !== ""
+  const isFormValid = Object.values(form).every((v) =>
+    typeof v === "number" ? v > 0 : (v as string).trim() !== ""
   );
 
   const handleSubmit = async () => {
+    if (!isFormValid) return;
     setLoading(true);
     try {
-      // unwrap() will throw if the thunk was rejected
-      await dispatch(
-        disburseLead({
-          leadId: lead.id!,
-          disbData: {
-            loanAmount: form.loanAmount,
-            tenureMonths: form.tenure,
-            interestRatePA: form.interestRate,
-            processingFee: form.processingFee,
-            insuranceCharges: form.insuranceCharges,
-            loanScheme: form.loanScheme,
-            lanNumber: form.lanNumber,
-            actualDisbursedDate: form.actualDisbursedDate,
-          },
-        })
-      ).unwrap();
+      const thunk = isEdit ? editDisbursement : disburseLead;
+      await dispatch(thunk({ leadId: lead.id, disbData: form })).unwrap();
+     dispatch(fetchAllLeads());
 
-      // close the dialog right away
-      onClose();
-
-      // then show a success toast
       setSnackbar({
         open: true,
-        message: "Disbursement saved!",
+        message: isEdit ? "Disbursement updated!" : "Disbursement saved!",
         severity: "success",
       });
+      onClose();
     } catch (err: any) {
       setSnackbar({
         open: true,
-        message: typeof err === "string" ? err : err.message || "An error occurred",
+        message: err.message || "An error occurred",
         severity: "error",
       });
     } finally {
@@ -127,7 +146,7 @@ const DisbursementDialog: React.FC<DisbursementDialogProps> = ({
       <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
         <DialogTitle>
           <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Typography variant="h6">Disbursement Details</Typography>
+            <Typography variant="h6">{title}</Typography>
             <IconButton onClick={onClose} size="small">
               <Close />
             </IconButton>
@@ -135,22 +154,14 @@ const DisbursementDialog: React.FC<DisbursementDialogProps> = ({
         </DialogTitle>
 
         <DialogContent dividers>
-          <Box mb={2}>
+          <Paper variant="outlined" sx={{ p: 2, mb: 3, borderRadius: 2 }}>
             <Typography variant="subtitle2" color="textSecondary">
               Lead ID
             </Typography>
             <Typography variant="body1" fontWeight={500}>
               {lead.leadId}
             </Typography>
-          </Box>
-          <Box mb={3}>
-            <Typography variant="subtitle2" color="textSecondary">
-              Applicant
-            </Typography>
-            <Typography variant="body1" fontWeight={500}>
-              {lead.applicant.name}
-            </Typography>
-          </Box>
+          </Paper>
 
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6} md={4}>
@@ -169,8 +180,8 @@ const DisbursementDialog: React.FC<DisbursementDialogProps> = ({
                 fullWidth
                 label="Tenure (months)"
                 type="number"
-                value={form.tenure}
-                onChange={(e) => handleChange("tenure", e.target.value)}
+                value={form.tenureMonths}
+                onChange={(e) => handleChange("tenureMonths", e.target.value)}
               />
             </Grid>
             <Grid item xs={12} sm={6} md={4}>
@@ -179,11 +190,10 @@ const DisbursementDialog: React.FC<DisbursementDialogProps> = ({
                 fullWidth
                 label="Interest Rate (PA)"
                 type="number"
-                value={form.interestRate}
-                onChange={(e) => handleChange("interestRate", e.target.value)}
+                value={form.interestRatePA}
+                onChange={(e) => handleChange("interestRatePA", e.target.value)}
               />
             </Grid>
-
             <Grid item xs={12} sm={6} md={4}>
               <TextField
                 required
@@ -204,7 +214,6 @@ const DisbursementDialog: React.FC<DisbursementDialogProps> = ({
                 onChange={(e) => handleChange("insuranceCharges", e.target.value)}
               />
             </Grid>
-
             <Grid item xs={12} sm={6} md={4}>
               <TextField
                 required
@@ -238,9 +247,7 @@ const DisbursementDialog: React.FC<DisbursementDialogProps> = ({
                 label="Actual Disbursed Date"
                 InputLabelProps={{ shrink: true }}
                 value={form.actualDisbursedDate}
-                onChange={(e) =>
-                  handleChange("actualDisbursedDate", e.target.value)
-                }
+                onChange={(e) => handleChange("actualDisbursedDate", e.target.value)}
               />
             </Grid>
           </Grid>
@@ -250,27 +257,19 @@ const DisbursementDialog: React.FC<DisbursementDialogProps> = ({
           <Button onClick={onClose} disabled={loading}>
             Cancel
           </Button>
-          <Button
-            onClick={handleSubmit}
-            variant="contained"
-            disabled={loading || !isFormValid}
-          >
-            {loading ? <CircularProgress size={20} /> : "Save"}
+          <Button onClick={handleSubmit} variant="contained" disabled={!isFormValid || loading}>
+            {loading ? <CircularProgress size={20} /> : submitLabel}
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Always render the Snackbar so it can show after onClose() */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={2000}
         onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
         anchorOrigin={{ vertical: "top", horizontal: "center" }}
       >
-        <Alert
-          severity={snackbar.severity}
-          onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
-        >
+        <Alert severity={snackbar.severity} onClose={() => setSnackbar((s) => ({ ...s, open: false }))}>
           {snackbar.message}
         </Alert>
       </Snackbar>

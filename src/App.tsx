@@ -16,6 +16,7 @@ import partnerRoutes from "./routes/partnerRoutes"
 import Login from "./pages/Auth/Login"
 import BecomePartner from "./pages/Auth/BecomePartner"
 import ForgotPassword from "./pages/Auth/ForgotPassword"
+import associateRoutes from "./routes/associateRoutes"
 
 // Loading component for suspense fallback
 const LoadingFallback = () => (
@@ -47,6 +48,8 @@ const AppRoutes = () => {
         return "/manager"
       case "partner":
         return "/partner"
+         case "associate":
+        return "/associate"
       default:
         return "/"
     }
@@ -70,6 +73,8 @@ const AppRoutes = () => {
     ...adminRoutes,
     ...managerRoutes,
     ...partnerRoutes,
+    ...associateRoutes,
+
     // Redirect any unknown routes to appropriate dashboard or login
     {
       path: "*",

@@ -13,6 +13,7 @@ import PartnerDetails from "../pages/ManagePartners/PartnerDetails"
 import type { JSX } from "react/jsx-runtime"
 import TeamManagement from "../pages/TeamManagement/TeamManagement"
 import { useAppSelector } from "../hooks/useAppSelector"
+import CommissionDashboard from "../pages/Commissions/CommissionDashboard"
 
 // Protected route component specific to admin role
 const AdminRoute = ({ children }: { children: JSX.Element }) => {
@@ -57,7 +58,7 @@ const adminRoutes: RouteObject[] = [
       },
       {
         path: "commissions",
-        element: <Commissions />,
+        element: <CommissionDashboard />,
       },
       {
         path: "settings",

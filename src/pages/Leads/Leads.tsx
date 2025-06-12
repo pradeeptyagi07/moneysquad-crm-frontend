@@ -3,9 +3,9 @@
 import { useEffect } from "react"
 import { useAuth } from "../../hooks/useAuth"
 import { useAppDispatch } from "../../hooks/useAppDispatch"
-import AdminLeads from "./AdminLeads"
 
 import { fetchAllLeads } from "../../store/slices/leadSLice"
+import LeadsPage from "./LeadComponents/LeadsPage"
 
 const Leads: React.FC = () => {
   const { userRole } = useAuth()
@@ -17,11 +17,13 @@ const Leads: React.FC = () => {
 
   switch (userRole) {
     case "admin":
-      return <AdminLeads />
+      return <LeadsPage />
     case "manager":
-      return <AdminLeads />
+      return <LeadsPage />
     case "partner":
-      return <AdminLeads />
+      return <LeadsPage />
+      case "associate":
+        return <LeadsPage />
     default:
       return <div>Unauthorized</div>
   }

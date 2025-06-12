@@ -42,7 +42,7 @@ import {
   Save,
 } from "@mui/icons-material"
 import { mockPartners } from "./data/mockPartners"
-import { mockLeads } from "../../data/mockLeads"
+// import { mockLeads } from "../../data/mockLeads"
 import BasicInfoSection from "./components/BasicInfoSection"
 import PersonalDetailsSection from "./components/PersonalDetailsSection"
 import AddressDetailsSection from "./components/AddressDetailsSection"
@@ -89,28 +89,28 @@ const PartnerDetails: React.FC = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [editedPartner, setEditedPartner] = useState<Partial<Partner>>({})
 
-  useEffect(() => {
-    // Find partner by ID
-    const foundPartner = mockPartners.find((p) => p.partnerId === partnerId)
-    if (foundPartner) {
-      // Calculate active status
-      const thirtyDaysAgo = new Date()
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+  // useEffect(() => {
+  //   // Find partner by ID
+  //   const foundPartner = mockPartners.find((p) => p.partnerId === partnerId)
+  //   if (foundPartner) {
+  //     // Calculate active status
+  //     const thirtyDaysAgo = new Date()
+  //     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
-      const hasRecentLeads = mockLeads.some(
-        (lead) => lead.createdBy === foundPartner.fullName && new Date(lead.createdAt) >= thirtyDaysAgo,
-      )
+  //     const hasRecentLeads = mockLeads.some(
+  //       (lead) => lead.createdBy === foundPartner.fullName && new Date(lead.createdAt) >= thirtyDaysAgo,
+  //     )
 
-      setPartner({
-        ...foundPartner,
-        status: hasRecentLeads ? "active" : "inactive",
-      })
+  //     setPartner({
+  //       ...foundPartner,
+  //       status: hasRecentLeads ? "active" : "inactive",
+  //     })
 
-      // Get partner leads
-      const leads = mockLeads.filter((lead) => lead.createdBy === foundPartner.fullName)
-      setPartnerLeads(leads)
-    }
-  }, [partnerId])
+  //     // Get partner leads
+  //     const leads = mockLeads.filter((lead) => lead.createdBy === foundPartner.fullName)
+  //     setPartnerLeads(leads)
+  //   }
+  // }, [partnerId])
 
   useEffect(() => {
     // Check if edit=true is in the URL query parameters

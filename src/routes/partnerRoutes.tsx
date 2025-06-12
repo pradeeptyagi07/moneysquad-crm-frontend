@@ -9,6 +9,8 @@ import Offers from "../pages/Offers/Offers"
 import Commissions from "../pages/Commissions/Commissions"
 import Settings from "../pages/Settings/Settings"
 import { useAppSelector } from "../hooks/useAppSelector"
+import AssociateManagement from "../pages/Associates/AssociateManagement"
+import CommissionDashboard from "../pages/Commissions/CommissionDashboard"
 
 // Protected route component specific to partner role
 const PartnerRoute = ({ children }: { children: JSX.Element }) => {
@@ -53,7 +55,11 @@ const partnerRoutes: RouteObject[] = [
       },
       {
         path: "commissions",
-        element: <Commissions />,
+        element: <CommissionDashboard />,      
+      },
+      {
+        path: "team-management",
+        element: <AssociateManagement />,      
       },
       {
         path: "settings",
