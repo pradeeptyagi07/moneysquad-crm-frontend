@@ -31,6 +31,8 @@ import {
   Groups,
   SupervisorAccount,
   Logout,
+  HelpOutline,
+  MenuBook,
 } from "@mui/icons-material"
 import { useAuth } from "../../hooks/useAuth"
 import { useAppSelector } from "../../hooks/useAppSelector"
@@ -102,6 +104,10 @@ const DashboardLayout = ({
         return <Groups />
       case "SupervisorAccount":
         return <SupervisorAccount />
+        case "Help":
+  return <HelpOutline />
+  case "TrainingResources":
+      return <MenuBook />;
       default:
         return <Dashboard />
     }

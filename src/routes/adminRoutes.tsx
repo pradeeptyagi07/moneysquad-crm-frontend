@@ -14,6 +14,8 @@ import type { JSX } from "react/jsx-runtime"
 import TeamManagement from "../pages/TeamManagement/TeamManagement"
 import { useAppSelector } from "../hooks/useAppSelector"
 import CommissionDashboard from "../pages/Commissions/CommissionDashboard"
+import HelpSupportMain from "../pages/HelpAndSupport/HelpSupportMain"
+import TrainingResourcesTab from "../pages/TrainingResources/TrainingResources"
 
 // Protected route component specific to admin role
 const AdminRoute = ({ children }: { children: JSX.Element }) => {
@@ -75,6 +77,14 @@ const adminRoutes: RouteObject[] = [
       {
         path: "team-management",
         element: <TeamManagement />,
+      },
+      {
+        path: "help-support",
+        element: <HelpSupportMain />,
+      },
+      {
+        path: "training-resorces",
+        element: <TrainingResourcesTab/>
       },
     ],
   },

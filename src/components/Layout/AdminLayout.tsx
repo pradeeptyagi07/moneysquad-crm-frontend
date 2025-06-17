@@ -17,6 +17,10 @@ const AdminLayout = () => {
 
     { text: "Team Management", icon: "Groups", path: "/admin/team-management" },
     { text: "Settings", icon: "Settings", path: "/admin/settings" },
+      { text: "Help & Support", icon: "Help", path: "help-support" }, // ✅ Add this
+            { text: "Training & Resources", icon: "Help", path: "training-resorces" }, // ✅ Add this
+
+
   ]
 
   return (
