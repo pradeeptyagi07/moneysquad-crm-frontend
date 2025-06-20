@@ -1,11 +1,13 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Box, Tab, Tabs, Typography, Paper } from "@mui/material"
 import { Person, Security } from "@mui/icons-material"
 import ProfileSection from "./components/ProfileSection"
 import SecuritySection from "./components/SecuritySection"
+import { useAppDispatch } from "../../hooks/useAppDispatch"
+import { fetchUserData } from "../../store/slices/userDataSlice"
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -46,6 +48,12 @@ const ManagerSettings: React.FC<ManagerSettingsProps> = ({ user }) => {
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue)
   }
+
+  const dispatch = useAppDispatch()
+
+  useEffect(() => {
+    dispatch(fetchUserData())
+  }, [dispatch])
 
   return (
     <Paper
@@ -94,7 +102,7 @@ const ManagerSettings: React.FC<ManagerSettingsProps> = ({ user }) => {
       </Box>
 
       <TabPanel value={value} index={0}>
-        <ProfileSection user={user} isAdmin={false} isManager={true} />
+        <ProfileSection isAdmin={false} isManager={true} />
       </TabPanel>
 
       <TabPanel value={value} index={1}>

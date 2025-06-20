@@ -16,6 +16,9 @@ const PartnerLayout = () => {
     { text: "Team Management", icon: "Groups", path: "/partner/team-management" },
 
     { text: "Settings", icon: "Settings", path: "/partner/settings" },
+    { text: "Help & Support", icon: "Help", path: "help-support" }, // ✅ Add this
+    { text: "Training & Resources", icon: "TrainingResources", path: "training-resorces" }, // ✅ Add this
+
   ];
 
   return (

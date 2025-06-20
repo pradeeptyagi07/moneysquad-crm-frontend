@@ -1,39 +1,82 @@
 "use client"
 
 import type React from "react"
-import { Box, Typography, Paper, Grid, Button, Chip } from "@mui/material"
-import { InsertDriveFile, CloudDownload, Visibility } from "@mui/icons-material"
+import { useState } from "react"
+import {
+  Box,
+  Typography,
+  Paper,
+  Grid,
+  Button,
+  Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  IconButton,
+} from "@mui/material"
+import { InsertDriveFile, CloudDownload, Visibility, Close } from "@mui/icons-material"
 
 interface DocumentsSectionProps {
   partner: Partner
-  onViewDocument: (title: string, url: string) => void
 }
 
-const DocumentsSection: React.FC<DocumentsSectionProps> = ({ partner, onViewDocument }) => {
+interface Partner {
+  documents?: {
+    [key: string]: any
+  }
+}
+
+const DocumentsSection: React.FC<DocumentsSectionProps> = ({ partner }) => {
+  const [viewDocumentOpen, setViewDocumentOpen] = useState(false)
+  const [selectedDocument, setSelectedDocument] = useState<{ title: string; url: string } | null>(null)
+
   const docs = partner.documents || {}
 
-  const allDocuments = Object.entries(docs).flatMap(([key, value]: [string, any], index) => {
-    if (key === "otherDocuments" && Array.isArray(value)) {
-      return value.map((doc: any, i: number) => ({
-        title: `Additional Document ${i + 1}`,
-        fileName: doc.name || `additional_doc_${i + 1}`,
-        uploadDate: "N/A",
-        status: "Verified",
-        required: false,
-        url: doc.url || URL.createObjectURL(doc),
-      }))
-    } else if (typeof value === "string" && value) {
-      return [{
-        title: key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
-        fileName: value.split('/').pop() || key + ".file",
-        uploadDate: "N/A",
-        status: "Verified",
-        required: false,
-        url: value,
-      }]
-    }
-    return []
-  })
+  // Filter out _id and only process actual document fields
+  const allDocuments = Object.entries(docs)
+    .filter(([key]) => key !== "_id") // Exclude _id field
+    .flatMap(([key, value]: [string, any]) => {
+      if (key === "otherDocuments" && Array.isArray(value)) {
+        return value.map((doc: any, i: number) => ({
+          title: `Additional Document ${i + 1}`,
+          fileName: doc.name || `additional_doc_${i + 1}`,
+          uploadDate: "N/A",
+          status: "Verified",
+          required: false,
+          url: doc.url || URL.createObjectURL(doc),
+        }))
+      } else if (typeof value === "string" && value) {
+        return [
+          {
+            title: key.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase()),
+            fileName: value.split("/").pop() || key + ".file",
+            uploadDate: "N/A",
+            status: "Verified",
+            required: false,
+            url: value,
+          },
+        ]
+      }
+      return []
+    })
+
+  const handleViewDocument = (title: string, url: string) => {
+    setSelectedDocument({ title, url })
+    setViewDocumentOpen(true)
+  }
+
+  const handleCloseViewDocument = () => {
+    setViewDocumentOpen(false)
+    setSelectedDocument(null)
+  }
+
+  const isImageFile = (url: string) => {
+    return /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(url)
+  }
+
+  const isPDFFile = (url: string) => {
+    return /\.pdf$/i.test(url)
+  }
 
   return (
     <Box>
@@ -102,7 +145,7 @@ const DocumentsSection: React.FC<DocumentsSectionProps> = ({ partner, onViewDocu
                   <Button
                     startIcon={<Visibility />}
                     size="small"
-                    onClick={() => onViewDocument(doc.title, doc.url)}
+                    onClick={() => handleViewDocument(doc.title, doc.url)}
                     sx={{ mr: 1 }}
                   >
                     View
@@ -116,6 +159,104 @@ const DocumentsSection: React.FC<DocumentsSectionProps> = ({ partner, onViewDocu
           </Grid>
         ))}
       </Grid>
+
+      {/* View Document Dialog - Inline */}
+      <Dialog
+        open={viewDocumentOpen}
+        onClose={handleCloseViewDocument}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            maxHeight: "90vh",
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            pb: 1,
+          }}
+        >
+          <Typography variant="h6" component="div">
+            {selectedDocument?.title || "Document Viewer"}
+          </Typography>
+          <IconButton
+            onClick={handleCloseViewDocument}
+            sx={{
+              color: "grey.500",
+              "&:hover": {
+                backgroundColor: "grey.100",
+              },
+            }}
+          >
+            <Close />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ p: 0, display: "flex", justifyContent: "center", alignItems: "center" }}>
+          {selectedDocument && (
+            <Box
+              sx={{ width: "100%", height: "70vh", display: "flex", justifyContent: "center", alignItems: "center" }}
+            >
+              {isImageFile(selectedDocument.url) ? (
+                <img
+                  src={selectedDocument.url || "/placeholder.svg"}
+                  alt={selectedDocument.title}
+                  style={{
+                    maxWidth: "100%",
+                    maxHeight: "100%",
+                    objectFit: "contain",
+                    borderRadius: "8px",
+                  }}
+                />
+              ) : isPDFFile(selectedDocument.url) ? (
+                <iframe
+                  src={selectedDocument.url}
+                  title={selectedDocument.title}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    border: "none",
+                    borderRadius: "8px",
+                  }}
+                />
+              ) : (
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    height: "100%",
+                    color: "text.secondary",
+                  }}
+                >
+                  <InsertDriveFile sx={{ fontSize: 64, mb: 2 }} />
+                  <Typography variant="h6" gutterBottom>
+                    Document Preview Not Available
+                  </Typography>
+                  <Typography variant="body2" align="center">
+                    This document type cannot be previewed in the browser.
+                    <br />
+                    Please download the file to view it.
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    startIcon={<CloudDownload />}
+                    sx={{ mt: 2 }}
+                    onClick={() => window.open(selectedDocument.url, "_blank")}
+                  >
+                    Download Document
+                  </Button>
+                </Box>
+              )}
+            </Box>
+          )}
+        </DialogContent>
+      </Dialog>
     </Box>
   )
 }

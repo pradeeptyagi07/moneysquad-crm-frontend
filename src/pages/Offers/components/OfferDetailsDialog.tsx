@@ -1,6 +1,6 @@
-"use client";
+"use client"
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react"
 import {
   Dialog,
   DialogTitle,
@@ -19,33 +19,21 @@ import {
   List,
   ListItem,
   ListItemIcon,
-} from "@mui/material";
-import type { TransitionProps } from "@mui/material/transitions";
-import {
-  Close,
-  Share,
-  Star,
-  Person,
-  AttachMoney,
-  Work,
-  CreditScore,
-  Edit,
-} from "@mui/icons-material";
-import CreateOfferDialog from "./CreateOfferDialog";
-import { useAppDispatch } from "../../../hooks/useAppDispatch";
-import { useAppSelector } from "../../../hooks/useAppSelector";
-import {
-  fetchOfferById,
-  setSelectedOffer,
-} from "../../../store/slices/offersSlice";
+} from "@mui/material"
+import type { TransitionProps } from "@mui/material/transitions"
+import { Close, Person, AttachMoney, Work, CreditScore, Edit, CheckCircle, ContentCopy } from "@mui/icons-material"
+import CreateOfferDialog from "./CreateOfferDialog"
+import { useAppDispatch } from "../../../hooks/useAppDispatch"
+import { useAppSelector } from "../../../hooks/useAppSelector"
+import { fetchOfferById, setSelectedOffer } from "../../../store/slices/offersSlice"
 
 // Slide-up transition
 const Transition = React.forwardRef(function Transition(
   props: TransitionProps & { children: React.ReactElement },
-  ref: React.Ref<unknown>
+  ref: React.Ref<unknown>,
 ) {
-  return <Slide direction="up" ref={ref} {...props} />;
-});
+  return <Slide direction="up" ref={ref} {...props} />
+})
 
 // Summary section with premium border accent
 const SummarySection: React.FC<{ rate: number; fee: number; valid?: string }> = ({ rate, fee, valid }) => (
@@ -59,7 +47,7 @@ const SummarySection: React.FC<{ rate: number; fee: number; valid?: string }> = 
     }}
   >
     <CardContent>
-      <Grid container justifyContent="space-around" sx={{ textAlign: 'center' }}>
+      <Grid container justifyContent="space-around" sx={{ textAlign: "center" }}>
         <Grid item xs={4}>
           <Typography variant="subtitle2" color="text.secondary">
             Interest Rate
@@ -89,7 +77,7 @@ const SummarySection: React.FC<{ rate: number; fee: number; valid?: string }> = 
       </Grid>
     </CardContent>
   </Card>
-);
+)
 
 // Premium Feature tags with glow effect
 const FeatureSection: React.FC<{ features: string[] }> = ({ features }) => (
@@ -108,11 +96,11 @@ const FeatureSection: React.FC<{ features: string[] }> = ({ features }) => (
               maxWidth: 200,
               whiteSpace: "normal",
               wordBreak: "break-word",
-              borderColor: '#5E17EB',
-              boxShadow: '0 0 8px rgba(94,23,235,0.3)',
-              transition: 'box-shadow 0.3s',
-              '&:hover': {
-                boxShadow: '0 0 12px rgba(94,23,235,0.5)',
+              borderColor: "#5E17EB",
+              boxShadow: "0 0 8px rgba(94,23,235,0.3)",
+              transition: "box-shadow 0.3s",
+              "&:hover": {
+                boxShadow: "0 0 12px rgba(94,23,235,0.5)",
               },
             }}
           />
@@ -120,14 +108,14 @@ const FeatureSection: React.FC<{ features: string[] }> = ({ features }) => (
       </Box>
     </CardContent>
   </Card>
-);
+)
 
 // Eligibility list, only render if data exists
 const EligibilitySection: React.FC<{ eligibility: any }> = ({ eligibility }) => {
-  const hasEligibility = eligibility && (
-    eligibility.minAge || eligibility.minIncome || eligibility.employmentType || eligibility.maxCreditScore
-  );
-  if (!hasEligibility) return null;
+  const hasEligibility =
+    eligibility &&
+    (eligibility.minAge || eligibility.minIncome || eligibility.employmentType || eligibility.maxCreditScore)
+  if (!hasEligibility) return null
   return (
     <Card elevation={2} sx={{ borderRadius: 2, mb: 3 }}>
       <CardContent>
@@ -150,9 +138,7 @@ const EligibilitySection: React.FC<{ eligibility: any }> = ({ eligibility }) => 
               <ListItemIcon>
                 <AttachMoney fontSize="small" color="primary" />
               </ListItemIcon>
-              <Typography variant="body2">
-                Min Income: ₹{eligibility.minIncome}
-              </Typography>
+              <Typography variant="body2">Min Income: ₹{eligibility.minIncome}</Typography>
             </ListItem>
           )}
           {eligibility.employmentType && (
@@ -160,9 +146,7 @@ const EligibilitySection: React.FC<{ eligibility: any }> = ({ eligibility }) => 
               <ListItemIcon>
                 <Work fontSize="small" color="primary" />
               </ListItemIcon>
-              <Typography variant="body2">
-                Employment: {eligibility.employmentType}
-              </Typography>
+              <Typography variant="body2">Employment: {eligibility.employmentType}</Typography>
             </ListItem>
           )}
           {eligibility.maxCreditScore && (
@@ -170,63 +154,134 @@ const EligibilitySection: React.FC<{ eligibility: any }> = ({ eligibility }) => 
               <ListItemIcon>
                 <CreditScore fontSize="small" color="primary" />
               </ListItemIcon>
-              <Typography variant="body2">
-                Max Credit Score: {eligibility.maxCreditScore}
-              </Typography>
+              <Typography variant="body2">Max Credit Score: {eligibility.maxCreditScore}</Typography>
             </ListItem>
           )}
         </List>
       </CardContent>
     </Card>
-  );
-};
+  )
+}
 
 // Terms & conditions
 const TermsSection: React.FC = () => (
   <Card elevation={1} sx={{ mx: 3, p: 2, bgcolor: "grey.50" }}>
     <Typography variant="body2" align="center">
-      The offer is subject to change without prior notice at the sole discretion of the Lender. Kindly contact your relationship manager for more details.
+      The offer is subject to change without prior notice at the sole discretion of the Lender. Kindly contact your
+      relationship manager for more details.
     </Typography>
   </Card>
-);
+)
 
 interface OfferDetailsDialogProps {
-  open: boolean;
-  onClose: () => void;
-  offerId: string;
-  userRole: string;
+  open: boolean
+  onClose: () => void
+  offerId: string
+  userRole: string
 }
 
-const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
-  open,
-  onClose,
-  offerId,
-  userRole,
-}) => {
-  const [openEdit, setOpenEdit] = useState(false);
-  const dispatch = useAppDispatch();
-  const { selectedOffer, detailsLoading, error } = useAppSelector(
-    (state) => state.offers
-  );
+const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({ open, onClose, offerId, userRole }) => {
+  const [openEdit, setOpenEdit] = useState(false)
+  const [copyState, setCopyState] = useState<"idle" | "copying" | "copied">("idle")
+
+  const handleShareOffer = async () => {
+    if (!selectedOffer) return
+
+    setCopyState("copying")
+
+    try {
+      // Generate shareable link
+      const shareableLink = `${window.location.origin}/offers/share/${selectedOffer.bankName.toLowerCase().replace(/\s+/g, "-")}-${selectedOffer.loanType?.toLowerCase().replace(/\s+/g, "-") || "loan"}-${selectedOffer.interestRate}-${selectedOffer._id}`
+
+      // Create rich text format
+      const validTill = selectedOffer?.offerValidity
+        ? new Date(selectedOffer.offerValidity).toLocaleDateString()
+        : undefined
+
+      let richText = `🏦 ${selectedOffer.bankName} - ${selectedOffer.loanType || "Loan"}
+💰 Interest Rate: ${selectedOffer.interestRate}%
+💳 Processing Fee: ₹${selectedOffer.processingFee}${
+        validTill
+          ? `
+⏰ Valid until: ${validTill}`
+          : ""
+      }
+
+${selectedOffer.offerHeadline || "Great loan offer with competitive rates!"}`
+
+      // Add key features if available
+      if (selectedOffer.keyFeatures && selectedOffer.keyFeatures.length > 0) {
+        richText += `
+
+✨ Key Features:
+${selectedOffer.keyFeatures.map((feature) => `• ${feature}`).join("\n")}`
+      }
+
+      // Copy to clipboard
+      await navigator.clipboard.writeText(richText)
+
+      setCopyState("copied")
+
+      // Reset after 2 seconds
+      setTimeout(() => {
+        setCopyState("idle")
+      }, 2000)
+    } catch (error) {
+      console.error("Failed to copy to clipboard:", error)
+      // Fallback for older browsers
+      const shareableLink = `${window.location.origin}/offers/share/${selectedOffer.bankName.toLowerCase().replace(/\s+/g, "-")}-${selectedOffer.loanType?.toLowerCase().replace(/\s+/g, "-") || "loan"}-${selectedOffer.interestRate}-${selectedOffer._id}`
+      const validTill = selectedOffer?.offerValidity
+        ? new Date(selectedOffer.offerValidity).toLocaleDateString()
+        : undefined
+
+      let richText = `🏦 ${selectedOffer.bankName} - ${selectedOffer.loanType || "Loan"}
+💰 Interest Rate: ${selectedOffer.interestRate}%
+💳 Processing Fee: ₹${selectedOffer.processingFee}${
+        validTill
+          ? `
+⏰ Valid until: ${validTill}`
+          : ""
+      }
+
+${selectedOffer.offerHeadline || "Great loan offer with competitive rates!"}`
+
+      // Add key features if available
+      if (selectedOffer.keyFeatures && selectedOffer.keyFeatures.length > 0) {
+        richText += `
+
+✨ Key Features:
+${selectedOffer.keyFeatures.map((feature) => `• ${feature}`).join("\n")}`
+      }
+      const textArea = document.createElement("textarea")
+      textArea.value = richText
+      document.body.appendChild(textArea)
+      textArea.select()
+      document.execCommand("copy")
+      document.body.removeChild(textArea)
+
+      setCopyState("copied")
+      setTimeout(() => {
+        setCopyState("idle")
+      }, 2000)
+    }
+  }
+  const dispatch = useAppDispatch()
+  const { selectedOffer, detailsLoading, error } = useAppSelector((state) => state.offers)
 
   useEffect(() => {
-    if (open && offerId) dispatch(fetchOfferById(offerId));
-    return () => { if (!open) dispatch(setSelectedOffer(null)); };
-  }, [open, offerId, dispatch]);
+    if (open && offerId) dispatch(fetchOfferById(offerId))
+    return () => {
+      if (!open) dispatch(setSelectedOffer(null))
+    }
+  }, [open, offerId, dispatch])
 
   const validTill = selectedOffer?.offerValidity
     ? new Date(selectedOffer.offerValidity).toLocaleDateString()
-    : undefined;
+    : undefined
 
   return (
     <>
-      <Dialog
-        open={open}
-        onClose={onClose}
-        maxWidth="md"
-        fullWidth
-        TransitionComponent={Transition}
-      >
+      <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth TransitionComponent={Transition}>
         <DialogTitle sx={{ pb: 1 }}>
           <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <Typography variant="h6" sx={{ fontWeight: 700 }}>
@@ -253,7 +308,9 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
           ) : error ? (
             <Box sx={{ textAlign: "center", py: 4 }}>
               <Typography color="error">{error}</Typography>
-              <Button onClick={onClose} sx={{ mt: 2 }}>Close</Button>
+              <Button onClick={onClose} sx={{ mt: 2 }}>
+                Close
+              </Button>
             </Box>
           ) : selectedOffer ? (
             <>
@@ -277,10 +334,10 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
                       color: "common.white",
                       borderRadius: 1,
                       animation: "pulse 2s infinite",
-                      '@keyframes pulse': {
-                        '0%': { boxShadow: '0 0 0 0 rgba(255, 170, 0, 0.7)' },
-                        '70%': { boxShadow: '0 0 0 8px rgba(255, 170, 0, 0)' },
-                        '100%': { boxShadow: '0 0 0 0 rgba(255, 170, 0, 0)' },
+                      "@keyframes pulse": {
+                        "0%": { boxShadow: "0 0 0 0 rgba(255, 170, 0, 0.7)" },
+                        "70%": { boxShadow: "0 0 0 8px rgba(255, 170, 0, 0)" },
+                        "100%": { boxShadow: "0 0 0 0 rgba(255, 170, 0, 0)" },
                       },
                     }}
                   />
@@ -302,8 +359,28 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
 
         {selectedOffer && (
           <DialogActions sx={{ px: 3, py: 2, justifyContent: "space-between" }}>
-            <Button startIcon={<Share />} sx={{ textTransform: "none" }}>
-              Share Offer
+            <Button
+              startIcon={
+                copyState === "copying" ? (
+                  <CircularProgress size={16} sx={{ color: "inherit" }} />
+                ) : copyState === "copied" ? (
+                  <CheckCircle />
+                ) : (
+                  <ContentCopy />
+                )
+              }
+              onClick={handleShareOffer}
+              disabled={copyState === "copying"}
+              sx={{
+                textTransform: "none",
+                color: copyState === "copied" ? "success.main" : "inherit",
+                transition: "all 0.3s ease",
+                "&:hover": {
+                  backgroundColor: copyState === "copied" ? "success.light" : "action.hover",
+                },
+              }}
+            >
+              {copyState === "copying" ? "Copying..." : copyState === "copied" ? "Copied!" : "Share Offer"}
             </Button>
             {userRole !== "partner" && (
               <Button variant="contained" sx={{ borderRadius: 3, fontWeight: 600 }}>
@@ -316,14 +393,10 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
 
       {/* Edit Dialog */}
       {userRole === "admin" && selectedOffer && (
-        <CreateOfferDialog
-          open={openEdit}
-          onClose={() => setOpenEdit(false)}
-          editOffer={selectedOffer}
-        />
+        <CreateOfferDialog open={openEdit} onClose={() => setOpenEdit(false)} editOffer={selectedOffer} />
       )}
     </>
-  );
-};
+  )
+}
 
-export default OfferDetailsDialog;
+export default OfferDetailsDialog

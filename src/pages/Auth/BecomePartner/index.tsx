@@ -1,8 +1,9 @@
 // src/pages/BecomePartner.tsx
-"use client";
+"use client"
 
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import type React from "react"
+import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 import {
   Box,
   Typography,
@@ -22,18 +23,18 @@ import {
   IconButton,
   Snackbar,
   Alert,
-} from "@mui/material";
-import { ArrowBack, Close, CheckCircle } from "@mui/icons-material";
+} from "@mui/material"
+import { ArrowBack, Close, CheckCircle } from "@mui/icons-material"
 
-import BasicInfo from "./steps/Basicinfo";
-import PersonalDetails from "./steps/PersonalDetails";
-import AddressDetails from "./steps/AddressDetails";
-import BankDetails from "./steps/BankDetails";
-import UploadDocuments from "./steps/UploadDocuments";
-import Preview from "./steps/Preview";
+import BasicInfo from "./steps/Basicinfo"
+import PersonalDetails from "./steps/PersonalDetails"
+import AddressDetails from "./steps/AddressDetails"
+import BankDetails from "./steps/BankDetails"
+import UploadDocuments from "./steps/UploadDocuments"
+import Preview from "./steps/Preview"
 
-import { useAppDispatch } from "../../../hooks/useAppDispatch";
-import { createPartner } from "../../../store/slices/signupPartnerSlice";
+import { useAppDispatch } from "../../../hooks/useAppDispatch"
+import { createPartner } from "../../../store/slices/signupPartnerSlice"
 
 const steps = [
   "Basic Info",
@@ -42,76 +43,82 @@ const steps = [
   "Bank Details",
   "Upload Documents",
   "Preview & Submit",
-];
+]
 
 export interface PartnerFormData {
-  fullName: string;
-  mobileNumber: string;
-  email: string;
-  pincode: string;
-  registrationType: string;
-  otpVerified: boolean;
-  gender: string;
-  dateOfBirth: string | null;
-  employmentType: string;
-  emergencyContact: string;
-  focusProduct: string;
-  role: string;
-  addressLine1: string;
-  addressLine2: string;
-  landmark: string;
-  city: string;
-  addressPincode: string;
-  addressType: string;
-  accountType: string;
-  accountHolderName: string;
-  bankName: string;
-  accountNumber: string;
-  confirmAccountNumber: string;
-  ifscCode: string;
-  branchName: string;
-  profilePhoto: File | null;
-  panCard: File | null;
-  aadharFront: File | null;
-  aadharBack: File | null;
-  cancelledCheque: File | null;
-  gstCertificate: File | null;
-  otherDocuments: File[];
+  fullName: string
+  mobileNumber: string
+  email: string
+  pincode: string
+  registrationType: string
+  teamStrength: string
+  otpVerified: boolean
+  dateOfBirth: string | null
+  employmentType: string
+  emergencyContact: string
+  focusProduct: string
+  role: string
+  experienceInSellingLoans: string
+  addressLine1: string
+  addressLine2: string
+  landmark: string
+  city: string
+  addressPincode: string
+  addressType: string
+  accountHolderName: string
+  accountType: string
+  relationshipWithAccountHolder: string
+  bankName: string
+  accountNumber: string
+  confirmAccountNumber: string
+  ifscCode: string
+  branchName: string
+  isGstBillingApplicable: string
+  profilePhoto: File | null
+  panCard: File | null
+  aadharFront: File | null
+  aadharBack: File | null
+  cancelledCheque: File | null
+  gstCertificate: File | null
+  otherDocuments: File[]
 }
 
 const BecomePartner: React.FC = () => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
-  const navigate = useNavigate();
-  const dispatch = useAppDispatch();
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"))
+  const navigate = useNavigate()
+  const dispatch = useAppDispatch()
 
-  const [activeStep, setActiveStep] = useState(0);
+  const [activeStep, setActiveStep] = useState(0)
   const [formData, setFormData] = useState<PartnerFormData>({
     fullName: "",
     mobileNumber: "",
     email: "",
     pincode: "",
     registrationType: "",
+    teamStrength: "",
     otpVerified: false,
-    gender: "",
     dateOfBirth: null,
     employmentType: "",
     emergencyContact: "",
     focusProduct: "",
     role: "leadSharing",
+    experienceInSellingLoans: "",
     addressLine1: "",
     addressLine2: "",
     landmark: "",
     city: "",
     addressPincode: "",
     addressType: "",
-    accountType: "",
     accountHolderName: "",
+    accountType: "",
+    relationshipWithAccountHolder: "",
     bankName: "",
     accountNumber: "",
     confirmAccountNumber: "",
     ifscCode: "",
     branchName: "",
+    isGstBillingApplicable: "",
     profilePhoto: null,
     panCard: null,
     aadharFront: null,
@@ -119,119 +126,127 @@ const BecomePartner: React.FC = () => {
     cancelledCheque: null,
     gstCertificate: null,
     otherDocuments: [],
-  });
+  })
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [partnerId, setPartnerId] = useState("");
-  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
-  const [showExitDialog, setShowExitDialog] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [partnerId, setPartnerId] = useState("")
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false)
+  const [showExitDialog, setShowExitDialog] = useState(false)
 
   // Snackbar state
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState("");
-  const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">("error");
+  const [snackbarOpen, setSnackbarOpen] = useState(false)
+  const [snackbarMessage, setSnackbarMessage] = useState("")
+  const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">("error")
 
   const updateFormData = (stepData: Partial<PartnerFormData>) => {
-    setFormData((prev) => ({ ...prev, ...stepData }));
-  };
+    setFormData((prev) => ({ ...prev, ...stepData }))
+  }
 
   const handleNext = () => {
-    setActiveStep((prev) => prev + 1);
-    window.scrollTo(0, 0);
-  };
+    setActiveStep((prev) => prev + 1)
+    window.scrollTo(0, 0)
+  }
 
   const handleBack = () => {
-    setActiveStep((prev) => prev - 1);
-    window.scrollTo(0, 0);
-  };
+    setActiveStep((prev) => prev - 1)
+    window.scrollTo(0, 0)
+  }
 
   const handleSubmit = async () => {
-    setIsSubmitting(true);
+    setIsSubmitting(true)
     try {
-      const result = await dispatch(createPartner(formData)).unwrap();
-      setPartnerId(result?.data?.partnerId);
-      setSnackbarSeverity("success");
-      setSnackbarMessage("Partner registered successfully!");
-      setSnackbarOpen(true);
-      setShowSuccessDialog(true);
+      const result = await dispatch(createPartner(formData)).unwrap()
+      setPartnerId(result?.data?.partnerId)
+      setSnackbarSeverity("success")
+      setSnackbarMessage("Partner registered successfully!")
+      setSnackbarOpen(true)
+      setShowSuccessDialog(true)
     } catch (error: any) {
       // show error in snackbar
-      setSnackbarSeverity("error");
-      setSnackbarMessage(error.message || "Failed to register partner.");
-      setSnackbarOpen(true);
-      console.error("Submission failed:", error);
+      setSnackbarSeverity("error")
+      setSnackbarMessage(error.message || "Failed to register partner.")
+      setSnackbarOpen(true)
+      console.error("Submission failed:", error)
     } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(false)
     }
-  };
+  }
 
-  const handleExit = () => setShowExitDialog(true);
-  const confirmExit = () => navigate("/");
+  const handleExit = () => setShowExitDialog(true)
+  const confirmExit = () => navigate("/")
 
   const renderStepContent = () => {
     switch (activeStep) {
       case 0:
-        return <BasicInfo formData={formData} updateFormData={updateFormData} />;
+        return <BasicInfo formData={formData} updateFormData={updateFormData} />
       case 1:
-        return <PersonalDetails formData={formData} updateFormData={updateFormData} />;
+        return <PersonalDetails formData={formData} updateFormData={updateFormData} />
       case 2:
-        return <AddressDetails formData={formData} updateFormData={updateFormData} />;
+        return <AddressDetails formData={formData} updateFormData={updateFormData} />
       case 3:
-        return <BankDetails formData={formData} updateFormData={updateFormData} />;
+        return <BankDetails formData={formData} updateFormData={updateFormData} />
       case 4:
-        return <UploadDocuments formData={formData} updateFormData={updateFormData} />;
+        return <UploadDocuments formData={formData} updateFormData={updateFormData} />
       case 5:
-        return <Preview formData={formData} />;
+        return <Preview formData={formData} />
       default:
-        return null;
+        return null
     }
-  };
+  }
 
   const isStepValid = () => {
     switch (activeStep) {
-      case 0:
-        return (
+      case 0: {
+        const basicInfoValid =
           formData.fullName &&
           formData.mobileNumber &&
           formData.email &&
           formData.registrationType &&
           formData.otpVerified
-        );
+
+        // Check team strength if registering as non-individual
+        const isNonIndividual = formData.registrationType !== "Individual"
+        const teamStrengthValid = !isNonIndividual || formData.teamStrength
+
+        return basicInfoValid && teamStrengthValid
+      }
       case 1:
         return (
-          formData.gender &&
           formData.dateOfBirth &&
           formData.employmentType &&
           formData.emergencyContact &&
           formData.focusProduct &&
-          formData.role
-        );
+          formData.role &&
+          formData.experienceInSellingLoans
+        )
       case 2:
-        return (
-          formData.addressLine1 &&
-          formData.city &&
-          formData.addressPincode &&
-          formData.addressType
-        );
-      case 3:
-        return (
-          formData.accountType &&
+        return formData.addressLine1 && formData.city && formData.addressPincode && formData.addressType
+      case 3: {
+        const bankDetailsValid =
           formData.accountHolderName &&
+          formData.accountType &&
+          formData.relationshipWithAccountHolder &&
           formData.bankName &&
           formData.accountNumber &&
           formData.confirmAccountNumber &&
           formData.ifscCode &&
           formData.branchName &&
           formData.accountNumber === formData.confirmAccountNumber
-        );
+
+        // Check GST billing if account type is Current or Others
+        const needsGstBilling = formData.accountType === "Current" || formData.accountType === "Others"
+        const gstBillingValid = !needsGstBilling || formData.isGstBillingApplicable
+
+        return bankDetailsValid && gstBillingValid
+      }
       case 4:
-        return !!formData.panCard && !!formData.aadharFront && !!formData.aadharBack;
+        return !!formData.panCard && !!formData.aadharFront && !!formData.aadharBack
       case 5:
-        return true;
+        return true
       default:
-        return false;
+        return false
     }
-  };
+  }
 
   return (
     <Box
@@ -283,7 +298,11 @@ const BecomePartner: React.FC = () => {
 
         <Card sx={{ borderRadius: 3, background: "#fff" }}>
           <CardContent sx={{ p: { xs: 2, md: 4 } }}>
-            <Stepper activeStep={activeStep} orientation={isMobile ? "vertical" : "horizontal"} alternativeLabel={!isMobile}>
+            <Stepper
+              activeStep={activeStep}
+              orientation={isMobile ? "vertical" : "horizontal"}
+              alternativeLabel={!isMobile}
+            >
               {steps.map((label) => (
                 <Step key={label}>
                   <StepLabel>{label}</StepLabel>
@@ -353,13 +372,18 @@ const BecomePartner: React.FC = () => {
       </Dialog>
 
       {/* Snackbar for errors & success */}
-      <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={() => setSnackbarOpen(false)} anchorOrigin={{ vertical: "bottom", horizontal: "center" }}>
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={() => setSnackbarOpen(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
         <Alert onClose={() => setSnackbarOpen(false)} severity={snackbarSeverity} sx={{ width: "100%" }}>
           {snackbarMessage}
         </Alert>
       </Snackbar>
     </Box>
-  );
-};
+  )
+}
 
-export default BecomePartner;
+export default BecomePartner

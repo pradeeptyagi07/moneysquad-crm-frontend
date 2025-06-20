@@ -6,6 +6,8 @@ interface BasicInfoSectionProps {
 }
 
 const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ partner }) => {
+  const basicInfo = partner.basicInfo || {}
+
   return (
     <Paper
       sx={{
@@ -53,7 +55,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ partner }) => {
             Full Name
           </Typography>
           <Typography variant="body1" sx={{ fontWeight: 500, mb: 2 }}>
-            {partner.basicInfo?.fullName || "-"}
+            {basicInfo.fullName || "-"}
           </Typography>
         </Grid>
 
@@ -80,7 +82,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ partner }) => {
             Mobile Number
           </Typography>
           <Typography variant="body1" sx={{ fontWeight: 500, mb: 2 }}>
-            {partner.mobile || partner.basicInfo?.mobile || "-"}
+            {partner.mobile || basicInfo.mobile || "-"}
           </Typography>
         </Grid>
 
@@ -98,9 +100,20 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ partner }) => {
             Registration Type
           </Typography>
           <Typography variant="body1" sx={{ fontWeight: 500, mb: 2 }}>
-            {partner.basicInfo?.registeringAs || "-"}
+            {basicInfo.registeringAs || "-"}
           </Typography>
         </Grid>
+
+        {basicInfo.teamStrength && (
+          <Grid item xs={12} sm={6}>
+            <Typography variant="body2" color="text.secondary">
+              Team Strength
+            </Typography>
+            <Typography variant="body1" sx={{ fontWeight: 500, mb: 2 }}>
+              {basicInfo.teamStrength}
+            </Typography>
+          </Grid>
+        )}
 
         <Grid item xs={12}>
           <Typography variant="body2" color="text.secondary">

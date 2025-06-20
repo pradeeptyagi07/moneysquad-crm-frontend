@@ -67,7 +67,7 @@ const closeReasonOptions = [
 const statusTransitions: Record<LeadStatus, LeadStatus[]> = {
   pending: ["login"],
   login: ["approved", "rejected"],
-  approved: ["disbursed", "closed"],
+  approved: ["disbursed", "closed","rejected"],
   disbursed: ["closed"],
   rejected: ["approved"],
   closed: [],

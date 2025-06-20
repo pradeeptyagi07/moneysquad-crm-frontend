@@ -1,4 +1,6 @@
-import React from "react";
+"use client"
+
+import React, { useState } from "react"
 import {
   Dialog,
   DialogTitle,
@@ -8,63 +10,208 @@ import {
   Box,
   TextField,
   Typography,
-} from "@mui/material";
+  IconButton,
+  Divider,
+  Chip,
+  useTheme,
+  alpha,
+} from "@mui/material"
+import { styled } from "@mui/material/styles"
+import CloseIcon from "@mui/icons-material/Close"
+import AddIcon from "@mui/icons-material/Add"
+import DeleteIcon from "@mui/icons-material/Delete"
+import SaveIcon from "@mui/icons-material/Save"
+
+const StyledDialog = styled(Dialog)(({ theme }) => ({
+  "& .MuiDialog-paper": {
+    borderRadius: theme.spacing(3),
+    background: "linear-gradient(145deg, #ffffff 0%, #f8f9ff 100%)",
+    boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
+  },
+}))
+
+const StyledDialogTitle = styled(DialogTitle)(({ theme }) => ({
+  background: "#ffffff",
+  color: theme.palette.text.primary,
+  padding: theme.spacing(2.5),
+  margin: 0,
+  borderBottom: `1px solid ${theme.palette.divider}`,
+}))
+
+const CategoryCard = styled(Box)(({ theme }) => ({
+  background: "#ffffff",
+  borderRadius: theme.spacing(1.5),
+  padding: theme.spacing(2),
+  marginBottom: theme.spacing(2),
+  border: `1px solid ${theme.palette.divider}`,
+  boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+}))
+
+const CriteriaItem = styled(Box)(({ theme }) => ({
+  display: "flex",
+  alignItems: "center",
+  gap: theme.spacing(2),
+  marginBottom: theme.spacing(2),
+  padding: theme.spacing(1),
+  background: "rgba(255,255,255,0.8)",
+  borderRadius: theme.spacing(1),
+  border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+}))
+
+const StyledTextField = styled(TextField)(({ theme }) => ({
+  "& .MuiOutlinedInput-root": {
+    borderRadius: theme.spacing(1.5),
+    background: "rgba(255,255,255,0.9)",
+  },
+}))
 
 interface EditEligibilityDialogProps {
-  open: boolean;
-  data: Record<string, string[]>;
-  onClose: () => void;
-  onSave: (updated: Record<string, string[]>) => void;
+  open: boolean
+  data: Record<string, string[]>
+  onClose: () => void
+  onSave: (updated: Record<string, string[]>) => void
 }
 
-const EditEligibilityDialog: React.FC<EditEligibilityDialogProps> = ({
-  open,
-  data,
-  onClose,
-  onSave,
-}) => {
-  const [tempData, setTempData] = React.useState(data);
+const EditEligibilityDialog: React.FC<EditEligibilityDialogProps> = ({ open, data, onClose, onSave }) => {
+  const [tempData, setTempData] = useState(data)
+  const theme = useTheme()
+
+  React.useEffect(() => {
+    setTempData(data)
+  }, [data])
 
   const handleChange = (key: string, index: number, value: string) => {
-    const updated = { ...tempData };
-    updated[key][index] = value;
-    setTempData(updated);
-  };
+    const updated = { ...tempData }
+    updated[key][index] = value
+    setTempData(updated)
+  }
+
+  const handleAddCriteria = (key: string) => {
+    const updated = { ...tempData }
+    updated[key] = [...updated[key], ""]
+    setTempData(updated)
+  }
+
+  const handleDeleteCriteria = (key: string, index: number) => {
+    const updated = { ...tempData }
+    updated[key] = updated[key].filter((_, i) => i !== index)
+    setTempData(updated)
+  }
 
   const handleSave = () => {
-    onSave(tempData);
-    onClose();
-  };
+    // Filter out empty criteria
+    const cleanedData = Object.fromEntries(
+      Object.entries(tempData).map(([key, values]) => [key, values.filter((value) => value.trim() !== "")]),
+    )
+    onSave(cleanedData)
+    onClose()
+  }
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>Edit Eligibility Criteria</DialogTitle>
-      <DialogContent>
-        {Object.entries(tempData).map(([category, points], i) => (
-          <Box key={i} sx={{ mb: 3 }}>
-            <Typography fontWeight={600} mb={1}>
-              {category}
-            </Typography>
-            {points.map((point, j) => (
-              <TextField
-                key={j}
-                fullWidth
-                sx={{ mb: 1 }}
-                value={point}
-                onChange={(e) => handleChange(category, j, e.target.value)}
+    <StyledDialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <StyledDialogTitle>
+        <Box display="flex" justifyContent="space-between" alignItems="center">
+          <Typography variant="h5" fontWeight={700}>
+            Edit Eligibility Criteria
+          </Typography>
+          <IconButton
+            onClick={onClose}
+            sx={{
+              color: "white",
+              background: alpha("#fff", 0.2),
+              "&:hover": { background: alpha("#fff", 0.3) },
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </Box>
+      </StyledDialogTitle>
+
+      <DialogContent sx={{ p: 3, maxHeight: "70vh", overflowY: "auto" }}>
+        {Object.entries(tempData).map(([category, points]) => (
+          <CategoryCard key={category}>
+            <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
+              <Chip
+                label={category}
+                sx={{
+                  background: theme.palette.primary.main,
+                  color: "white",
+                  fontWeight: 600,
+                  fontSize: "0.85rem",
+                  px: 1.5,
+                  py: 0.5,
+                }}
               />
+              <Button
+                startIcon={<AddIcon />}
+                onClick={() => handleAddCriteria(category)}
+                variant="outlined"
+                size="small"
+                sx={{ borderRadius: 2 }}
+              >
+                Add Criteria
+              </Button>
+            </Box>
+
+            {points.map((point, j) => (
+              <CriteriaItem key={j}>
+                <StyledTextField
+                  fullWidth
+                  value={point}
+                  onChange={(e) => handleChange(category, j, e.target.value)}
+                  placeholder="Enter eligibility criteria..."
+                  variant="outlined"
+                  size="small"
+                />
+                {points.length > 1 && (
+                  <IconButton
+                    onClick={() => handleDeleteCriteria(category, j)}
+                    sx={{
+                      color: "error.main",
+                      background: alpha(theme.palette.error.main, 0.1),
+                      "&:hover": { background: alpha(theme.palette.error.main, 0.2) },
+                    }}
+                    size="small"
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                )}
+              </CriteriaItem>
             ))}
-          </Box>
+          </CategoryCard>
         ))}
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button variant="contained" onClick={handleSave}>
-          Save
+
+      <Divider />
+      <DialogActions sx={{ p: 3, gap: 2 }}>
+        <Button
+          onClick={onClose}
+          variant="outlined"
+          sx={{
+            borderRadius: 3,
+            px: 4,
+            py: 1.5,
+            fontWeight: 600,
+          }}
+        >
+          Cancel
+        </Button>
+        <Button
+          variant="contained"
+          onClick={handleSave}
+          startIcon={<SaveIcon />}
+          sx={{
+            borderRadius: 2,
+            px: 3,
+            py: 1,
+            fontWeight: 600,
+          }}
+        >
+          Save Changes
         </Button>
       </DialogActions>
-    </Dialog>
-  );
-};
+    </StyledDialog>
+  )
+}
 
-export default EditEligibilityDialog;
+export default EditEligibilityDialog

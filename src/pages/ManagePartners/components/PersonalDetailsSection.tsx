@@ -1,12 +1,21 @@
-import type React from "react";
-import { Box, Typography, Paper, Grid, Divider } from "@mui/material";
+import type React from "react"
+import { Box, Typography, Paper, Grid, Divider } from "@mui/material"
+import { format } from "date-fns"
 
-interface PersonalDetailsSectionProps {
-  partner: Partner;
+interface PersonalInfoSectionProps {
+  partner: Partner
 }
 
-const PersonalDetailsSection: React.FC<PersonalDetailsSectionProps> = ({ partner }) => {
-  const personal = partner.personalInfo || {};
+const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({ partner }) => {
+  const personalInfo = partner.personalInfo || {}
+
+  const formatDate = (dateString: string) => {
+    try {
+      return format(new Date(dateString), "dd MMM yyyy")
+    } catch {
+      return "-"
+    }
+  }
 
   return (
     <Paper
@@ -44,7 +53,7 @@ const PersonalDetailsSection: React.FC<PersonalDetailsSectionProps> = ({ partner
         >
           2
         </Box>
-        Personal Details
+        Personal Information
       </Typography>
 
       <Divider sx={{ mb: 3 }} />
@@ -52,70 +61,70 @@ const PersonalDetailsSection: React.FC<PersonalDetailsSectionProps> = ({ partner
       <Grid container spacing={2}>
         <Grid item xs={12} sm={6}>
           <Typography variant="body2" color="text.secondary">
-            Gender
+            Current Profession
           </Typography>
           <Typography variant="body1" sx={{ fontWeight: 500, mb: 2 }}>
-            {personal.gender || "—"}
+            {personalInfo.currentProfession || "-"}
           </Typography>
         </Grid>
 
-        <Grid item xs={12} sm={6}>
-          <Typography variant="body2" color="text.secondary">
-            Date of Birth
-          </Typography>
-          <Typography variant="body1" sx={{ fontWeight: 500, mb: 2 }}>
-            {personal.dateOfBirth
-              ? new Date(personal.dateOfBirth).toLocaleDateString("en-IN", {
-                  day: "2-digit",
-                  month: "short",
-                  year: "numeric",
-                })
-              : "—"}
-          </Typography>
-        </Grid>
+        {personalInfo.dateOfBirth && (
+          <Grid item xs={12} sm={6}>
+            <Typography variant="body2" color="text.secondary">
+              Date of Birth
+            </Typography>
+            <Typography variant="body1" sx={{ fontWeight: 500, mb: 2 }}>
+              {formatDate(personalInfo.dateOfBirth)}
+            </Typography>
+          </Grid>
+        )}
 
-        <Grid item xs={12} sm={6}>
-          <Typography variant="body2" color="text.secondary">
-            Employment Type
-          </Typography>
-          <Typography variant="body1" sx={{ fontWeight: 500, mb: 2 }}>
-            {personal.employmentType || "—"}
-          </Typography>
-        </Grid>
+        {personalInfo.emergencyContactNumber && (
+          <Grid item xs={12} sm={6}>
+            <Typography variant="body2" color="text.secondary">
+              Emergency Contact Number
+            </Typography>
+            <Typography variant="body1" sx={{ fontWeight: 500, mb: 2 }}>
+              {personalInfo.emergencyContactNumber}
+            </Typography>
+          </Grid>
+        )}
 
-        <Grid item xs={12} sm={6}>
-          <Typography variant="body2" color="text.secondary">
-            Emergency Contact
-          </Typography>
-          <Typography variant="body1" sx={{ fontWeight: 500, mb: 2 }}>
-            {personal.emergencyContactNumber || "—"}
-          </Typography>
-        </Grid>
+        {personalInfo.focusProduct && (
+          <Grid item xs={12} sm={6}>
+            <Typography variant="body2" color="text.secondary">
+              Focus Product
+            </Typography>
+            <Typography variant="body1" sx={{ fontWeight: 500, mb: 2 }}>
+              {personalInfo.focusProduct}
+            </Typography>
+          </Grid>
+        )}
 
-        <Grid item xs={12} sm={6}>
-          <Typography variant="body2" color="text.secondary">
-            Focus Product
-          </Typography>
-          <Typography variant="body1" sx={{ fontWeight: 500, mb: 2 }}>
-            {personal.focusProduct || "—"}
-          </Typography>
-        </Grid>
+        {personalInfo.roleSelection && (
+          <Grid item xs={12} sm={6}>
+            <Typography variant="body2" color="text.secondary">
+              Role Selection
+            </Typography>
+            <Typography variant="body1" sx={{ fontWeight: 500, mb: 2 }}>
+              {personalInfo.roleSelection}
+            </Typography>
+          </Grid>
+        )}
 
-        <Grid item xs={12} sm={6}>
-          <Typography variant="body2" color="text.secondary">
-            Partner Role
-          </Typography>
-          <Typography variant="body1" sx={{ fontWeight: 500, mb: 2 }}>
-            {personal.roleSelection === "leadSharing"
-              ? "Lead Sharing"
-              : personal.roleSelection === "fileSharing"
-              ? "File Sharing"
-              : "—"}
-          </Typography>
-        </Grid>
+        {personalInfo.experienceInSellingLoans && (
+          <Grid item xs={12} sm={6}>
+            <Typography variant="body2" color="text.secondary">
+              Experience in Selling Loans
+            </Typography>
+            <Typography variant="body1" sx={{ fontWeight: 500, mb: 2 }}>
+              {personalInfo.experienceInSellingLoans}
+            </Typography>
+          </Grid>
+        )}
       </Grid>
     </Paper>
-  );
-};
+  )
+}
 
-export default PersonalDetailsSection;
+export default PersonalInfoSection

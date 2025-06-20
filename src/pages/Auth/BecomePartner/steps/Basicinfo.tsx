@@ -24,7 +24,8 @@ interface BasicInfoProps {
   updateFormData: (data: Partial<PartnerFormData>) => void
 }
 
-const registrationTypes = ["Individual", "Proprietorship", "LLP", "Private Limited", "Other"]
+const registrationTypes = ["Individual", "Proprietorship", "Partnership", "LLP", "Private Limited", "Other"]
+const teamStrengthOptions = ["5", "5-10", "15-30", "30-50", "50+"]
 
 const BasicInfo: React.FC<BasicInfoProps> = ({ formData, updateFormData }) => {
   const dispatch = useAppDispatch()
@@ -34,6 +35,7 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ formData, updateFormData }) => {
     mobileNumber: "",
     email: "",
     registrationType: "",
+    teamStrength: "",
   })
 
   const [otpSent, setOtpSent] = useState(false)
@@ -68,6 +70,10 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ formData, updateFormData }) => {
           : "Email is required"
       case "registrationType":
         return value ? "" : "Please select registration type"
+      case "teamStrength": {
+        const isNonIndividual = formData.registrationType !== "Individual"
+        return isNonIndividual && !value ? "Team strength is required for non-individual registration" : ""
+      }
       default:
         return ""
     }
@@ -112,6 +118,8 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ formData, updateFormData }) => {
       setIsVerifying(false)
     }
   }
+
+  const isNonIndividual = formData.registrationType && formData.registrationType !== "Individual"
 
   return (
     <Box>
@@ -259,6 +267,31 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ formData, updateFormData }) => {
             ))}
           </TextField>
         </Grid>
+
+        {/* Team Strength - Only show for non-individual registration */}
+        {isNonIndividual && (
+          <Grid item xs={12} md={6}>
+            <TextField
+              select
+              fullWidth
+              required
+              label="Team Strength"
+              name="teamStrength"
+              value={formData.teamStrength}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              error={!!errors.teamStrength}
+              helperText={errors.teamStrength}
+              InputProps={{ sx: { borderRadius: 2 } }}
+            >
+              {teamStrengthOptions.map((option) => (
+                <MenuItem key={option} value={option}>
+                  {option}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Grid>
+        )}
 
         {/* Note */}
         <Grid item xs={12}>

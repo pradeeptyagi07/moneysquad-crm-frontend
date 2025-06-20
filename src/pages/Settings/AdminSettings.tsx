@@ -1,12 +1,14 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Box, Tab, Tabs, Typography, Paper } from "@mui/material"
 import { Person, Security, AccountBalance } from "@mui/icons-material"
 import ProfileSection from "./components/ProfileSection"
 import SecuritySection from "./components/SecuritySection"
 import LenderLoanType from "./components/LenderLoanType"
+import { useAppDispatch } from "../../hooks/useAppDispatch"
+import { fetchUserData } from "../../store/slices/userDataSlice"
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -40,6 +42,12 @@ function a11yProps(index: number) {
 const AdminSettings: React.FC = () => {
   const [value, setValue] = useState(0)
 
+  const dispatch = useAppDispatch()
+
+  useEffect(() => {
+    dispatch(fetchUserData())
+  }, [dispatch])
+
   const handleChange = (_event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue)
   }
@@ -52,8 +60,7 @@ const AdminSettings: React.FC = () => {
         borderRadius: 2,
         overflow: "hidden",
         background: "linear-gradient(to right, #f7f9fc, #ffffff)",
-        boxShadow:
-          "0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025)",
+        boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025)",
       }}
     >
       <Box
@@ -88,7 +95,13 @@ const AdminSettings: React.FC = () => {
         >
           <Tab icon={<Person />} label="Profile" iconPosition="start" {...a11yProps(0)} sx={{ px: 3 }} />
           <Tab icon={<Security />} label="Security" iconPosition="start" {...a11yProps(1)} sx={{ px: 3 }} />
-          <Tab icon={<AccountBalance />} label="Lender & Loan Types" iconPosition="start" {...a11yProps(2)} sx={{ px: 3 }} />
+          <Tab
+            icon={<AccountBalance />}
+            label="Lender & Loan Types"
+            iconPosition="start"
+            {...a11yProps(2)}
+            sx={{ px: 3 }}
+          />
         </Tabs>
       </Box>
 

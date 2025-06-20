@@ -1,6 +1,6 @@
 // src/components/Leads/LeadsFilterBar.tsx
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Paper,
   Grid,
@@ -11,6 +11,9 @@ import {
   Button,
 } from "@mui/material";
 import { Search, Clear } from "@mui/icons-material";
+import { fetchLoanTypes } from "../../../store/slices/lenderLoanSlice";
+import { useAppDispatch } from "../../../hooks/useAppDispatch";
+import { useAppSelector } from "../../../hooks/useAppSelector";
 
 interface LeadsFilterBarProps {
   statusFilter: string;
@@ -31,6 +34,18 @@ const LeadsFilterBar: React.FC<LeadsFilterBarProps> = ({
   onSearchChange,
   onReset,
 }) => {
+  const dispatch = useAppDispatch();
+
+  const loanTypes = useAppSelector((state) => state.lenderLoan.loanTypes);
+  const [fetched, setFetched] = useState(false);
+
+  useEffect(() => {
+    if (!fetched) {
+      dispatch(fetchLoanTypes());
+      setFetched(true);
+    }
+  }, [dispatch, fetched]);
+
   return (
     <Paper sx={{ p: 3, mb: 4, borderRadius: 2 }}>
       <Grid container spacing={2} alignItems="center">
@@ -65,12 +80,11 @@ const LeadsFilterBar: React.FC<LeadsFilterBarProps> = ({
             onChange={(e) => onLoanTypeChange(e.target.value)}
           >
             <MenuItem value="all">All</MenuItem>
-            <MenuItem value="PL-Term Loan">PL-Term Loan</MenuItem>
-            <MenuItem value="PL-Overdraft">PL-Overdraft</MenuItem>
-            <MenuItem value="BL-Term Loan">BL-Term Loan</MenuItem>
-            <MenuItem value="BL-Overdraft">CBL-Overdraft</MenuItem>
-            <MenuItem value="SEPL-Term Loan">SEPL-Term Loan</MenuItem>
-            <MenuItem value="SEPL-Overdraft">SEPL-Overdraft</MenuItem>
+            {loanTypes.map((loan) => (
+              <MenuItem key={loan._id} value={loan.name}>
+                {loan.name}
+              </MenuItem>
+            ))}
           </TextField>
         </Grid>
 

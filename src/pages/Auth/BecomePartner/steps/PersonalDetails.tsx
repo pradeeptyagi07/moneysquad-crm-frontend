@@ -25,19 +25,38 @@ interface PersonalDetailsProps {
   updateFormData: (data: Partial<PartnerFormData>) => void
 }
 
-const genderOptions = ["Male", "Female", "Other", "Prefer not to say"]
-
-const employmentTypes = ["Salaried", "Self-employed", "Business Owner", "Student", "Retired", "Other"]
+const currentProfessionOptions = [
+  "Freelancer",
+  "Financial Advisor",
+  "Insurance Agent",
+  "Property Dealer",
+  "Chartered Accountant",
+  "Wealth Manager",
+  "Loan Agent/DSA",
+  "Bank Employee",
+  "Retired Individual",
+  "Salaried Individual",
+  "Student",
+  "Other",
+]
 
 const focusProducts = ["Credit Card", "Personal Loan", "Business Loan", "Home Loan", "Insurance", "Other"]
 
+const experienceOptions = [
+  "Completely New",
+  "Less than 12 months",
+  "1 Year - 3 Years",
+  "3 Years - 10 Years",
+  "More than 10 Years",
+]
+
 const PersonalDetails: React.FC<PersonalDetailsProps> = ({ formData, updateFormData }) => {
   const [errors, setErrors] = useState({
-    gender: "",
     dateOfBirth: "",
     employmentType: "",
     emergencyContact: "",
     focusProduct: "",
+    experienceInSellingLoans: "",
   })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -67,10 +86,8 @@ const PersonalDetails: React.FC<PersonalDetailsProps> = ({ formData, updateFormD
 
   const validateField = (name: string, value: string) => {
     switch (name) {
-      case "gender":
-        return value ? "" : "Please select your gender"
       case "employmentType":
-        return value ? "" : "Please select your employment type"
+        return value ? "" : "Please select your current profession"
       case "emergencyContact":
         return value
           ? /^[6-9]\d{9}$/.test(value)
@@ -79,6 +96,8 @@ const PersonalDetails: React.FC<PersonalDetailsProps> = ({ formData, updateFormD
           : "Emergency contact is required"
       case "focusProduct":
         return value ? "" : "Please select your focus product"
+      case "experienceInSellingLoans":
+        return value ? "" : "Please select your experience in selling loans"
       default:
         return ""
     }
@@ -110,30 +129,6 @@ const PersonalDetails: React.FC<PersonalDetailsProps> = ({ formData, updateFormD
         </Grid>
 
         <Grid item xs={12} md={6}>
-          <TextField
-            select
-            fullWidth
-            required
-            label="Gender"
-            name="gender"
-            value={formData.gender}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            error={!!errors.gender}
-            helperText={errors.gender}
-            InputProps={{
-              sx: { borderRadius: 2 },
-            }}
-          >
-            {genderOptions.map((option) => (
-              <MenuItem key={option} value={option}>
-                {option}
-              </MenuItem>
-            ))}
-          </TextField>
-        </Grid>
-
-        <Grid item xs={12} md={6}>
           <LocalizationProvider dateAdapter={AdapterDateFns}>
             <DatePicker
               label="Date of Birth *"
@@ -158,7 +153,7 @@ const PersonalDetails: React.FC<PersonalDetailsProps> = ({ formData, updateFormD
             select
             fullWidth
             required
-            label="Employment Type"
+            label="Current Profession"
             name="employmentType"
             value={formData.employmentType}
             onChange={handleChange}
@@ -169,7 +164,31 @@ const PersonalDetails: React.FC<PersonalDetailsProps> = ({ formData, updateFormD
               sx: { borderRadius: 2 },
             }}
           >
-            {employmentTypes.map((option) => (
+            {currentProfessionOptions.map((option) => (
+              <MenuItem key={option} value={option}>
+                {option}
+              </MenuItem>
+            ))}
+          </TextField>
+        </Grid>
+
+        <Grid item xs={12} md={6}>
+          <TextField
+            select
+            fullWidth
+            required
+            label="Experience in Selling Loans"
+            name="experienceInSellingLoans"
+            value={formData.experienceInSellingLoans}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            error={!!errors.experienceInSellingLoans}
+            helperText={errors.experienceInSellingLoans}
+            InputProps={{
+              sx: { borderRadius: 2 },
+            }}
+          >
+            {experienceOptions.map((option) => (
               <MenuItem key={option} value={option}>
                 {option}
               </MenuItem>

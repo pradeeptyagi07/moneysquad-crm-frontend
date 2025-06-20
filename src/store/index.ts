@@ -8,7 +8,8 @@ import signupPartnerReducer from "./slices/signupPartnerSlice" // ✅ Import you
 import managePartnersReducer from "./slices/managePartnerSlice" // ✅ Import your new slice
 import leadsReducer from "./slices/leadSLice" // ✅ Import your new slice
 import associateReducer from "./slices/associateSlice" // ✅ Import your new slice
-
+import commissionReducer from "./slices/commissionSlice" // ✅ Import your new slice
+import userDataReducer from "./slices/userDataSlice" // ✅ Import userData slice
 
 export const store = configureStore({
   reducer: {
@@ -16,10 +17,12 @@ export const store = configureStore({
     offers: offersReducer,
     team: teamReducer,
     lenderLoan: lenderLoanReducer, // ✅ Add it to the store
-    signupPartner:signupPartnerReducer,
+    signupPartner: signupPartnerReducer,
     managePartners: managePartnersReducer, // ✅ this key must match useAppSelector
-    leads:leadsReducer,
-    associate:associateReducer,
+    leads: leadsReducer,
+    associate: associateReducer,
+    commission: commissionReducer,
+    userData: userDataReducer, // ✅ Add userData to the store
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

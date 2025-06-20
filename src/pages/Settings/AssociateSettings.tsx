@@ -1,10 +1,13 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Box, Tab, Tabs, Typography, Paper } from "@mui/material"
-import { Security } from "@mui/icons-material"
+import { Person, Security } from "@mui/icons-material"
 import SecuritySection from "./components/SecuritySection"
+import { useAppDispatch } from "../../hooks/useAppDispatch"
+import { fetchUserData } from "../../store/slices/userDataSlice"
+import ProfileSection from "./components/ProfileSection"
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -45,6 +48,12 @@ const AssociateSettings: React.FC<AssociateSettingsProps> = ({ user }) => {
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue)
   }
+
+  const dispatch = useAppDispatch()
+
+  useEffect(() => {
+    dispatch(fetchUserData())
+  }, [dispatch])
 
   return (
     <Paper
@@ -87,11 +96,15 @@ const AssociateSettings: React.FC<AssociateSettingsProps> = ({ user }) => {
             },
           }}
         >
-          <Tab icon={<Security />} label="Security" iconPosition="start" {...a11yProps(0)} sx={{ px: 3 }} />
+          <Tab icon={<Person />} label="Profile" iconPosition="start" {...a11yProps(0)} sx={{ px: 3 }} />
+          <Tab icon={<Security />} label="Security" iconPosition="start" {...a11yProps(1)} sx={{ px: 3 }} />
         </Tabs>
       </Box>
 
       <TabPanel value={value} index={0}>
+        <ProfileSection />
+      </TabPanel>
+      <TabPanel value={value} index={1}>
         <SecuritySection user={user} />
       </TabPanel>
     </Paper>

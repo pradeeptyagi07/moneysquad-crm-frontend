@@ -14,6 +14,7 @@ const AssociateLayout = () => {
     { text: "Offers", icon: "LocalOffer", path: "/associate/offers" },
     { text: "Settings", icon: "Settings", path: "/associate/settings" },
       { text: "Help & Support", icon: "Help", path: "/help-support" }, // ✅ Add this
+      { text: "Training & Resources", icon: "TrainingResources", path: "training-resorces" }, // ✅ Add this
 
   ];
 

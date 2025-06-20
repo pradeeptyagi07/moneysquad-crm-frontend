@@ -33,6 +33,8 @@ import {
   Logout,
   HelpOutline,
   MenuBook,
+  LibraryBooks,
+  GroupWork,
 } from "@mui/icons-material"
 import { useAuth } from "../../hooks/useAuth"
 import { useAppSelector } from "../../hooks/useAppSelector"
@@ -104,10 +106,12 @@ const DashboardLayout = ({
         return <Groups />
       case "SupervisorAccount":
         return <SupervisorAccount />
-        case "Help":
-  return <HelpOutline />
-  case "TrainingResources":
-      return <MenuBook />;
+      case "Help":
+        return <HelpOutline />
+      case "TrainingResources":
+        return <LibraryBooks /> // More suitable than MenuBook for resources
+      case "PartnerManagement":
+        return <GroupWork /> // Better reflects team/collab concept
       default:
         return <Dashboard />
     }

@@ -1,137 +1,550 @@
 "use client"
 
-import React from "react"
-import { Box, Typography, Grid, TextField, MenuItem } from "@mui/material"
+import type React from "react"
+import { useState } from "react"
+import {
+  Box,
+  Typography,
+  Paper,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Grid,
+  TextField,
+  IconButton,
+} from "@mui/material"
+import { AccountBalance, Edit, Business, Receipt, Visibility, VisibilityOff } from "@mui/icons-material"
+import { useAppSelector } from "../../../hooks/useAppSelector"
+import {
+  selectUserData,
+  selectUserDataLoading,
+  selectUserDataError,
+  isPartnerUser,
+} from "../../../store/slices/userDataSlice"
 
 interface BankDetailsSectionProps {
-  title?: string
-  accountTypes?: string[]
-  formData?: {
-    accountType: string
-    accountHolderName: string
-    accountNumber: string
-    ifscCode: string
-    bankName: string
-    branchName: string
+  user?: {
+    accountHolderName?: string
+    accountType?: string
+    relationshipWithAccountHolder?: string
+    accountNumber?: string
+    ifscCode?: string
+    bankName?: string
+    branchName?: string
+    isGstBillingApplicable?: string
   }
-  errors?: Partial<Record<keyof BankDetailsSectionProps['formData'], string>>
-  handleChange?: (e: React.ChangeEvent<HTMLInputElement>) => void
-  handleBlur?: (e: React.FocusEvent<HTMLInputElement>) => void
 }
 
-const BankDetailsSection: React.FC<BankDetailsSectionProps> = ({
-  title = "Bank Account Details",
-  accountTypes = ["Savings", "Current"],
-  formData = {
-    accountType: "",
+const BankDetailsSection: React.FC<BankDetailsSectionProps> = () => {
+  const [updateModalOpen, setUpdateModalOpen] = useState(false)
+  const [showAccountNumber, setShowAccountNumber] = useState(false)
+  const [newData, setNewData] = useState({
     accountHolderName: "",
+    accountType: "",
+    relationshipWithAccountHolder: "",
     accountNumber: "",
     ifscCode: "",
     bankName: "",
     branchName: "",
-  },
-  errors = {},
-  handleChange = () => {},
-  handleBlur = () => {},
-}) => {
+    isGstBillingApplicable: "",
+  })
+  const [reason, setReason] = useState("")
+
+  // Get user data from Redux store
+  const userData = useAppSelector(selectUserData)
+  const loading = useAppSelector(selectUserDataLoading)
+  const error = useAppSelector(selectUserDataError)
+
+  // Use Redux data if available, otherwise fallback to empty
+  const user =
+    userData && isPartnerUser(userData)
+      ? userData.bankDetails
+      : {
+          accountHolderName: "",
+          accountType: "",
+          relationshipWithAccountHolder: "",
+          accountNumber: "",
+          ifscCode: "",
+          bankName: "",
+          branchName: "",
+          isGstBillingApplicable: "",
+        }
+
+  const handleRequestUpdate = () => {
+    // Pre-fill with current data
+    setNewData({
+      accountHolderName: user.accountHolderName || "",
+      accountType: user.accountType || "",
+      relationshipWithAccountHolder: user.relationshipWithAccountHolder || "",
+      accountNumber: user.accountNumber || "",
+      ifscCode: user.ifscCode || "",
+      bankName: user.bankName || "",
+      branchName: user.branchName || "",
+      isGstBillingApplicable: user.isGstBillingApplicable || "",
+    })
+    setUpdateModalOpen(true)
+  }
+
+  const handleConfirmRequest = () => {
+    // Here you would send the update request to backend
+    console.log("Bank details update request:", {
+      currentData: user,
+      requestedData: newData,
+      reason: reason,
+    })
+    setUpdateModalOpen(false)
+    setReason("")
+    // Show success message
+  }
+
+  const maskAccountNumber = (accountNumber: string) => {
+    if (!accountNumber) return ""
+    return `****${accountNumber.slice(-4)}`
+  }
+
+  const toggleAccountNumber = () => setShowAccountNumber(!showAccountNumber)
+
+  const getBankIcon = (bankName: string) => {
+    // You can add bank-specific icons here
+    return <AccountBalance sx={{ fontSize: 40, color: "#1976d2" }} />
+  }
+
+  const accountTypes = ["Savings", "Current", "Others"]
+  const relationshipOptions = ["Self", "Company", "Spouse", "Parent", "Others"]
+  const gstOptions = ["Yes", "No"]
+
+  const showGstBilling = newData.accountType === "Current" || newData.accountType === "Others"
+
+  if (loading) {
+    return <div>Loading bank details...</div>
+  }
+
+  if (error) {
+    return <div>Error loading bank details: {error}</div>
+  }
+
   return (
     <Box>
-      <Typography variant="subtitle1" sx={{ mb: 2 }}>
-        {title}
-      </Typography>
-      <Grid container spacing={3}>
-        <Grid item xs={12} sm={6}>
-          <TextField
-            select
-            fullWidth
-            required
-            label="Account Type"
-            name="accountType"
-            value={formData.accountType}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            error={!!errors.accountType}
-            helperText={errors.accountType}
-            InputProps={{ sx: { borderRadius: 2 } }}
-          >
-            {accountTypes.map((option) => (
-              <MenuItem key={option} value={option}>
-                {option}
-              </MenuItem>
-            ))}
-          </TextField>
+      {/* Premium Bank Card Display */}
+      <Card
+        elevation={3}
+        sx={{
+          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+          color: "white",
+          borderRadius: 3,
+          mb: 3,
+          overflow: "visible",
+          position: "relative",
+        }}
+      >
+        <CardContent sx={{ p: 4 }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 3 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+              {getBankIcon(user.bankName || "")}
+              <Box>
+                <Typography variant="h6" fontWeight={600}>
+                  {user.bankName}
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                  {user.branchName}
+                </Typography>
+              </Box>
+            </Box>
+            <Chip
+              label={user.accountType}
+              sx={{
+                backgroundColor: "rgba(255,255,255,0.2)",
+                color: "white",
+                fontWeight: 600,
+              }}
+            />
+          </Box>
+
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="body2" sx={{ opacity: 0.8, mb: 1 }}>
+              Account Number
+            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Typography variant="h5" fontWeight={600} letterSpacing={2}>
+                {showAccountNumber ? user.accountNumber : maskAccountNumber(user.accountNumber || "")}
+              </Typography>
+              <IconButton onClick={toggleAccountNumber} sx={{ color: "white", opacity: 0.8 }}>
+                {showAccountNumber ? <VisibilityOff /> : <Visibility />}
+              </IconButton>
+            </Box>
+          </Box>
+
+          <Grid container spacing={2}>
+            <Grid item xs={6}>
+              <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                Account Holder
+              </Typography>
+              <Typography variant="body1" fontWeight={500}>
+                {user.accountHolderName}
+              </Typography>
+            </Grid>
+            <Grid item xs={6}>
+              <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                IFSC Code
+              </Typography>
+              <Typography variant="body1" fontWeight={500}>
+                {user.ifscCode}
+              </Typography>
+            </Grid>
+          </Grid>
+
+          <Box sx={{ mt: 3 }}>
+            <Button
+              variant="contained"
+              startIcon={<Edit />}
+              onClick={handleRequestUpdate}
+              sx={{
+                backgroundColor: "rgba(255,255,255,0.2)",
+                backdropFilter: "blur(10px)",
+                border: "1px solid rgba(255,255,255,0.3)",
+                "&:hover": {
+                  backgroundColor: "rgba(255,255,255,0.3)",
+                },
+              }}
+            >
+              Request Update
+            </Button>
+          </Box>
+        </CardContent>
+      </Card>
+
+      {/* Additional Info Cards */}
+      <Grid container spacing={2}>
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 2, borderRadius: 2 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+              <Business color="primary" />
+              <Typography variant="subtitle2" fontWeight={600}>
+                Relationship
+              </Typography>
+            </Box>
+            <Typography variant="body1">{user.relationshipWithAccountHolder}</Typography>
+          </Paper>
         </Grid>
-        <Grid item xs={12} sm={6}>
-          <TextField
-            fullWidth
-            required
-            label="Account Holder Name"
-            name="accountHolderName"
-            value={formData.accountHolderName}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            error={!!errors.accountHolderName}
-            helperText={errors.accountHolderName}
-            InputProps={{ sx: { borderRadius: 2 } }}
-          />
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <TextField
-            fullWidth
-            required
-            label="Account Number"
-            name="accountNumber"
-            value={formData.accountNumber}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            error={!!errors.accountNumber}
-            helperText={errors.accountNumber}
-            InputProps={{ sx: { borderRadius: 2 } }}
-          />
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <TextField
-            fullWidth
-            required
-            label="IFSC Code"
-            name="ifscCode"
-            value={formData.ifscCode}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            error={!!errors.ifscCode}
-            helperText={errors.ifscCode}
-            InputProps={{ sx: { borderRadius: 2 } }}
-          />
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <TextField
-            fullWidth
-            required
-            label="Bank Name"
-            name="bankName"
-            value={formData.bankName}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            error={!!errors.bankName}
-            helperText={errors.bankName}
-            InputProps={{ sx: { borderRadius: 2 } }}
-          />
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <TextField
-            fullWidth
-            required
-            label="Branch Name"
-            name="branchName"
-            value={formData.branchName}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            error={!!errors.branchName}
-            helperText={errors.branchName}
-            InputProps={{ sx: { borderRadius: 2 } }}
-          />
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 2, borderRadius: 2 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+              <Receipt color="primary" />
+              <Typography variant="subtitle2" fontWeight={600}>
+                GST Billing Applicable
+              </Typography>
+            </Box>
+            <Chip
+              label={user.isGstBillingApplicable || "No"}
+              color={user.isGstBillingApplicable === "Yes" ? "success" : "default"}
+              size="small"
+            />
+          </Paper>
         </Grid>
       </Grid>
+
+      {/* Update Request Modal */}
+      <Dialog open={updateModalOpen} onClose={() => setUpdateModalOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle>
+          <Typography variant="h6" fontWeight={600}>
+            Request Bank Details Update
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Submit your updated bank details for admin approval
+          </Typography>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Grid container spacing={3}>
+            {/* Current Data Column */}
+            <Grid item xs={12} md={6}>
+              <Typography variant="subtitle1" fontWeight={600} mb={2} color="text.secondary">
+                Current Details
+              </Typography>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <Box
+                  sx={{
+                    backgroundColor: "#f8fafc",
+                    p: 2,
+                    borderRadius: 2,
+                    minHeight: "56px",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.75rem", mb: 0.5 }}>
+                    Account Holder Name
+                  </Typography>
+                  <Typography variant="body1" fontWeight={500}>
+                    {user.accountHolderName}
+                  </Typography>
+                </Box>
+                <Box
+                  sx={{
+                    backgroundColor: "#f8fafc",
+                    p: 2,
+                    borderRadius: 2,
+                    minHeight: "56px",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.75rem", mb: 0.5 }}>
+                    Account Type
+                  </Typography>
+                  <Typography variant="body1" fontWeight={500}>
+                    {user.accountType}
+                  </Typography>
+                </Box>
+                <Box
+                  sx={{
+                    backgroundColor: "#f8fafc",
+                    p: 2,
+                    borderRadius: 2,
+                    minHeight: "56px",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.75rem", mb: 0.5 }}>
+                    Relationship
+                  </Typography>
+                  <Typography variant="body1" fontWeight={500}>
+                    {user.relationshipWithAccountHolder}
+                  </Typography>
+                </Box>
+                <Box
+                  sx={{
+                    backgroundColor: "#f8fafc",
+                    p: 2,
+                    borderRadius: 2,
+                    minHeight: "56px",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.75rem", mb: 0.5 }}>
+                    Account Number
+                  </Typography>
+                  <Typography variant="body1" fontWeight={500}>
+                    {maskAccountNumber(user.accountNumber || "")}
+                  </Typography>
+                </Box>
+                <Box
+                  sx={{
+                    backgroundColor: "#f8fafc",
+                    p: 2,
+                    borderRadius: 2,
+                    minHeight: "56px",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.75rem", mb: 0.5 }}>
+                    IFSC Code
+                  </Typography>
+                  <Typography variant="body1" fontWeight={500}>
+                    {user.ifscCode}
+                  </Typography>
+                </Box>
+                <Box
+                  sx={{
+                    backgroundColor: "#f8fafc",
+                    p: 2,
+                    borderRadius: 2,
+                    minHeight: "56px",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.75rem", mb: 0.5 }}>
+                    Bank Name
+                  </Typography>
+                  <Typography variant="body1" fontWeight={500}>
+                    {user.bankName}
+                  </Typography>
+                </Box>
+                <Box
+                  sx={{
+                    backgroundColor: "#f8fafc",
+                    p: 2,
+                    borderRadius: 2,
+                    minHeight: "56px",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.75rem", mb: 0.5 }}>
+                    Branch Name
+                  </Typography>
+                  <Typography variant="body1" fontWeight={500}>
+                    {user.branchName}
+                  </Typography>
+                </Box>
+                {(user.accountType === "Current" || user.accountType === "Others") && (
+                  <Box
+                    sx={{
+                      backgroundColor: "#f8fafc",
+                      p: 2,
+                      borderRadius: 2,
+                      minHeight: "56px",
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.75rem", mb: 0.5 }}>
+                      GST Billing Applicable
+                    </Typography>
+                    <Typography variant="body1" fontWeight={500}>
+                      {user.isGstBillingApplicable || "No"}
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+            </Grid>
+
+            {/* New Data Column */}
+            <Grid item xs={12} md={6}>
+              <Typography variant="subtitle1" fontWeight={600} mb={2} color="primary">
+                New Details
+              </Typography>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <TextField
+                  fullWidth
+                  label="Account Holder Name"
+                  value={newData.accountHolderName}
+                  onChange={(e) => setNewData((prev) => ({ ...prev, accountHolderName: e.target.value }))}
+                  size="small"
+                  sx={{ minHeight: "56px" }}
+                />
+                <TextField
+                  select
+                  fullWidth
+                  label="Account Type"
+                  value={newData.accountType}
+                  onChange={(e) => setNewData((prev) => ({ ...prev, accountType: e.target.value }))}
+                  size="small"
+                  sx={{ minHeight: "56px" }}
+                  SelectProps={{ native: true }}
+                >
+                  <option value="">Select Type</option>
+                  {accountTypes.map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </TextField>
+                <TextField
+                  select
+                  fullWidth
+                  label="Relationship with Account Holder"
+                  value={newData.relationshipWithAccountHolder}
+                  onChange={(e) => setNewData((prev) => ({ ...prev, relationshipWithAccountHolder: e.target.value }))}
+                  size="small"
+                  sx={{ minHeight: "56px" }}
+                  SelectProps={{ native: true }}
+                >
+                  <option value="">Select Relationship</option>
+                  {relationshipOptions.map((rel) => (
+                    <option key={rel} value={rel}>
+                      {rel}
+                    </option>
+                  ))}
+                </TextField>
+                <TextField
+                  fullWidth
+                  label="Account Number"
+                  value={newData.accountNumber}
+                  onChange={(e) => setNewData((prev) => ({ ...prev, accountNumber: e.target.value }))}
+                  size="small"
+                  sx={{ minHeight: "56px" }}
+                />
+                <TextField
+                  fullWidth
+                  label="IFSC Code"
+                  value={newData.ifscCode}
+                  onChange={(e) => setNewData((prev) => ({ ...prev, ifscCode: e.target.value }))}
+                  size="small"
+                  sx={{ minHeight: "56px" }}
+                  helperText="Format: First 4 letters + 0 + 6 characters (e.g., HDFC0123456)"
+                />
+                <TextField
+                  fullWidth
+                  label="Bank Name"
+                  value={newData.bankName}
+                  onChange={(e) => setNewData((prev) => ({ ...prev, bankName: e.target.value }))}
+                  size="small"
+                  sx={{ minHeight: "56px" }}
+                />
+                <TextField
+                  fullWidth
+                  label="Branch Name"
+                  value={newData.branchName}
+                  onChange={(e) => setNewData((prev) => ({ ...prev, branchName: e.target.value }))}
+                  size="small"
+                  sx={{ minHeight: "56px" }}
+                />
+                {showGstBilling && (
+                  <TextField
+                    select
+                    fullWidth
+                    label="GST Billing Applicable"
+                    value={newData.isGstBillingApplicable}
+                    onChange={(e) => setNewData((prev) => ({ ...prev, isGstBillingApplicable: e.target.value }))}
+                    size="small"
+                    sx={{ minHeight: "56px" }}
+                    SelectProps={{ native: true }}
+                  >
+                    <option value="">Select Option</option>
+                    {gstOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </TextField>
+                )}
+              </Box>
+            </Grid>
+          </Grid>
+
+          {/* Reason for Update */}
+          <Box sx={{ mt: 3 }}>
+            <TextField
+              fullWidth
+              label="Reason for Update *"
+              multiline
+              rows={3}
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Please provide a reason for this update request..."
+              required
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ p: 3 }}>
+          <Button onClick={() => setUpdateModalOpen(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            onClick={handleConfirmRequest}
+            disabled={reason.trim() === ""}
+            sx={{ borderRadius: 2 }}
+          >
+            Confirm Request
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   )
 }

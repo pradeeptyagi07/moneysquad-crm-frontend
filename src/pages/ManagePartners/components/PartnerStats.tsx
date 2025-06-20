@@ -1,9 +1,26 @@
 "use client"
 
 import type React from "react"
-import { Box, Grid, Paper, Typography, useTheme } from "@mui/material"
-import { People, PersonAdd, TrendingUp, TrendingDown, CheckCircle, Block } from "@mui/icons-material"
-import type { Partner } from "../types/partnerTypes"
+import {
+  Box,
+  Grid,
+  Paper,
+  Typography,
+  useTheme,
+} from "@mui/material"
+import {
+  People,
+  PersonAdd,
+  TrendingUp,
+  CheckCircle,
+  Block,
+} from "@mui/icons-material"
+
+interface Partner {
+  status: string
+  commissionPlan: string
+  createdAt: string
+}
 
 interface PartnerStatsProps {
   partners: Partner[]
@@ -12,20 +29,13 @@ interface PartnerStatsProps {
 const PartnerStats: React.FC<PartnerStatsProps> = ({ partners }) => {
   const theme = useTheme()
 
-  // Calculate statistics
   const totalPartners = partners.length
-  const activePartners = partners.filter((partner) => partner.status === "active").length
-  const inactivePartners = totalPartners - activePartners
-  const activePercentage = totalPartners > 0 ? (activePartners / totalPartners) * 100 : 0
+  const activePartners = partners.filter((p) => p.status === "active").length
+  const nonVerifiedPartners = partners.filter((p) => p.commissionPlan === "n/a").length
 
-  // Get new partners in the last 30 days
   const thirtyDaysAgo = new Date()
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-  const newPartners = partners.filter((partner) => new Date(partner.joinedOn) >= thirtyDaysAgo).length
-
-  // Calculate trend (mock data for demonstration)
-  const previousActivePercentage = 65 // This would come from historical data in a real app
-  const trend = activePercentage - previousActivePercentage
+  const newPartners = partners.filter((p) => new Date(p.createdAt) >= thirtyDaysAgo).length
 
   const StatCard = ({ title, value, icon, color, subtitle }: any) => (
     <Paper
@@ -77,8 +87,14 @@ const PartnerStats: React.FC<PartnerStatsProps> = ({ partners }) => {
   return (
     <Grid container spacing={3}>
       <Grid item xs={12} sm={6} md={3}>
-        <StatCard title="Total Partners" value={totalPartners} icon={<People />} color={theme.palette.primary.main} />
+        <StatCard
+          title="Total Partners"
+          value={totalPartners}
+          icon={<People />}
+          color={theme.palette.primary.main}
+        />
       </Grid>
+
       <Grid item xs={12} sm={6} md={3}>
         <StatCard
           title="New Partners"
@@ -88,32 +104,22 @@ const PartnerStats: React.FC<PartnerStatsProps> = ({ partners }) => {
           color={theme.palette.info.main}
         />
       </Grid>
+
       <Grid item xs={12} sm={6} md={3}>
         <StatCard
           title="Active Partners"
-          value={`${activePartners} (${activePercentage.toFixed(0)}%)`}
+          value={activePartners}
           icon={<CheckCircle />}
           color={theme.palette.success.main}
-          subtitle={
-            <Box sx={{ display: "flex", alignItems: "center", mt: 0.5 }}>
-              {trend > 0 ? (
-                <TrendingUp fontSize="small" color="success" sx={{ mr: 0.5 }} />
-              ) : (
-                <TrendingDown fontSize="small" color="error" sx={{ mr: 0.5 }} />
-              )}
-              <Typography variant="caption" color={trend > 0 ? "success.main" : "error.main"} sx={{ fontWeight: 600 }}>
-                {Math.abs(trend).toFixed(1)}% {trend > 0 ? "increase" : "decrease"}
-              </Typography>
-            </Box>
-          }
         />
       </Grid>
+
       <Grid item xs={12} sm={6} md={3}>
         <StatCard
-          title="Inactive Partners"
-          value={inactivePartners}
+          title="Non-Verified Partners"
+          value={nonVerifiedPartners}
           icon={<Block />}
-          color={theme.palette.text.secondary}
+          color={theme.palette.error.main}
         />
       </Grid>
     </Grid>

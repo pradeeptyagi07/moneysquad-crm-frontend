@@ -1,44 +1,19 @@
-import type React from "react";
-import {
-  Box,
-  Grid,
-  Typography,
-  Divider,
-  Paper,
-  Button,
-  Chip,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-} from "@mui/material";
-import {
-  Person,
-  LocationOn,
-  Work,
-  AccountBalance,
-  InsertDriveFile,
-  Edit,
-} from "@mui/icons-material";
-import type { PartnerFormData } from "../index";
+import type React from "react"
+import { Box, Grid, Typography, Divider, Paper, Chip, List, ListItem, ListItemText, ListItemIcon } from "@mui/material"
+import { Person, LocationOn, Work, AccountBalance, InsertDriveFile } from "@mui/icons-material"
+import type { PartnerFormData } from "../index"
 
 interface PreviewProps {
-  formData: PartnerFormData;
+  formData: PartnerFormData
 }
 
 interface SectionProps {
-  title: string;
-  icon: React.ReactNode;
-  children: React.ReactNode;
-  stepNumber: number;
+  title: string
+  icon: React.ReactNode
+  children: React.ReactNode
 }
 
-const Section: React.FC<SectionProps> = ({
-  title,
-  icon,
-  children,
-  stepNumber,
-}) => {
+const Section: React.FC<SectionProps> = ({ title, icon, children }) => {
   return (
     <Paper
       elevation={0}
@@ -53,48 +28,42 @@ const Section: React.FC<SectionProps> = ({
       <Box
         sx={{
           display: "flex",
-          justifyContent: "space-between",
           alignItems: "center",
           mb: 2,
         }}
       >
-        <Box sx={{ display: "flex", alignItems: "center" }}>
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: 40,
-              height: 40,
-              borderRadius: "50%",
-              bgcolor: "primary.light",
-              color: "white",
-              mr: 2,
-            }}
-          >
-            {icon}
-          </Box>
-          <Typography variant="h6">{title}</Typography>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: 40,
+            height: 40,
+            borderRadius: "50%",
+            bgcolor: "primary.light",
+            color: "white",
+            mr: 2,
+          }}
+        >
+          {icon}
         </Box>
-        {/* <Button startIcon={<Edit />} size="small" sx={{ borderRadius: 2 }} href={`#step-${stepNumber}`}>
-          Edit
-        </Button> */}
+        <Typography variant="h6">{title}</Typography>
       </Box>
       <Divider sx={{ mb: 2 }} />
       {children}
     </Paper>
-  );
-};
+  )
+}
 
 const Preview: React.FC<PreviewProps> = ({ formData }) => {
   const formatDate = (dateString: string | null) => {
-    if (!dateString) return "Not provided";
+    if (!dateString) return "Not provided"
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
-    });
-  };
+    })
+  }
 
   return (
     <Box>
@@ -102,7 +71,7 @@ const Preview: React.FC<PreviewProps> = ({ formData }) => {
         Please review your information before submitting
       </Typography>
 
-      <Section title="Basic Information" icon={<Person />} stepNumber={1}>
+      <Section title="Basic Information" icon={<Person />}>
         <Grid container spacing={2}>
           <Grid item xs={12} md={6}>
             <Typography variant="subtitle2" color="text.secondary">
@@ -119,14 +88,7 @@ const Preview: React.FC<PreviewProps> = ({ formData }) => {
           <Grid item xs={12} md={6}>
             <Typography variant="subtitle2" color="text.secondary">
               Email
-              {formData.otpVerified && (
-                <Chip
-                  label="Verified"
-                  color="success"
-                  size="small"
-                  sx={{ ml: 1 }}
-                />
-              )}
+              {formData.otpVerified && <Chip label="Verified" color="success" size="small" sx={{ ml: 1 }} />}
             </Typography>
             <Typography variant="body1">{formData.email}</Typography>
           </Grid>
@@ -136,34 +98,34 @@ const Preview: React.FC<PreviewProps> = ({ formData }) => {
             </Typography>
             <Typography variant="body1">{formData.pincode}</Typography>
           </Grid>
-          <Grid item xs={12}>
+          <Grid item xs={12} md={6}>
             <Typography variant="subtitle2" color="text.secondary">
               Registration Type
             </Typography>
             <Typography variant="body1">{formData.registrationType}</Typography>
           </Grid>
+          {formData.teamStrength && (
+            <Grid item xs={12} md={6}>
+              <Typography variant="subtitle2" color="text.secondary">
+                Team Strength
+              </Typography>
+              <Typography variant="body1">{formData.teamStrength}</Typography>
+            </Grid>
+          )}
         </Grid>
       </Section>
 
-      <Section title="Personal Details" icon={<Work />} stepNumber={2}>
+      <Section title="Personal Details" icon={<Work />}>
         <Grid container spacing={2}>
-          <Grid item xs={12} md={6}>
-            <Typography variant="subtitle2" color="text.secondary">
-              Gender
-            </Typography>
-            <Typography variant="body1">{formData.gender}</Typography>
-          </Grid>
           <Grid item xs={12} md={6}>
             <Typography variant="subtitle2" color="text.secondary">
               Date of Birth
             </Typography>
-            <Typography variant="body1">
-              {formatDate(formData.dateOfBirth)}
-            </Typography>
+            <Typography variant="body1">{formatDate(formData.dateOfBirth)}</Typography>
           </Grid>
           <Grid item xs={12} md={6}>
             <Typography variant="subtitle2" color="text.secondary">
-              Employment Type
+              Current Profession
             </Typography>
             <Typography variant="body1">{formData.employmentType}</Typography>
           </Grid>
@@ -171,9 +133,7 @@ const Preview: React.FC<PreviewProps> = ({ formData }) => {
             <Typography variant="subtitle2" color="text.secondary">
               Emergency Contact
             </Typography>
-            <Typography variant="body1">
-              +91 {formData.emergencyContact}
-            </Typography>
+            <Typography variant="body1">+91 {formData.emergencyContact}</Typography>
           </Grid>
           <Grid item xs={12} md={6}>
             <Typography variant="subtitle2" color="text.secondary">
@@ -185,22 +145,22 @@ const Preview: React.FC<PreviewProps> = ({ formData }) => {
             <Typography variant="subtitle2" color="text.secondary">
               Role
             </Typography>
-            <Typography variant="body1">
-              {formData.role === "leadSharing"
-                ? "Lead Sharing"
-                : "File Sharing"}
+            <Typography variant="body1">{formData.role === "leadSharing" ? "Lead Sharing" : "File Sharing"}</Typography>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <Typography variant="subtitle2" color="text.secondary">
+              Experience in Selling Loans
             </Typography>
+            <Typography variant="body1">{formData.experienceInSellingLoans}</Typography>
           </Grid>
         </Grid>
       </Section>
 
-      <Section title="Address Details" icon={<LocationOn />} stepNumber={3}>
+      <Section title="Address Details" icon={<LocationOn />}>
         <Grid container spacing={2}>
           <Grid item xs={12}>
             <Typography variant="subtitle2" color="text.secondary">
-              {formData.registrationType === "Individual"
-                ? "Residence Address"
-                : "Work Address"}
+              {formData.registrationType === "Individual" ? "Residence Address" : "Work Address"}
             </Typography>
             <Typography variant="body1">
               {formData.addressLine1}
@@ -220,8 +180,14 @@ const Preview: React.FC<PreviewProps> = ({ formData }) => {
         </Grid>
       </Section>
 
-      <Section title="Bank Details" icon={<AccountBalance />} stepNumber={4}>
+      <Section title="Bank Details" icon={<AccountBalance />}>
         <Grid container spacing={2}>
+          <Grid item xs={12} md={6}>
+            <Typography variant="subtitle2" color="text.secondary">
+              Account Holder Name
+            </Typography>
+            <Typography variant="body1">{formData.accountHolderName}</Typography>
+          </Grid>
           <Grid item xs={12} md={6}>
             <Typography variant="subtitle2" color="text.secondary">
               Account Type
@@ -230,11 +196,9 @@ const Preview: React.FC<PreviewProps> = ({ formData }) => {
           </Grid>
           <Grid item xs={12} md={6}>
             <Typography variant="subtitle2" color="text.secondary">
-              Account Holder Name
+              Relationship with Account Holder
             </Typography>
-            <Typography variant="body1">
-              {formData.accountHolderName}
-            </Typography>
+            <Typography variant="body1">{formData.relationshipWithAccountHolder}</Typography>
           </Grid>
           <Grid item xs={12} md={6}>
             <Typography variant="subtitle2" color="text.secondary">
@@ -247,8 +211,7 @@ const Preview: React.FC<PreviewProps> = ({ formData }) => {
               Account Number
             </Typography>
             <Typography variant="body1">
-              {"•".repeat(formData.accountNumber.length - 4) +
-                formData.accountNumber.slice(-4)}
+              {"•".repeat(formData.accountNumber.length - 4) + formData.accountNumber.slice(-4)}
             </Typography>
           </Grid>
           <Grid item xs={12} md={6}>
@@ -263,14 +226,18 @@ const Preview: React.FC<PreviewProps> = ({ formData }) => {
             </Typography>
             <Typography variant="body1">{formData.branchName}</Typography>
           </Grid>
+          {formData.isGstBillingApplicable && (
+            <Grid item xs={12} md={6}>
+              <Typography variant="subtitle2" color="text.secondary">
+                GST Billing Applicable
+              </Typography>
+              <Typography variant="body1">{formData.isGstBillingApplicable}</Typography>
+            </Grid>
+          )}
         </Grid>
       </Section>
 
-      <Section
-        title="Uploaded Documents"
-        icon={<InsertDriveFile />}
-        stepNumber={5}
-      >
+      <Section title="Uploaded Documents" icon={<InsertDriveFile />}>
         <List>
           {[
             {
@@ -308,23 +275,10 @@ const Preview: React.FC<PreviewProps> = ({ formData }) => {
                 primary={
                   <Box sx={{ display: "flex", alignItems: "center" }}>
                     {doc.name}
-                    {doc.required && !doc.file && (
-                      <Chip
-                        label="Required"
-                        color="warning"
-                        size="small"
-                        sx={{ ml: 1 }}
-                      />
-                    )}
+                    {doc.required && !doc.file && <Chip label="Required" color="warning" size="small" sx={{ ml: 1 }} />}
                   </Box>
                 }
-                secondary={
-                  doc.file
-                    ? `${doc.file.name} (${(doc.file.size / 1024).toFixed(
-                        1
-                      )} KB)`
-                    : "Not uploaded"
-                }
+                secondary={doc.file ? `${doc.file.name} (${(doc.file.size / 1024).toFixed(1)} KB)` : "Not uploaded"}
               />
             </ListItem>
           ))}
@@ -340,10 +294,7 @@ const Preview: React.FC<PreviewProps> = ({ formData }) => {
                   <ListItemIcon>
                     <InsertDriveFile color="primary" />
                   </ListItemIcon>
-                  <ListItemText
-                    primary={doc.name}
-                    secondary={`${(doc.size / 1024).toFixed(1)} KB`}
-                  />
+                  <ListItemText primary={doc.name} secondary={`${(doc.size / 1024).toFixed(1)} KB`} />
                 </ListItem>
               ))}
             </>
@@ -353,13 +304,12 @@ const Preview: React.FC<PreviewProps> = ({ formData }) => {
 
       <Box sx={{ textAlign: "center", mt: 4 }}>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          By submitting this form, you agree to our Terms of Service and Privacy
-          Policy. Your information will be verified before your account is
-          activated.
+          By submitting this form, you agree to our Terms of Service and Privacy Policy. Your information will be
+          verified before your account is activated.
         </Typography>
       </Box>
     </Box>
-  );
-};
+  )
+}
 
-export default Preview;
+export default Preview

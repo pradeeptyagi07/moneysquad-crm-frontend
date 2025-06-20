@@ -6,10 +6,8 @@ import AdminLayout from "../components/Layout/AdminLayout"
 import AdminOverview from "../pages/Overview/AdminOverview"
 import Leads from "../pages/Leads/Leads"
 import Offers from "../pages/Offers/Offers"
-import Commissions from "../pages/Commissions/Commissions"
 import Settings from "../pages/Settings/Settings"
 import ManagePartners from "../pages/ManagePartners/ManagePartners"
-import PartnerDetails from "../pages/ManagePartners/PartnerDetails"
 import type { JSX } from "react/jsx-runtime"
 import TeamManagement from "../pages/TeamManagement/TeamManagement"
 import { useAppSelector } from "../hooks/useAppSelector"
@@ -70,10 +68,7 @@ const adminRoutes: RouteObject[] = [
         path: "manage-partners",
         element: <ManagePartners />,
       },
-      {
-        path: "manage-partners/:partnerId",
-        element: <PartnerDetails />,
-      },
+ 
       {
         path: "team-management",
         element: <TeamManagement />,

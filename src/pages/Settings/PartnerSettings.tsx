@@ -1,13 +1,16 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Box, Tab, Tabs, Typography, Paper } from "@mui/material"
-import { Security, AccountBalance, Home, Badge, UploadFile } from "@mui/icons-material"
+import { Security, AccountBalance, Home, Badge, UploadFile, History } from "@mui/icons-material"
+import { useAppDispatch } from "../../hooks/useAppDispatch"
+import { fetchUserData } from "../../store/slices/userDataSlice"
 import BankDetailsSection from "./components/BankDetailsSection"
 import PersonalDetailsSection from "./components/PersonalDetailsSection"
 import AddressDetailsSection from "./components/AddressDetailsSection"
 import DocumentsSection from "./components/DocumentsSection"
+import RequestChangeSummary from "./components/RequestChangeSummary"
 import SecuritySection from "./components/SecuritySection"
 
 interface TabPanelProps {
@@ -39,12 +42,14 @@ function a11yProps(index: number) {
   }
 }
 
-interface PartnerSettingsProps {
-  user: any
-}
-
-const PartnerSettings: React.FC<PartnerSettingsProps> = ({ user }) => {
+const PartnerSettings: React.FC = () => {
   const [value, setValue] = useState(0)
+  const dispatch = useAppDispatch()
+
+  // Fetch user data on component mount
+  useEffect(() => {
+    dispatch(fetchUserData())
+  }, [dispatch])
 
   const handleChange = (_event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue)
@@ -97,23 +102,27 @@ const PartnerSettings: React.FC<PartnerSettingsProps> = ({ user }) => {
           <Tab icon={<Home />} label="Address" iconPosition="start" {...a11yProps(1)} sx={{ px: 3 }} />
           <Tab icon={<AccountBalance />} label="Bank Details" iconPosition="start" {...a11yProps(2)} sx={{ px: 3 }} />
           <Tab icon={<UploadFile />} label="Documents" iconPosition="start" {...a11yProps(3)} sx={{ px: 3 }} />
-          <Tab icon={<Security />} label="Security" iconPosition="start" {...a11yProps(4)} sx={{ px: 3 }} />
+          <Tab icon={<History />} label="Request History" iconPosition="start" {...a11yProps(4)} sx={{ px: 3 }} />
+          <Tab icon={<Security />} label="Security" iconPosition="start" {...a11yProps(5)} sx={{ px: 3 }} />
         </Tabs>
       </Box>
 
       <TabPanel value={value} index={0}>
-        <PersonalDetailsSection user={user} />
+        <PersonalDetailsSection />
       </TabPanel>
       <TabPanel value={value} index={1}>
-        <AddressDetailsSection user={user} />
+        <AddressDetailsSection />
       </TabPanel>
       <TabPanel value={value} index={2}>
-        <BankDetailsSection user={user} />
+        <BankDetailsSection />
       </TabPanel>
       <TabPanel value={value} index={3}>
-        <DocumentsSection user={user} />
+        <DocumentsSection />
       </TabPanel>
       <TabPanel value={value} index={4}>
+        <RequestChangeSummary />
+      </TabPanel>
+      <TabPanel value={value} index={5}>
         <SecuritySection />
       </TabPanel>
     </Paper>

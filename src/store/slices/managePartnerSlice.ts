@@ -69,14 +69,13 @@ export const updatePartnerById = createAsyncThunk(
     }: {
       partnerId: string;
       data: {
-        fullName:string
-
+        fullName: string;
         mobile: string;
         email: string;
-        gender: string;
-        employmentType: string;
+        currentProfession: string;
         roleSelection: string;
         focusProduct: string;
+        commission: string; // ✅
       };
     },
     { rejectWithValue }
@@ -85,12 +84,12 @@ export const updatePartnerById = createAsyncThunk(
       const formData = new FormData();
       formData.append("basicInfo.mobile", data.mobile);
       formData.append("basicInfo.fullName", data.fullName);
-
       formData.append("basicInfo.email", data.email);
-      formData.append("personalInfo.gender", data.gender);
-      formData.append("personalInfo.employmentType", data.employmentType);
+
+      formData.append("personalInfo.currentProfession", data.currentProfession);
       formData.append("personalInfo.roleSelection", data.roleSelection);
       formData.append("personalInfo.focusProduct", data.focusProduct);
+      formData.append("commission", data.commission); // ✅ instead of commissionPlan
 
       const response = await axiosInstance.put(`/partner/${partnerId}`, formData);
       return response.data.data;
@@ -99,6 +98,7 @@ export const updatePartnerById = createAsyncThunk(
     }
   }
 );
+
 
 const managePartnerSlice = createSlice({
   name: "managePartner",

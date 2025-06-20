@@ -86,14 +86,14 @@ const LeadsDataTable: React.FC<LeadsDataTableProps> = ({
           <TableHead>
             <TableRow>
               <TableCell>Lead ID</TableCell>
-              {showPartnerCol && <TableCell>Partner (Name, ID)</TableCell>}
-              {showAssociateCol && <TableCell>Associate (Name, ID)</TableCell>}
-              <TableCell>Applicant (Name, Location)</TableCell>
-              <TableCell>Contact (Mobile, Email)</TableCell>
-              <TableCell>Lender (Name, Loan Type)</TableCell>
+              {showPartnerCol && <TableCell>Partner</TableCell>}
+              {showAssociateCol && <TableCell>Associate</TableCell>}
+              <TableCell>Applicant</TableCell>
+              <TableCell>Contact</TableCell>
+              <TableCell>Lender</TableCell>
               <TableCell>Loan Amount</TableCell>
-              <TableCell>Status (Last update)</TableCell>
-              {showManagerCol && <TableCell>Manager (Name, ID)</TableCell>}
+              <TableCell>Status</TableCell>
+              {showManagerCol && <TableCell>Manager</TableCell>}
               <TableCell>Created</TableCell>
               <TableCell align="right">Actions</TableCell>
             </TableRow>

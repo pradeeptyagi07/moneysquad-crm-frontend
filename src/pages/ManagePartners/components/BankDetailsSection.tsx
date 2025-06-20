@@ -137,6 +137,24 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = ({ partner }) => {
             {bank.branchName}
           </Typography>
         </Grid>
+
+        <Grid item xs={12} sm={6}>
+          <Typography variant="body2" color="text.secondary">
+            Relationship with Account Holder
+          </Typography>
+          <Typography variant="body1" sx={{ fontWeight: 500, mb: 2 }}>
+            {bank.relationshipWithAccountHolder}
+          </Typography>
+        </Grid>
+
+        <Grid item xs={12} sm={6}>
+          <Typography variant="body2" color="text.secondary">
+            Is GST Billing Applicable
+          </Typography>
+          <Typography variant="body1" sx={{ fontWeight: 500, mb: 2 }}>
+            {bank.isGstBillingApplicable}
+          </Typography>
+        </Grid>
       </Grid>
     </Paper>
   )

@@ -56,7 +56,7 @@ const LeadsActionMenu: React.FC<LeadsActionMenuProps> = ({
   ];
 
   // Remove "status" action entirely if already rejected or closed
-  if (["rejected", "closed","expired"].includes(currentStatus)) {
+  if (["new lead", "closed","expired"].includes(currentStatus)) {
     items = items.filter((i) => i.label !== "status");
   }
 

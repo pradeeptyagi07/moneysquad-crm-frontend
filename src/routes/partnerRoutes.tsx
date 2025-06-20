@@ -11,6 +11,8 @@ import Settings from "../pages/Settings/Settings"
 import { useAppSelector } from "../hooks/useAppSelector"
 import AssociateManagement from "../pages/Associates/AssociateManagement"
 import CommissionDashboard from "../pages/Commissions/CommissionDashboard"
+import HelpSupportMain from "../pages/HelpAndSupport/HelpSupportMain"
+import TrainingResourcesTab from "../pages/TrainingResources/TrainingResources"
 
 // Protected route component specific to partner role
 const PartnerRoute = ({ children }: { children: JSX.Element }) => {
@@ -65,6 +67,14 @@ const partnerRoutes: RouteObject[] = [
         path: "settings",
         element: <Settings />,
       },
+        {
+              path: "help-support",
+              element: <HelpSupportMain />,
+            },
+            {
+              path: "training-resorces",
+              element: <TrainingResourcesTab/>
+            },
     ],
   },
 ]
