@@ -10,6 +10,8 @@ import leadsReducer from "./slices/leadSLice" // ✅ Import your new slice
 import associateReducer from "./slices/associateSlice" // ✅ Import your new slice
 import commissionReducer from "./slices/commissionSlice" // ✅ Import your new slice
 import userDataReducer from "./slices/userDataSlice" // ✅ Import userData slice
+import changeRequestReducer from "./slices/changeRequestSlice" // ✅ Import changeRequest slice
+import resourceAndSupportReducer from "./slices/resourceAndSupportSlice" // ✅ Import changeRequest slice
 
 export const store = configureStore({
   reducer: {
@@ -23,6 +25,9 @@ export const store = configureStore({
     associate: associateReducer,
     commission: commissionReducer,
     userData: userDataReducer, // ✅ Add userData to the store
+    changeRequest: changeRequestReducer, // ✅ Add changeRequest to the store
+    resourceAndSupport: resourceAndSupportReducer,
+
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

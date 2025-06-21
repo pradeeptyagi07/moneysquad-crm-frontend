@@ -78,7 +78,7 @@ export function useLeadFormHandlers(): UseLeadFormHandlers {
             city: data.city,
             state: data.state,
             partnerId: data.partnerName!,
-            assignto: data.assignTo!,
+            assignedTo: data.assignTo!,
             lenderType: data.lenderName!,
           })
         ).unwrap();

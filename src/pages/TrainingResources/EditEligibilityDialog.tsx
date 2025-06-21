@@ -1,6 +1,7 @@
 "use client"
 
-import React, { useState } from "react"
+import type React from "react"
+import { useState, useEffect } from "react"
 import {
   Dialog,
   DialogTitle,
@@ -70,32 +71,53 @@ interface EditEligibilityDialogProps {
   data: Record<string, string[]>
   onClose: () => void
   onSave: (updated: Record<string, string[]>) => void
+  loading?: boolean
 }
 
-const EditEligibilityDialog: React.FC<EditEligibilityDialogProps> = ({ open, data, onClose, onSave }) => {
-  const [tempData, setTempData] = useState(data)
+const EditEligibilityDialog: React.FC<EditEligibilityDialogProps> = ({
+  open,
+  data,
+  onClose,
+  onSave,
+  loading = false,
+}) => {
+  const [tempData, setTempData] = useState<Record<string, string[]>>({})
   const theme = useTheme()
 
-  React.useEffect(() => {
-    setTempData(data)
-  }, [data])
+  // Update temp data when dialog opens or data changes
+  useEffect(() => {
+    if (open && data) {
+      // Deep copy the data to avoid mutations
+      const deepCopy = Object.entries(data).reduce(
+        (acc, [key, values]) => {
+          acc[key] = [...values]
+          return acc
+        },
+        {} as Record<string, string[]>,
+      )
+      setTempData(deepCopy)
+    }
+  }, [open, data])
 
   const handleChange = (key: string, index: number, value: string) => {
-    const updated = { ...tempData }
-    updated[key][index] = value
-    setTempData(updated)
+    setTempData((prev) => ({
+      ...prev,
+      [key]: prev[key].map((item, i) => (i === index ? value : item)),
+    }))
   }
 
   const handleAddCriteria = (key: string) => {
-    const updated = { ...tempData }
-    updated[key] = [...updated[key], ""]
-    setTempData(updated)
+    setTempData((prev) => ({
+      ...prev,
+      [key]: [...prev[key], ""],
+    }))
   }
 
   const handleDeleteCriteria = (key: string, index: number) => {
-    const updated = { ...tempData }
-    updated[key] = updated[key].filter((_, i) => i !== index)
-    setTempData(updated)
+    setTempData((prev) => ({
+      ...prev,
+      [key]: prev[key].filter((_, i) => i !== index),
+    }))
   }
 
   const handleSave = () => {
@@ -104,22 +126,26 @@ const EditEligibilityDialog: React.FC<EditEligibilityDialogProps> = ({ open, dat
       Object.entries(tempData).map(([key, values]) => [key, values.filter((value) => value.trim() !== "")]),
     )
     onSave(cleanedData)
+  }
+
+  const handleClose = () => {
+    // Reset temp data when closing
+    setTempData({})
     onClose()
   }
 
   return (
-    <StyledDialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <StyledDialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
       <StyledDialogTitle>
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Typography variant="h5" fontWeight={700}>
             Edit Eligibility Criteria
           </Typography>
           <IconButton
-            onClick={onClose}
+            onClick={handleClose}
             sx={{
-              color: "white",
-              background: alpha("#fff", 0.2),
-              "&:hover": { background: alpha("#fff", 0.3) },
+              color: "text.primary",
+              "&:hover": { background: alpha(theme.palette.primary.main, 0.1) },
             }}
           >
             <CloseIcon />
@@ -185,7 +211,7 @@ const EditEligibilityDialog: React.FC<EditEligibilityDialogProps> = ({ open, dat
       <Divider />
       <DialogActions sx={{ p: 3, gap: 2 }}>
         <Button
-          onClick={onClose}
+          onClick={handleClose}
           variant="outlined"
           sx={{
             borderRadius: 3,
@@ -200,6 +226,7 @@ const EditEligibilityDialog: React.FC<EditEligibilityDialogProps> = ({ open, dat
           variant="contained"
           onClick={handleSave}
           startIcon={<SaveIcon />}
+          disabled={loading}
           sx={{
             borderRadius: 2,
             px: 3,
@@ -207,7 +234,7 @@ const EditEligibilityDialog: React.FC<EditEligibilityDialogProps> = ({ open, dat
             fontWeight: 600,
           }}
         >
-          Save Changes
+          {loading ? "Saving..." : "Save Changes"}
         </Button>
       </DialogActions>
     </StyledDialog>

@@ -227,10 +227,10 @@ const DisbursedLeadsTable: React.FC = () => {
             <TableRow>
               <TableCell>Created At</TableCell>
               <TableCell>Lead ID</TableCell>
-              {!isPartner && <TableCell>Partner (Name, ID)</TableCell>}
-              {isPartner && <TableCell>Associate (Name, ID)</TableCell>}
-              <TableCell>Applicant (Name, Business)</TableCell>
-              <TableCell>Lender (Name, Loan Type)</TableCell>
+              {!isPartner && <TableCell>Partner</TableCell>}
+              {isPartner && <TableCell>Associate</TableCell>}
+              <TableCell>Applicant</TableCell>
+              <TableCell>Lender</TableCell>
               <TableCell>Disbursal Amount</TableCell>
               <TableCell>Commission %</TableCell>
               <TableCell>Gross Payout</TableCell>

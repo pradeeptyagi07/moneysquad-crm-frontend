@@ -107,6 +107,8 @@ interface UserDataState {
   userData: UserData | null
   loading: boolean
   error: string | null
+  updating: boolean
+  updateError: string | null
 }
 
 // Initial State
@@ -114,6 +116,8 @@ const initialState: UserDataState = {
   userData: null,
   loading: false,
   error: null,
+  updating: false,
+  updateError: null,
 }
 
 // Async Thunk for fetching user data
@@ -134,6 +138,24 @@ export const fetchUserData = createAsyncThunk<UserData, void, { rejectValue: str
   },
 )
 
+// Async Thunk for updating user data
+export const updateUserData = createAsyncThunk<UserData, Partial<UserData>, { rejectValue: string }>(
+  "userData/updateUserData",
+  async (updateData, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.put<UserDataResponse>("/common/userdata", updateData)
+
+      if (response.data.success) {
+        return response.data.data
+      } else {
+        return rejectWithValue("Failed to update user data")
+      }
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || "Failed to update user data")
+    }
+  },
+)
+
 // User Data Slice
 const userDataSlice = createSlice({
   name: "userData",
@@ -143,11 +165,13 @@ const userDataSlice = createSlice({
     clearUserData: (state) => {
       state.userData = null
       state.error = null
+      state.updateError = null
     },
 
     // Clear error
     clearError: (state) => {
       state.error = null
+      state.updateError = null
     },
 
     // Update user data locally (for optimistic updates)
@@ -173,6 +197,20 @@ const userDataSlice = createSlice({
         state.loading = false
         state.error = action.payload || "Failed to fetch user data"
       })
+      // Update User Data
+      .addCase(updateUserData.pending, (state) => {
+        state.updating = true
+        state.updateError = null
+      })
+      .addCase(updateUserData.fulfilled, (state, action) => {
+        state.updating = false
+        state.userData = action.payload
+        state.updateError = null
+      })
+      .addCase(updateUserData.rejected, (state, action) => {
+        state.updating = false
+        state.updateError = action.payload || "Failed to update user data"
+      })
   },
 })
 
@@ -186,6 +224,8 @@ export default userDataSlice.reducer
 export const selectUserData = (state: { userData: UserDataState }) => state.userData.userData
 export const selectUserDataLoading = (state: { userData: UserDataState }) => state.userData.loading
 export const selectUserDataError = (state: { userData: UserDataState }) => state.userData.error
+export const selectUserDataUpdating = (state: { userData: UserDataState }) => state.userData.updating
+export const selectUserDataUpdateError = (state: { userData: UserDataState }) => state.userData.updateError
 
 // Type guards for checking user role
 export const isAdminUser = (user: UserData | null): user is AdminUser => {

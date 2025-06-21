@@ -344,7 +344,7 @@ export const updateLead = createAsyncThunk<
     city: string;
     state: string;
     partnerId: string;
-    assignto: string;
+    assignedTo: string;
     lenderType: string;
   },
   { rejectValue: string }
@@ -370,7 +370,7 @@ export const updateLead = createAsyncThunk<
       formData.append("state", formValues.state);
       // Assignment fields
       formData.append("partnerId", formValues.partnerId);
-      formData.append("assignto", formValues.assignto);
+      formData.append("assignedTo", formValues.assignedTo);
       // Lender type
       formData.append("lenderType", formValues.lenderType);
 

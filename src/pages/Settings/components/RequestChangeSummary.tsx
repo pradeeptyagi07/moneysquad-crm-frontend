@@ -1,60 +1,28 @@
-import type React from "react"
-import { Box, Typography, Card, CardContent, Grid, Chip, Paper } from "@mui/material"
-import { AccountBalance, Description, CheckCircle, Schedule, Cancel } from "@mui/icons-material"
+"use client"
 
-// Mock data for requests
-const mockRequestData = {
-  summary: {
-    pending: 2,
-    approved: 5,
-    rejected: 1,
-  },
-  bankRequests: [
-    {
-      id: "REQ-BD-001",
-      requestDate: "2024-01-15T10:30:00Z",
-      status: "PENDING",
-      changes: ["Account Number", "IFSC Code"],
-    },
-    {
-      id: "REQ-BD-002",
-      requestDate: "2024-01-10T14:20:00Z",
-      status: "APPROVED",
-      changes: ["Branch Name"],
-    },
-    {
-      id: "REQ-BD-003",
-      requestDate: "2024-01-05T09:15:00Z",
-      status: "REJECTED",
-      changes: ["Account Holder Name"],
-    },
-  ],
-  documentRequests: [
-    {
-      id: "REQ-DOC-001",
-      requestDate: "2024-01-12T16:45:00Z",
-      status: "PENDING",
-      documents: ["PAN Card", "Aadhar Front"],
-      fileCount: 2,
-    },
-    {
-      id: "REQ-DOC-002",
-      requestDate: "2024-01-08T11:30:00Z",
-      status: "APPROVED",
-      documents: ["Bank Statement", "Address Proof"],
-      fileCount: 2,
-    },
-    {
-      id: "REQ-DOC-003",
-      requestDate: "2024-01-03T13:20:00Z",
-      status: "APPROVED",
-      documents: ["GST Certificate"],
-      fileCount: 1,
-    },
-  ],
-}
+import type React from "react"
+import { useEffect } from "react"
+import { Box, Typography, Card, CardContent, Grid, Chip, Paper, CircularProgress } from "@mui/material"
+import { AccountBalance, Description, CheckCircle, Schedule, Cancel } from "@mui/icons-material"
+import { useAppDispatch } from "../../../hooks/useAppDispatch"
+import {
+  fetchPartnerRequests,
+  selectPartnerRequests,
+  selectFetchLoading,
+  selectFetchError,
+} from "../../../store/slices/changeRequestSlice"
+import { useAppSelector } from "../../../hooks/useAppSelector"
 
 const RequestChangeSummary: React.FC = () => {
+  const dispatch = useAppDispatch()
+  const requests = useAppSelector(selectPartnerRequests)
+  const loading = useAppSelector(selectFetchLoading)
+  const error = useAppSelector(selectFetchError)
+
+  useEffect(() => {
+    dispatch(fetchPartnerRequests())
+  }, [dispatch])
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     return date.toLocaleDateString("en-IN", {
@@ -65,12 +33,12 @@ const RequestChangeSummary: React.FC = () => {
   }
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case "PENDING":
+    switch (status.toLowerCase()) {
+      case "pending":
         return "warning"
-      case "APPROVED":
+      case "approved":
         return "success"
-      case "REJECTED":
+      case "rejected":
         return "error"
       default:
         return "default"
@@ -78,16 +46,79 @@ const RequestChangeSummary: React.FC = () => {
   }
 
   const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "PENDING":
+    switch (status.toLowerCase()) {
+      case "pending":
         return <Schedule fontSize="small" />
-      case "APPROVED":
+      case "approved":
         return <CheckCircle fontSize="small" />
-      case "REJECTED":
+      case "rejected":
         return <Cancel fontSize="small" />
       default:
         return null
     }
+  }
+
+  // Process requests data
+  const bankRequests = requests.filter((req) => req.requestType === "bankDetails")
+  const documentRequests = requests.filter((req) => req.requestType === "documents")
+
+  // Calculate summary
+  const summary = {
+    pending: requests.filter((req) => req.status === "pending").length,
+    approved: requests.filter((req) => req.status === "approved").length,
+    rejected: requests.filter((req) => req.status === "rejected").length,
+  }
+
+  // Helper function to get changed fields for bank details
+  const getBankChanges = (previousData: any, currentData: any) => {
+    const changes: string[] = []
+    Object.keys(currentData).forEach((key) => {
+      if (previousData[key] !== currentData[key]) {
+        // Convert camelCase to readable format
+        const readableKey = key.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase())
+        changes.push(readableKey)
+      }
+    })
+    return changes
+  }
+
+  // Helper function to get document names and count
+  const getDocumentInfo = (currentData: any) => {
+    const documentNames: string[] = []
+    let fileCount = 0
+
+    Object.keys(currentData).forEach((key) => {
+      // Convert camelCase to readable format
+      const readableName = key.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase())
+      documentNames.push(readableName)
+
+      // Count files (some might be arrays)
+      if (Array.isArray(currentData[key])) {
+        fileCount += currentData[key].length
+      } else {
+        fileCount += 1
+      }
+    })
+
+    return { documentNames, fileCount }
+  }
+
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+        <CircularProgress />
+      </Box>
+    )
+  }
+
+  if (error) {
+    return (
+      <Box textAlign="center" py={4}>
+        <Typography color="error" variant="body1">
+          {error}
+        </Typography>
+      </Box>
+    )
   }
 
   return (
@@ -98,7 +129,7 @@ const RequestChangeSummary: React.FC = () => {
           <Card sx={{ textAlign: "center", bgcolor: "#fff3e0", py: 1 }}>
             <CardContent sx={{ py: "8px !important" }}>
               <Typography variant="h5" sx={{ fontWeight: 600, color: "#f57c00" }}>
-                {mockRequestData.summary.pending}
+                {summary.pending}
               </Typography>
               <Typography variant="caption" color="text.secondary">
                 Pending
@@ -110,7 +141,7 @@ const RequestChangeSummary: React.FC = () => {
           <Card sx={{ textAlign: "center", bgcolor: "#e8f5e8", py: 1 }}>
             <CardContent sx={{ py: "8px !important" }}>
               <Typography variant="h5" sx={{ fontWeight: 600, color: "#4caf50" }}>
-                {mockRequestData.summary.approved}
+                {summary.approved}
               </Typography>
               <Typography variant="caption" color="text.secondary">
                 Approved
@@ -122,7 +153,7 @@ const RequestChangeSummary: React.FC = () => {
           <Card sx={{ textAlign: "center", bgcolor: "#ffebee", py: 1 }}>
             <CardContent sx={{ py: "8px !important" }}>
               <Typography variant="h5" sx={{ fontWeight: 600, color: "#f44336" }}>
-                {mockRequestData.summary.rejected}
+                {summary.rejected}
               </Typography>
               <Typography variant="caption" color="text.secondary">
                 Rejected
@@ -145,30 +176,56 @@ const RequestChangeSummary: React.FC = () => {
             </Box>
 
             <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-              {mockRequestData.bankRequests.map((request) => (
-                <Card key={request.id} sx={{ border: "1px solid #e0e0e0" }}>
-                  <CardContent sx={{ py: "12px !important" }}>
-                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        {request.id}
-                      </Typography>
-                      <Chip
-                        icon={getStatusIcon(request.status)}
-                        label={request.status}
-                        color={getStatusColor(request.status) as any}
-                        size="small"
-                        sx={{ height: 20, fontSize: "0.7rem" }}
-                      />
-                    </Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5 }}>
-                      {formatDate(request.requestDate)}
-                    </Typography>
-                    <Typography variant="body2" sx={{ fontSize: "0.8rem" }}>
-                      {request.changes.join(", ")}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              ))}
+              {bankRequests.length === 0 ? (
+                <Typography variant="body2" color="text.secondary" textAlign="center" py={2}>
+                  No bank detail change requests
+                </Typography>
+              ) : (
+                bankRequests.map((request) => {
+                  const changes = getBankChanges(request.previousData, request.currentData)
+                  return (
+                    <Card key={request._id} sx={{ border: "1px solid #e0e0e0" }}>
+                      <CardContent sx={{ py: "12px !important" }}>
+                        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            {request._id.slice(-8).toUpperCase()}
+                          </Typography>
+                          <Chip
+                            icon={getStatusIcon(request.status)}
+                            label={request.status.toUpperCase()}
+                            color={getStatusColor(request.status) as any}
+                            size="small"
+                            sx={{ height: 20, fontSize: "0.7rem" }}
+                          />
+                        </Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5 }}>
+                          {formatDate(request.createdAt)}
+                        </Typography>
+                        <Typography variant="body2" sx={{ fontSize: "0.8rem" }}>
+                          {changes.length > 0 ? changes.join(", ") : "No changes detected"}
+                        </Typography>
+                        {/* Show approve/reject message if available */}
+                        {request.status === "approved" && request.approveMessage && (
+                          <Typography
+                            variant="body2"
+                            sx={{ fontSize: "0.75rem", color: "#4caf50", mt: 0.5, fontStyle: "italic" }}
+                          >
+                            ✓ {request.approveMessage}
+                          </Typography>
+                        )}
+                        {request.status === "rejected" && request.rejectMessage && (
+                          <Typography
+                            variant="body2"
+                            sx={{ fontSize: "0.75rem", color: "#f44336", mt: 0.5, fontStyle: "italic" }}
+                          >
+                            ✗ {request.rejectMessage}
+                          </Typography>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )
+                })
+              )}
             </Box>
           </Paper>
         </Grid>
@@ -184,30 +241,56 @@ const RequestChangeSummary: React.FC = () => {
             </Box>
 
             <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-              {mockRequestData.documentRequests.map((request) => (
-                <Card key={request.id} sx={{ border: "1px solid #e0e0e0" }}>
-                  <CardContent sx={{ py: "12px !important" }}>
-                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        {request.id}
-                      </Typography>
-                      <Chip
-                        icon={getStatusIcon(request.status)}
-                        label={request.status}
-                        color={getStatusColor(request.status) as any}
-                        size="small"
-                        sx={{ height: 20, fontSize: "0.7rem" }}
-                      />
-                    </Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5 }}>
-                      {formatDate(request.requestDate)}
-                    </Typography>
-                    <Typography variant="body2" sx={{ fontSize: "0.8rem" }}>
-                      {request.documents.join(", ")} ({request.fileCount} files)
-                    </Typography>
-                  </CardContent>
-                </Card>
-              ))}
+              {documentRequests.length === 0 ? (
+                <Typography variant="body2" color="text.secondary" textAlign="center" py={2}>
+                  No document change requests
+                </Typography>
+              ) : (
+                documentRequests.map((request) => {
+                  const { documentNames, fileCount } = getDocumentInfo(request.currentData)
+                  return (
+                    <Card key={request._id} sx={{ border: "1px solid #e0e0e0" }}>
+                      <CardContent sx={{ py: "12px !important" }}>
+                        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            {request._id.slice(-8).toUpperCase()}
+                          </Typography>
+                          <Chip
+                            icon={getStatusIcon(request.status)}
+                            label={request.status.toUpperCase()}
+                            color={getStatusColor(request.status) as any}
+                            size="small"
+                            sx={{ height: 20, fontSize: "0.7rem" }}
+                          />
+                        </Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5 }}>
+                          {formatDate(request.createdAt)}
+                        </Typography>
+                        <Typography variant="body2" sx={{ fontSize: "0.8rem" }}>
+                          {documentNames.join(", ")} ({fileCount} files)
+                        </Typography>
+                        {/* Show approve/reject message if available */}
+                        {request.status === "approved" && request.approveMessage && (
+                          <Typography
+                            variant="body2"
+                            sx={{ fontSize: "0.75rem", color: "#4caf50", mt: 0.5, fontStyle: "italic" }}
+                          >
+                            ✓ {request.approveMessage}
+                          </Typography>
+                        )}
+                        {request.status === "rejected" && request.rejectMessage && (
+                          <Typography
+                            variant="body2"
+                            sx={{ fontSize: "0.75rem", color: "#f44336", mt: 0.5, fontStyle: "italic" }}
+                          >
+                            ✗ {request.rejectMessage}
+                          </Typography>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )
+                })
+              )}
             </Box>
           </Paper>
         </Grid>

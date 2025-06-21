@@ -20,10 +20,10 @@ import {
   Alert,
 } from "@mui/material"
 import UniversalFilterBar from "./UniversalFilterBar"
-import { useAuth } from "../../../hooks/useAuth"
 import { useAppDispatch } from "../../../hooks/useAppDispatch"
-import { useAppSelector } from "../../../hooks/useAppSelector"
 import { fetchMonthlyBreakdown } from "../../../store/slices/commissionSlice"
+import { isPartnerUser } from "../../../store/slices/userDataSlice"
+import { useAppSelector } from "../../../hooks/useAppSelector"
 
 interface PayoutHistoryFilters {
   month?: number
@@ -33,10 +33,12 @@ interface PayoutHistoryFilters {
 }
 
 const PayoutHistoryTable = () => {
-  const { user } = useAuth()
   const dispatch = useAppDispatch()
   const { monthlyBreakdown, monthlyBreakdownLoading, error } = useAppSelector((state) => state.commission)
-  const isGSTApplicable = true // Simulated based on account type
+  const { userData } = useAppSelector((state) => state.userData)
+
+  // Check if user is partner and has GST billing enabled
+  const isGSTApplicable = isPartnerUser(userData) && userData.bankDetails?.isGstBillingApplicable === "Yes"
 
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(5)
@@ -196,7 +198,7 @@ const PayoutHistoryTable = () => {
         }}
       />
 
-      {/* GST Invoice Info */}
+      {/* GST Invoice Info - Only show for partners with GST billing enabled */}
       {isGSTApplicable && (
         <Card variant="outlined" sx={{ mt: 2, p: 1, bgcolor: "#fefefe", borderRadius: 3, boxShadow: 1 }}>
           <CardContent>

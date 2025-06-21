@@ -16,7 +16,27 @@ import {
   TextField,
 } from "@mui/material"
 import { AccountBalance, CheckCircle, Cancel, AccessTime, ArrowForward } from "@mui/icons-material"
-import type { BankChangeRequest } from "../types/changeRequestTypes"
+
+interface BankData {
+  accountType: string
+  accountHolderName: string
+  bankName: string
+  accountNumber: string
+  ifscCode: string
+  branchName: string
+  relationshipWithAccountHolder: string
+  isGstBillingApplicable: string
+}
+
+interface BankChangeRequest {
+  id: string
+  type: string
+  submittedAt: string
+  reason: string
+  status: "pending" | "approved" | "rejected"
+  currentData: BankData
+  requestedData: BankData
+}
 
 interface BankChangeRequestCardProps {
   request: BankChangeRequest
@@ -25,7 +45,6 @@ interface BankChangeRequestCardProps {
 }
 
 const BankChangeRequestCard: React.FC<BankChangeRequestCardProps> = ({ request, onApprove, onDecline }) => {
-  const [detailsOpen, setDetailsOpen] = useState(false)
   const [approveDialogOpen, setApproveDialogOpen] = useState(false)
   const [declineDialogOpen, setDeclineDialogOpen] = useState(false)
   const [adminNotes, setAdminNotes] = useState("")
@@ -59,7 +78,7 @@ const BankChangeRequestCard: React.FC<BankChangeRequestCardProps> = ({ request, 
     <>
       <Card
         sx={{
-          mb: 2, // Reduced from 3
+          mb: 2,
           borderRadius: 3,
           background: "linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.7) 100%)",
           backdropFilter: "blur(10px)",
@@ -73,8 +92,6 @@ const BankChangeRequestCard: React.FC<BankChangeRequestCardProps> = ({ request, 
         }}
       >
         <CardContent sx={{ p: 2 }}>
-          {" "}
-          {/* Reduced from 3 */}
           <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
             <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
               <Box
@@ -99,8 +116,8 @@ const BankChangeRequestCard: React.FC<BankChangeRequestCardProps> = ({ request, 
                 </Box>
               </Box>
             </Box>
-            {/* Remove the icons and status chip section */}
           </Box>
+
           <Box
             sx={{
               bgcolor: "rgba(255,255,255,0.7)",
@@ -116,6 +133,12 @@ const BankChangeRequestCard: React.FC<BankChangeRequestCardProps> = ({ request, 
                 </Typography>
                 <Box sx={{ space: 1 }}>
                   <Typography variant="body2">
+                    <strong>Account Type:</strong> {request.currentData.accountType}
+                  </Typography>
+                  <Typography variant="body2">
+                    <strong>Account Holder:</strong> {request.currentData.accountHolderName}
+                  </Typography>
+                  <Typography variant="body2">
                     <strong>Bank:</strong> {request.currentData.bankName}
                   </Typography>
                   <Typography variant="body2">
@@ -126,6 +149,12 @@ const BankChangeRequestCard: React.FC<BankChangeRequestCardProps> = ({ request, 
                   </Typography>
                   <Typography variant="body2">
                     <strong>Branch:</strong> {request.currentData.branchName}
+                  </Typography>
+                  <Typography variant="body2">
+                    <strong>Relationship:</strong> {request.currentData.relationshipWithAccountHolder}
+                  </Typography>
+                  <Typography variant="body2">
+                    <strong>GST Billing:</strong> {request.currentData.isGstBillingApplicable}
                   </Typography>
                 </Box>
               </Grid>
@@ -138,6 +167,12 @@ const BankChangeRequestCard: React.FC<BankChangeRequestCardProps> = ({ request, 
                 </Typography>
                 <Box sx={{ space: 1 }}>
                   <Typography variant="body2">
+                    <strong>Account Type:</strong> {request.requestedData.accountType}
+                  </Typography>
+                  <Typography variant="body2">
+                    <strong>Account Holder:</strong> {request.requestedData.accountHolderName}
+                  </Typography>
+                  <Typography variant="body2">
                     <strong>Bank:</strong> {request.requestedData.bankName}
                   </Typography>
                   <Typography variant="body2">
@@ -149,10 +184,17 @@ const BankChangeRequestCard: React.FC<BankChangeRequestCardProps> = ({ request, 
                   <Typography variant="body2">
                     <strong>Branch:</strong> {request.requestedData.branchName}
                   </Typography>
+                  <Typography variant="body2">
+                    <strong>Relationship:</strong> {request.requestedData.relationshipWithAccountHolder}
+                  </Typography>
+                  <Typography variant="body2">
+                    <strong>GST Billing:</strong> {request.requestedData.isGstBillingApplicable}
+                  </Typography>
                 </Box>
               </Grid>
             </Grid>
           </Box>
+
           <Box sx={{ mb: 2 }}>
             <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
               Reason for Change
@@ -170,6 +212,7 @@ const BankChangeRequestCard: React.FC<BankChangeRequestCardProps> = ({ request, 
               "{request.reason}"
             </Typography>
           </Box>
+
           {request.status === "pending" && (
             <Box sx={{ display: "flex", gap: 2, justifyContent: "flex-end" }}>
               <Button

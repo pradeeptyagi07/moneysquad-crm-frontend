@@ -1,4 +1,10 @@
+"use client"
+
 import type React from "react"
+import { useEffect } from "react"
+import { useDispatch } from "react-redux"
+import type { AppDispatch } from "../../store"
+import { fetchProductInfo } from "../../store/slices/resourceAndSupportSlice"
 import { Container, Grid, Typography, Box, Fade } from "@mui/material"
 import { styled } from "@mui/material/styles"
 import ProductGuide from "./ProductGuide"
@@ -35,6 +41,12 @@ const SectionWrapper = styled(Box)(({ theme }) => ({
 }))
 
 const TrainingResourcesTab: React.FC = () => {
+  const dispatch = useDispatch<AppDispatch>()
+
+  useEffect(() => {
+    dispatch(fetchProductInfo())
+  }, [dispatch])
+
   return (
     <StyledContainer maxWidth="xl">
       <Fade in timeout={800}>

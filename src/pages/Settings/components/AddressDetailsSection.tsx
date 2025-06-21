@@ -1,14 +1,29 @@
 "use client"
 
-import type React from "react"
+import React from "react"
 import { useState } from "react"
-import { Box, Typography, Grid, TextField, MenuItem, Paper, Button } from "@mui/material"
+import {
+  Box,
+  Typography,
+  Grid,
+  TextField,
+  MenuItem,
+  Paper,
+  Button,
+  CircularProgress,
+  Snackbar,
+  Alert,
+} from "@mui/material"
 import { Edit, Save, Cancel } from "@mui/icons-material"
 import { useAppSelector } from "../../../hooks/useAppSelector"
+import { useAppDispatch } from "../../../hooks/useAppDispatch"
 import {
   selectUserData,
   selectUserDataLoading,
   selectUserDataError,
+  selectUserDataUpdating,
+  selectUserDataUpdateError,
+  updateUserData,
   isPartnerUser,
 } from "../../../store/slices/userDataSlice"
 
@@ -34,11 +49,15 @@ const AddressDetailsSection: React.FC<AddressDetailsSectionProps> = ({
   },
 }) => {
   const [isEditing, setIsEditing] = useState(false)
+  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" as "success" | "error" })
 
   // Get user data from Redux store
+  const dispatch = useAppDispatch()
   const userData = useAppSelector(selectUserData)
   const loading = useAppSelector(selectUserDataLoading)
   const error = useAppSelector(selectUserDataError)
+  const updating = useAppSelector(selectUserDataUpdating)
+  const updateError = useAppSelector(selectUserDataUpdateError)
 
   // Use Redux data if available, otherwise fall back to props
   const addressData =
@@ -55,7 +74,26 @@ const AddressDetailsSection: React.FC<AddressDetailsSectionProps> = ({
 
   const [tempData, setTempData] = useState(addressData)
 
-  const addressTypes = ["Residential", "Commercial", "Permanent", "Temporary"]
+  // Update tempData when userData changes
+  React.useEffect(() => {
+    if (userData && isPartnerUser(userData)) {
+      const updatedAddressData = {
+        addressLine1: userData.addressDetails?.addressLine1 || "",
+        addressLine2: userData.addressDetails?.addressLine2 || "",
+        landmark: userData.addressDetails?.landmark || "",
+        city: userData.addressDetails?.city || "",
+        addressPincode: userData.addressDetails?.pincode || "",
+        addressType: userData.addressDetails?.addressType || "",
+      }
+      setTempData(updatedAddressData)
+    }
+  }, [userData])
+
+  const addressTypes = ["Owned", "Rented", "Company Provided", "Parental", "Other"]
+
+  const handleCloseSnackbar = () => {
+    setSnackbar((prev) => ({ ...prev, open: false }))
+  }
 
   const handleEdit = () => {
     setTempData(addressData)
@@ -67,12 +105,29 @@ const AddressDetailsSection: React.FC<AddressDetailsSectionProps> = ({
     setIsEditing(false)
   }
 
-  const handleUpdate = () => {
-    // Here you would make API call to update the data
-    console.log("Updating address details:", tempData)
-    // For now, just exit edit mode
-    setIsEditing(false)
-    // In real implementation, update the user data after successful API call
+  const handleUpdate = async () => {
+    if (!userData || !isPartnerUser(userData)) return
+
+    try {
+      // Prepare update data in the same format as received (addressDetails)
+      const updateData = {
+        addressDetails: {
+          ...userData.addressDetails,
+          addressLine1: tempData.addressLine1,
+          addressLine2: tempData.addressLine2,
+          landmark: tempData.landmark,
+          city: tempData.city,
+          pincode: tempData.addressPincode,
+          addressType: tempData.addressType,
+        },
+      }
+
+      await dispatch(updateUserData(updateData)).unwrap()
+      setSnackbar({ open: true, message: "Address details updated successfully!", severity: "success" })
+      setIsEditing(false)
+    } catch (error: any) {
+      setSnackbar({ open: true, message: error || "Failed to update address details", severity: "error" })
+    }
   }
 
   const handleChange = (field: string, value: any) => {
@@ -102,7 +157,14 @@ const AddressDetailsSection: React.FC<AddressDetailsSectionProps> = ({
           Address Details
         </Typography>
         {!isEditing ? (
-          <Button variant="outlined" startIcon={<Edit />} onClick={handleEdit} size="small" sx={{ borderRadius: 2 }}>
+          <Button
+            variant="outlined"
+            startIcon={<Edit />}
+            onClick={handleEdit}
+            size="small"
+            sx={{ borderRadius: 2 }}
+            disabled={updating}
+          >
             Edit Address
           </Button>
         ) : (
@@ -113,17 +175,19 @@ const AddressDetailsSection: React.FC<AddressDetailsSectionProps> = ({
               onClick={handleCancel}
               size="small"
               sx={{ borderRadius: 2 }}
+              disabled={updating}
             >
               Cancel
             </Button>
             <Button
               variant="contained"
-              startIcon={<Save />}
+              startIcon={updating ? <CircularProgress size={16} color="inherit" /> : <Save />}
               onClick={handleUpdate}
               size="small"
               sx={{ borderRadius: 2 }}
+              disabled={updating}
             >
-              Update
+              {updating ? "Updating..." : "Update"}
             </Button>
           </Box>
         )}
@@ -243,6 +307,17 @@ const AddressDetailsSection: React.FC<AddressDetailsSectionProps> = ({
           </TextField>
         </Grid>
       </Grid>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: "100%" }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Paper>
   )
 }

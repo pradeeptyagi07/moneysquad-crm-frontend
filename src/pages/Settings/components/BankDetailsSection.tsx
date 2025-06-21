@@ -17,15 +17,24 @@ import {
   Grid,
   TextField,
   IconButton,
+  Snackbar,
+  Alert,
+  CircularProgress,
 } from "@mui/material"
 import { AccountBalance, Edit, Business, Receipt, Visibility, VisibilityOff } from "@mui/icons-material"
 import { useAppSelector } from "../../../hooks/useAppSelector"
+import { useAppDispatch } from "../../../hooks/useAppDispatch"
 import {
   selectUserData,
   selectUserDataLoading,
   selectUserDataError,
   isPartnerUser,
 } from "../../../store/slices/userDataSlice"
+import {
+  submitChangeRequest,
+  selectChangeRequestLoading,
+  selectChangeRequestError,
+} from "../../../store/slices/changeRequestSlice"
 
 interface BankDetailsSectionProps {
   user?: {
@@ -41,8 +50,12 @@ interface BankDetailsSectionProps {
 }
 
 const BankDetailsSection: React.FC<BankDetailsSectionProps> = () => {
+  const dispatch = useAppDispatch()
   const [updateModalOpen, setUpdateModalOpen] = useState(false)
   const [showAccountNumber, setShowAccountNumber] = useState(false)
+  const [snackbarOpen, setSnackbarOpen] = useState(false)
+  const [snackbarMessage, setSnackbarMessage] = useState("")
+  const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">("success")
   const [newData, setNewData] = useState({
     accountHolderName: "",
     accountType: "",
@@ -59,6 +72,8 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = () => {
   const userData = useAppSelector(selectUserData)
   const loading = useAppSelector(selectUserDataLoading)
   const error = useAppSelector(selectUserDataError)
+  const changeRequestLoading = useAppSelector(selectChangeRequestLoading)
+  const changeRequestError = useAppSelector(selectChangeRequestError)
 
   // Use Redux data if available, otherwise fallback to empty
   const user =
@@ -90,16 +105,45 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = () => {
     setUpdateModalOpen(true)
   }
 
-  const handleConfirmRequest = () => {
-    // Here you would send the update request to backend
-    console.log("Bank details update request:", {
-      currentData: user,
-      requestedData: newData,
-      reason: reason,
-    })
-    setUpdateModalOpen(false)
-    setReason("")
-    // Show success message
+  const handleConfirmRequest = async () => {
+    try {
+      const requestData = {
+        requestType: "bankDetails" as const,
+        previousData: {
+          accountType: user.accountType || "",
+          accountHolderName: user.accountHolderName || "",
+          bankName: user.bankName || "",
+          accountNumber: user.accountNumber || "",
+          ifscCode: user.ifscCode || "",
+          branchName: user.branchName || "",
+          relationshipWithAccountHolder: user.relationshipWithAccountHolder || "",
+          isGstBillingApplicable: user.isGstBillingApplicable || "",
+        },
+        currentData: {
+          accountType: newData.accountType,
+          accountHolderName: newData.accountHolderName,
+          bankName: newData.bankName,
+          accountNumber: newData.accountNumber,
+          ifscCode: newData.ifscCode,
+          branchName: newData.branchName,
+          relationshipWithAccountHolder: newData.relationshipWithAccountHolder,
+          isGstBillingApplicable: newData.isGstBillingApplicable,
+        },
+        reason: reason,
+      }
+
+      await dispatch(submitChangeRequest(requestData)).unwrap()
+
+      setSnackbarMessage("Bank details change request submitted successfully!")
+      setSnackbarSeverity("success")
+      setSnackbarOpen(true)
+      setUpdateModalOpen(false)
+      setReason("")
+    } catch (error) {
+      setSnackbarMessage("Failed to submit change request. Please try again.")
+      setSnackbarSeverity("error")
+      setSnackbarOpen(true)
+    }
   }
 
   const maskAccountNumber = (accountNumber: string) => {
@@ -534,17 +578,32 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = () => {
           </Box>
         </DialogContent>
         <DialogActions sx={{ p: 3 }}>
-          <Button onClick={() => setUpdateModalOpen(false)}>Cancel</Button>
+          <Button onClick={() => setUpdateModalOpen(false)} disabled={changeRequestLoading}>
+            Cancel
+          </Button>
           <Button
             variant="contained"
             onClick={handleConfirmRequest}
-            disabled={reason.trim() === ""}
+            disabled={reason.trim() === "" || changeRequestLoading}
             sx={{ borderRadius: 2 }}
+            startIcon={changeRequestLoading ? <CircularProgress size={20} /> : null}
           >
-            Confirm Request
+            {changeRequestLoading ? "Submitting..." : "Confirm Request"}
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={4000}
+        onClose={() => setSnackbarOpen(false)}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert onClose={() => setSnackbarOpen(false)} severity={snackbarSeverity} sx={{ width: "100%" }}>
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
     </Box>
   )
 }

@@ -7,7 +7,17 @@ import { Close, AccountBalance, Description, Person } from "@mui/icons-material"
 import BankChangeRequestCard from "./BankChangeRequestCard"
 import DocumentChangeRequestCard from "./DocumentChangeRequestCard"
 import type { Partner } from "../../../store/slices/managePartnerSlice"
-import type { PartnerChangeRequests } from "../types/changeRequestTypes"
+import { useAppDispatch } from "../../../hooks/useAppDispatch"
+import {
+  fetchAdminRequests,
+  selectAdminRequests,
+  selectAdminFetchLoading,
+  selectAdminFetchError,
+  updateRequestStatus,
+  selectActionLoading,
+  clearActionState,
+} from "../../../store/slices/changeRequestSlice"
+import { useAppSelector } from "../../../hooks/useAppSelector"
 
 interface PartnerChangeRequestDialogProps {
   open: boolean
@@ -38,114 +48,145 @@ function TabPanel(props: TabPanelProps) {
 }
 
 const PartnerChangeRequestDialog: React.FC<PartnerChangeRequestDialogProps> = ({ open, onClose, partner }) => {
+  const dispatch = useAppDispatch()
   const [tabValue, setTabValue] = useState(0)
-  const [changeRequests, setChangeRequests] = useState<PartnerChangeRequests | null>(null)
-  const [loading, setLoading] = useState(false)
 
-  // Mock data for demonstration - replace with actual API call
-  const mockChangeRequests: PartnerChangeRequests = {
-    partnerId: partner?.partnerId || "",
-    partnerName: partner?.basicInfo?.fullName || "",
-    bankRequests: [
-      {
-        id: "bank_req_1",
-        type: "bank",
-        submittedAt: "2024-01-15T10:30:00Z",
-        reason: "Changed primary bank account for better transaction rates",
-        status: "pending",
-        currentData: {
-          bankName: "HDFC Bank",
-          accountNumber: "****1234",
-          ifscCode: "HDFC0001234",
-          accountHolderName: "John Doe",
-          branchName: "Mumbai Central",
-        },
-        requestedData: {
-          bankName: "State Bank of India",
-          accountNumber: "****5678",
-          ifscCode: "SBIN0005678",
-          accountHolderName: "John Doe",
-          branchName: "Mumbai Fort",
-        },
-      },
-    ],
-    documentRequests: [
-      {
-        id: "doc_req_1",
-        type: "document",
-        documentType: "panCard",
-        submittedAt: "2024-01-14T14:20:00Z",
-        reason: "Updated PAN card with corrected name spelling",
-        status: "pending",
-        currentDocument: {
-          id: "doc_1",
-          name: "pan_old.pdf",
-          url: "/placeholder.svg?height=400&width=600",
-          type: "application/pdf",
-          size: 245760,
-          uploadedAt: "2023-12-01T10:00:00Z",
-        },
-        newDocument: {
-          id: "doc_2",
-          name: "pan_new.pdf",
-          url: "/placeholder.svg?height=400&width=600",
-          type: "application/pdf",
-          size: 267890,
-          uploadedAt: "2024-01-14T14:20:00Z",
-        },
-      },
-      {
-        id: "doc_req_2",
-        type: "document",
-        documentType: "aadharCard",
-        submittedAt: "2024-01-13T09:15:00Z",
-        reason: "Address change in Aadhar card",
-        status: "pending",
-        currentDocument: {
-          id: "doc_3",
-          name: "aadhar_old.pdf",
-          url: "/placeholder.svg?height=400&width=600",
-          type: "application/pdf",
-          size: 189456,
-          uploadedAt: "2023-11-15T12:30:00Z",
-        },
-        newDocument: {
-          id: "doc_4",
-          name: "aadhar_new.pdf",
-          url: "/placeholder.svg?height=400&width=600",
-          type: "application/pdf",
-          size: 201234,
-          uploadedAt: "2024-01-13T09:15:00Z",
-        },
-      },
-    ],
-    totalPending: 3,
-  }
+  // Redux selectors
+  const requests = useAppSelector(selectAdminRequests)
+  const loading = useAppSelector(selectAdminFetchLoading)
+  const error = useAppSelector(selectAdminFetchError)
+  const actionLoading = useAppSelector(selectActionLoading)
+
+  // Filter requests by type
+  const bankRequests = requests.filter((req) => req.requestType === "bankDetails")
+  const documentRequests = requests.filter((req) => req.requestType === "documents")
+  const totalPending = requests.filter((req) => req.status === "pending").length
 
   useEffect(() => {
-    if (open && partner) {
-      setLoading(true)
-      // Simulate API call
-      setTimeout(() => {
-        setChangeRequests(mockChangeRequests)
-        setLoading(false)
-      }, 500)
+    if (open && partner?._id) {
+      // Use the actual _id from partner data, not partnerId
+      console.log("Fetching requests for partner _id:", partner._id)
+      dispatch(fetchAdminRequests(partner._id))
     }
-  }, [open, partner])
+  }, [open, partner?._id, dispatch])
+
+  useEffect(() => {
+    // Clear action state when dialog closes
+    if (!open) {
+      dispatch(clearActionState())
+    }
+  }, [open, dispatch])
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue)
   }
 
-  const handleApproveRequest = (requestId: string, adminNotes?: string) => {
-    console.log("Approving request:", requestId, adminNotes)
-    // Implement API call to approve request
+  const handleApproveRequest = async (requestId: string, adminNotes?: string) => {
+    try {
+      await dispatch(
+        updateRequestStatus({
+          requestId,
+          status: "approved",
+          message: adminNotes,
+        }),
+      ).unwrap()
+
+      // Refresh requests after successful action using _id
+      if (partner?._id) {
+        console.log("Refreshing requests after approve...")
+        dispatch(fetchAdminRequests(partner._id))
+      }
+    } catch (error) {
+      console.error("Failed to approve request:", error)
+    }
   }
 
-  const handleDeclineRequest = (requestId: string, reason: string) => {
-    console.log("Declining request:", requestId, reason)
-    // Implement API call to decline request
+  const handleDeclineRequest = async (requestId: string, reason: string) => {
+    try {
+      await dispatch(
+        updateRequestStatus({
+          requestId,
+          status: "rejected",
+          message: reason,
+        }),
+      ).unwrap()
+
+      // Refresh requests after successful action using _id
+      if (partner?._id) {
+        console.log("Refreshing requests after decline...")
+        dispatch(fetchAdminRequests(partner._id))
+      }
+    } catch (error) {
+      console.error("Failed to decline request:", error)
+    }
   }
+
+  // Transform API data to match existing component structure
+  const transformBankRequest = (apiRequest: any) => ({
+    id: apiRequest._id,
+    type: "bank",
+    submittedAt: apiRequest.createdAt,
+    reason: apiRequest.reason || "No reason provided",
+    status: apiRequest.status,
+    currentData: {
+      accountType: apiRequest.previousData.accountType,
+      accountHolderName: apiRequest.previousData.accountHolderName,
+      bankName: apiRequest.previousData.bankName,
+      accountNumber: apiRequest.previousData.accountNumber,
+      ifscCode: apiRequest.previousData.ifscCode,
+      branchName: apiRequest.previousData.branchName,
+      relationshipWithAccountHolder: apiRequest.previousData.relationshipWithAccountHolder,
+      isGstBillingApplicable: apiRequest.previousData.isGstBillingApplicable,
+    },
+    requestedData: {
+      accountType: apiRequest.currentData.accountType,
+      accountHolderName: apiRequest.currentData.accountHolderName,
+      bankName: apiRequest.currentData.bankName,
+      accountNumber: apiRequest.currentData.accountNumber,
+      ifscCode: apiRequest.currentData.ifscCode,
+      branchName: apiRequest.currentData.branchName,
+      relationshipWithAccountHolder: apiRequest.currentData.relationshipWithAccountHolder,
+      isGstBillingApplicable: apiRequest.currentData.isGstBillingApplicable,
+    },
+  })
+
+  // Transform document request to show all documents in one card
+  const transformDocumentRequest = (apiRequest: any) => ({
+    id: apiRequest._id,
+    type: "document",
+    submittedAt: apiRequest.createdAt,
+    reason: apiRequest.reason || "No reason provided",
+    status: apiRequest.status,
+    previousData: apiRequest.previousData,
+    currentData: apiRequest.currentData,
+  })
+
+  // Enhanced empty state component
+  const EmptyState = ({ icon: Icon, title, description }: { icon: any; title: string; description: string }) => (
+    <Box sx={{ textAlign: "center", py: 8 }}>
+      <Box
+        sx={{
+          width: 120,
+          height: 120,
+          borderRadius: "50%",
+          bgcolor: "grey.100",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          mx: "auto",
+          mb: 3,
+        }}
+      >
+        <Icon sx={{ fontSize: 48, color: "grey.400" }} />
+      </Box>
+      <Typography variant="h6" color="text.secondary" sx={{ mb: 1, fontWeight: 600 }}>
+        {title}
+      </Typography>
+      <Typography variant="body2" color="text.disabled" sx={{ maxWidth: 400, mx: "auto" }}>
+        {description}
+      </Typography>
+    </Box>
+  )
 
   if (!partner) return null
 
@@ -169,7 +210,7 @@ const PartnerChangeRequestDialog: React.FC<PartnerChangeRequestDialogProps> = ({
           color: "white",
           position: "relative",
           py: 3,
-          pr: 8, // Add right padding to prevent collision with close button
+          pr: 8,
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
@@ -177,8 +218,6 @@ const PartnerChangeRequestDialog: React.FC<PartnerChangeRequestDialogProps> = ({
             <Person />
           </Avatar>
           <Box sx={{ flex: 1, mr: 2 }}>
-            {" "}
-            {/* Add margin right */}
             <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
               Change Requests - {partner.basicInfo?.fullName}
             </Typography>
@@ -187,12 +226,12 @@ const PartnerChangeRequestDialog: React.FC<PartnerChangeRequestDialogProps> = ({
             </Typography>
           </Box>
           <Chip
-            label={`${changeRequests?.totalPending || 0} Pending`}
+            label={`${totalPending} Pending`}
             sx={{
               bgcolor: "rgba(255,255,255,0.2)",
               color: "white",
               fontWeight: 600,
-              mr: 1, // Add margin to prevent collision
+              mr: 1,
             }}
           />
         </Box>
@@ -200,8 +239,8 @@ const PartnerChangeRequestDialog: React.FC<PartnerChangeRequestDialogProps> = ({
           onClick={onClose}
           sx={{
             position: "absolute",
-            right: 16, // Increase right position
-            top: 16, // Increase top position
+            right: 16,
+            top: 16,
             color: "white",
             bgcolor: "rgba(255,255,255,0.1)",
             "&:hover": { bgcolor: "rgba(255,255,255,0.2)" },
@@ -223,7 +262,7 @@ const PartnerChangeRequestDialog: React.FC<PartnerChangeRequestDialogProps> = ({
               "& .MuiTab-root": {
                 minHeight: 64,
                 fontWeight: 600,
-                minWidth: 200, // Set minimum width for tabs
+                minWidth: 200,
               },
             }}
           >
@@ -232,12 +271,7 @@ const PartnerChangeRequestDialog: React.FC<PartnerChangeRequestDialogProps> = ({
               label={
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                   <span>Bank Requests</span>
-                  <Chip
-                    label={changeRequests?.bankRequests?.length || 0}
-                    size="small"
-                    color="primary"
-                    sx={{ minWidth: 24, height: 20 }}
-                  />
+                  <Chip label={bankRequests.length} size="small" color="primary" sx={{ minWidth: 24, height: 20 }} />
                 </Box>
               }
               iconPosition="start"
@@ -248,7 +282,7 @@ const PartnerChangeRequestDialog: React.FC<PartnerChangeRequestDialogProps> = ({
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                   <span>Document Requests</span>
                   <Chip
-                    label={changeRequests?.documentRequests?.length || 0}
+                    label={documentRequests.length}
                     size="small"
                     color="primary"
                     sx={{ minWidth: 24, height: 20 }}
@@ -262,26 +296,38 @@ const PartnerChangeRequestDialog: React.FC<PartnerChangeRequestDialogProps> = ({
           <TabPanel value={tabValue} index={0}>
             <Box sx={{ px: 3 }}>
               {loading ? (
-                <Typography>Loading bank requests...</Typography>
-              ) : changeRequests?.bankRequests?.length ? (
-                changeRequests.bankRequests.map((request) => (
+                <Box sx={{ textAlign: "center", py: 8 }}>
+                  <Typography variant="h6" color="text.secondary">
+                    Loading bank requests...
+                  </Typography>
+                  <Typography variant="body2" color="text.disabled" sx={{ mt: 1 }}>
+                    Please wait while we fetch the latest requests
+                  </Typography>
+                </Box>
+              ) : error ? (
+                <Box sx={{ textAlign: "center", py: 8 }}>
+                  <Typography variant="h6" color="error" sx={{ mb: 1 }}>
+                    Error Loading Requests
+                  </Typography>
+                  <Typography variant="body2" color="text.disabled">
+                    {error}
+                  </Typography>
+                </Box>
+              ) : bankRequests.length ? (
+                bankRequests.map((request) => (
                   <BankChangeRequestCard
-                    key={request.id}
-                    request={request}
+                    key={request._id}
+                    request={transformBankRequest(request)}
                     onApprove={handleApproveRequest}
                     onDecline={handleDeclineRequest}
                   />
                 ))
               ) : (
-                <Box sx={{ textAlign: "center", py: 8 }}>
-                  <AccountBalance sx={{ fontSize: 64, color: "grey.300", mb: 2 }} />
-                  <Typography variant="h6" color="text.secondary">
-                    No Bank Change Requests
-                  </Typography>
-                  <Typography variant="body2" color="text.disabled">
-                    All bank details are up to date
-                  </Typography>
-                </Box>
+                <EmptyState
+                  icon={AccountBalance}
+                  title="No Bank Change Requests"
+                  description="This partner hasn't submitted any bank details change requests yet. All bank information appears to be up to date."
+                />
               )}
             </Box>
           </TabPanel>
@@ -289,26 +335,38 @@ const PartnerChangeRequestDialog: React.FC<PartnerChangeRequestDialogProps> = ({
           <TabPanel value={tabValue} index={1}>
             <Box sx={{ px: 3 }}>
               {loading ? (
-                <Typography>Loading document requests...</Typography>
-              ) : changeRequests?.documentRequests?.length ? (
-                changeRequests.documentRequests.map((request) => (
+                <Box sx={{ textAlign: "center", py: 8 }}>
+                  <Typography variant="h6" color="text.secondary">
+                    Loading document requests...
+                  </Typography>
+                  <Typography variant="body2" color="text.disabled" sx={{ mt: 1 }}>
+                    Please wait while we fetch the latest requests
+                  </Typography>
+                </Box>
+              ) : error ? (
+                <Box sx={{ textAlign: "center", py: 8 }}>
+                  <Typography variant="h6" color="error" sx={{ mb: 1 }}>
+                    Error Loading Requests
+                  </Typography>
+                  <Typography variant="body2" color="text.disabled">
+                    {error}
+                  </Typography>
+                </Box>
+              ) : documentRequests.length ? (
+                documentRequests.map((request) => (
                   <DocumentChangeRequestCard
-                    key={request.id}
-                    request={request}
+                    key={request._id}
+                    request={transformDocumentRequest(request)}
                     onApprove={handleApproveRequest}
                     onDecline={handleDeclineRequest}
                   />
                 ))
               ) : (
-                <Box sx={{ textAlign: "center", py: 8 }}>
-                  <Description sx={{ fontSize: 64, color: "grey.300", mb: 2 }} />
-                  <Typography variant="h6" color="text.secondary">
-                    No Document Change Requests
-                  </Typography>
-                  <Typography variant="body2" color="text.disabled">
-                    All documents are up to date
-                  </Typography>
-                </Box>
+                <EmptyState
+                  icon={Description}
+                  title="No Document Change Requests"
+                  description="This partner hasn't submitted any document change requests yet. All documents appear to be current and properly uploaded."
+                />
               )}
             </Box>
           </TabPanel>

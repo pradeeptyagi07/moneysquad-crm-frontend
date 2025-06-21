@@ -21,6 +21,8 @@ import {
   Checkbox,
   FormControlLabel,
   IconButton,
+  Snackbar,
+  CircularProgress,
 } from "@mui/material"
 import {
   CloudUpload as UploadIcon,
@@ -31,6 +33,13 @@ import {
   Delete as DeleteIcon,
   CheckCircle as CheckCircleIcon,
 } from "@mui/icons-material"
+import { useAppDispatch } from "../../../hooks/useAppDispatch"
+import { useAppSelector } from "../../../hooks/useAppSelector"
+import {
+  submitChangeRequest,
+  selectChangeRequestLoading,
+  selectChangeRequestError,
+} from "../../../store/slices/changeRequestSlice"
 import { isPartnerUser } from "../../../store/slices/userDataSlice"
 
 interface RequestChangeDialogProps {
@@ -49,8 +58,15 @@ interface DocumentUpdate {
 }
 
 const RequestChangeDialog: React.FC<RequestChangeDialogProps> = ({ open, onClose, mode, data }) => {
+  const dispatch = useAppDispatch()
   const [documentUpdates, setDocumentUpdates] = useState<DocumentUpdate[]>([])
   const [reason, setReason] = useState("")
+  const [snackbarOpen, setSnackbarOpen] = useState(false)
+  const [snackbarMessage, setSnackbarMessage] = useState("")
+  const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">("success")
+
+  const changeRequestLoading = useAppSelector(selectChangeRequestLoading)
+  const changeRequestError = useAppSelector(selectChangeRequestError)
 
   // Initialize document updates when dialog opens
   React.useEffect(() => {
@@ -196,19 +212,55 @@ const RequestChangeDialog: React.FC<RequestChangeDialogProps> = ({ open, onClose
     setDocumentUpdates((prev) => prev.map((update) => ({ ...update, selected: !allSelected })))
   }
 
-  const handleSubmitRequest = () => {
-    const selectedUpdates = documentUpdates.filter((update) => update.selected && update.newFile)
+  const handleSubmitRequest = async () => {
+    try {
+      if (mode === "document_update") {
+        const selectedUpdates = documentUpdates.filter((update) => update.selected && update.newFile)
 
-    console.log("Submitting bulk document update request:", {
-      mode,
-      updates: selectedUpdates,
-      reason,
-    })
+        if (selectedUpdates.length === 0) {
+          setSnackbarMessage("Please select at least one document to update.")
+          setSnackbarSeverity("error")
+          setSnackbarOpen(true)
+          return
+        }
 
-    // Reset state
-    setDocumentUpdates([])
-    setReason("")
-    onClose()
+        // Prepare previous data (current document URLs)
+        const previousData: Record<string, string> = {}
+        selectedUpdates.forEach((update) => {
+          previousData[update.documentId] = update.currentFile.fileUrl
+        })
+
+        // Prepare current data (new files)
+        const currentData: Record<string, File> = {}
+        selectedUpdates.forEach((update) => {
+          if (update.newFile) {
+            currentData[update.documentId] = update.newFile
+          }
+        })
+
+        const requestData = {
+          requestType: "documents" as const,
+          previousData,
+          currentData,
+          reason,
+        }
+
+        await dispatch(submitChangeRequest(requestData)).unwrap()
+
+        setSnackbarMessage("Document change request submitted successfully!")
+        setSnackbarSeverity("success")
+        setSnackbarOpen(true)
+
+        // Reset state
+        setDocumentUpdates([])
+        setReason("")
+        onClose()
+      }
+    } catch (error) {
+      setSnackbarMessage("Failed to submit change request. Please try again.")
+      setSnackbarSeverity("error")
+      setSnackbarOpen(true)
+    }
   }
 
   const selectedCount = documentUpdates.filter((update) => update.selected && update.newFile).length
@@ -419,65 +471,84 @@ const RequestChangeDialog: React.FC<RequestChangeDialogProps> = ({ open, onClose
   )
 
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      maxWidth="lg"
-      fullWidth
-      PaperProps={{
-        sx: { borderRadius: "16px", maxHeight: "90vh" },
-      }}
-    >
-      <DialogTitle sx={{ pb: 1 }}>
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <Typography variant="h6" fontWeight={600}>
-            {mode === "document_update" ? "Bulk Document Update" : "Bank Details Update"}
-          </Typography>
-          <IconButton onClick={onClose} sx={{ color: "text.secondary" }}>
-            <CloseIcon />
-          </IconButton>
-        </Box>
-      </DialogTitle>
-
-      <DialogContent dividers sx={{ p: 3 }}>
-        {mode === "bank_details" ? renderBankDetailsContent() : renderDocumentUpdateContent()}
-
-        <Divider sx={{ my: 3 }} />
-
-        <TextField
-          label="Reason for Update"
-          multiline
-          rows={3}
-          fullWidth
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-          placeholder="Please provide a reason for this bulk update request..."
-          required
-        />
-      </DialogContent>
-
-      <DialogActions sx={{ p: 3, justifyContent: "space-between" }}>
-        <Box>
-          {mode === "document_update" && (
-            <Typography variant="body2" color="text.secondary">
-              {selectedCount} document(s) selected for update
+    <>
+      <Dialog
+        open={open}
+        onClose={onClose}
+        maxWidth="lg"
+        fullWidth
+        PaperProps={{
+          sx: { borderRadius: "16px", maxHeight: "90vh" },
+        }}
+      >
+        <DialogTitle sx={{ pb: 1 }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <Typography variant="h6" fontWeight={600}>
+              {mode === "document_update" ? "Bulk Document Update" : "Bank Details Update"}
             </Typography>
-          )}
-        </Box>
-        <Box sx={{ display: "flex", gap: 2 }}>
-          <Button onClick={onClose} variant="outlined">
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSubmitRequest}
-            variant="contained"
-            disabled={(mode === "document_update" && selectedCount === 0) || reason.trim() === ""}
-          >
-            Submit Request ({mode === "document_update" ? selectedCount : "1"} item{selectedCount !== 1 ? "s" : ""})
-          </Button>
-        </Box>
-      </DialogActions>
-    </Dialog>
+            <IconButton onClick={onClose} sx={{ color: "text.secondary" }}>
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+
+        <DialogContent dividers sx={{ p: 3 }}>
+          {mode === "bank_details" ? renderBankDetailsContent() : renderDocumentUpdateContent()}
+
+          <Divider sx={{ my: 3 }} />
+
+          <TextField
+            label="Reason for Update"
+            multiline
+            rows={3}
+            fullWidth
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="Please provide a reason for this bulk update request..."
+            required
+          />
+        </DialogContent>
+
+        <DialogActions sx={{ p: 3, justifyContent: "space-between" }}>
+          <Box>
+            {mode === "document_update" && (
+              <Typography variant="body2" color="text.secondary">
+                {selectedCount} document(s) selected for update
+              </Typography>
+            )}
+          </Box>
+          <Box sx={{ display: "flex", gap: 2 }}>
+            <Button onClick={onClose} variant="outlined" disabled={changeRequestLoading}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmitRequest}
+              variant="contained"
+              disabled={
+                (mode === "document_update" && selectedCount === 0) || reason.trim() === "" || changeRequestLoading
+              }
+              startIcon={changeRequestLoading ? <CircularProgress size={20} /> : null}
+            >
+              {changeRequestLoading
+                ? "Submitting..."
+                : `Submit Request (${mode === "document_update" ? selectedCount : "1"} item${selectedCount !== 1 ? "s" : ""})`}
+            </Button>
+          </Box>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={4000}
+        onClose={() => setSnackbarOpen(false)}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert onClose={() => setSnackbarOpen(false)} severity={snackbarSeverity} sx={{ width: "100%" }}>
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
+    </>
   )
 }
 

@@ -1,6 +1,7 @@
 "use client"
 
-import React, { useState } from "react"
+import type React from "react"
+import { useState, useEffect } from "react"
 import {
   Dialog,
   DialogTitle,
@@ -80,6 +81,7 @@ interface Product {
   processingFees: string
   loanAmount: string
   tenure: string
+  _id?: string
 }
 
 interface Props {
@@ -87,35 +89,46 @@ interface Props {
   onClose: () => void
   data: Product[]
   onSave: (updated: Product[]) => void
+  loading?: boolean
 }
 
-const EditProductGuideDialog: React.FC<Props> = ({ open, onClose, data, onSave }) => {
-  const [formData, setFormData] = useState<Product[]>(data)
+const EditProductGuideDialog: React.FC<Props> = ({ open, onClose, data, onSave, loading = false }) => {
+  const [formData, setFormData] = useState<Product[]>([])
   const theme = useTheme()
 
-  React.useEffect(() => {
-    setFormData(data)
-  }, [data])
+  // Update form data when dialog opens or data changes
+  useEffect(() => {
+    if (open && data) {
+      setFormData([...data])
+    }
+  }, [open, data])
 
   const handleChange = (index: number, key: keyof Product, value: string) => {
-    const updated = [...formData]
-    updated[index][key] = value
-    setFormData(updated)
+    setFormData((prev) => {
+      const updated = [...prev]
+      updated[index] = { ...updated[index], [key]: value }
+      return updated
+    })
   }
 
   const handleSave = () => {
     onSave(formData)
+  }
+
+  const handleClose = () => {
+    // Reset form data when closing
+    setFormData([])
     onClose()
   }
 
   return (
-    <StyledDialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
+    <StyledDialog open={open} onClose={handleClose} maxWidth="lg" fullWidth>
       <StyledDialogTitle>
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Typography variant="h6" fontWeight={600}>
             Edit Product Guide
           </Typography>
-          <IconButton onClick={onClose}>
+          <IconButton onClick={handleClose}>
             <CloseIcon />
           </IconButton>
         </Box>
@@ -123,7 +136,7 @@ const EditProductGuideDialog: React.FC<Props> = ({ open, onClose, data, onSave }
 
       <DialogContent sx={{ p: 3, maxHeight: "60vh", overflowY: "auto" }}>
         {formData.map((item, index) => (
-          <ProductCard key={index}>
+          <ProductCard key={item._id || index}>
             <Typography variant="subtitle1" fontWeight={600} color="primary" mb={1.5}>
               Product {index + 1}
             </Typography>
@@ -134,7 +147,7 @@ const EditProductGuideDialog: React.FC<Props> = ({ open, onClose, data, onSave }
                   label="Loan Type"
                   fullWidth
                   size="small"
-                  value={item.type}
+                  value={item.type || ""}
                   InputProps={{ readOnly: true }}
                 />
               </Grid>
@@ -143,7 +156,7 @@ const EditProductGuideDialog: React.FC<Props> = ({ open, onClose, data, onSave }
                   label="Interest Rate"
                   fullWidth
                   size="small"
-                  value={item.interestRate}
+                  value={item.interestRate || ""}
                   onChange={(e) => handleChange(index, "interestRate", e.target.value)}
                   placeholder="e.g., 10.5% - 18%"
                 />
@@ -153,7 +166,7 @@ const EditProductGuideDialog: React.FC<Props> = ({ open, onClose, data, onSave }
                   label="Processing Fees"
                   fullWidth
                   size="small"
-                  value={item.processingFees}
+                  value={item.processingFees || ""}
                   onChange={(e) => handleChange(index, "processingFees", e.target.value)}
                   placeholder="e.g., 4999 - 1%"
                 />
@@ -163,7 +176,7 @@ const EditProductGuideDialog: React.FC<Props> = ({ open, onClose, data, onSave }
                   label="Loan Amount"
                   fullWidth
                   size="small"
-                  value={item.loanAmount}
+                  value={item.loanAmount || ""}
                   onChange={(e) => handleChange(index, "loanAmount", e.target.value)}
                   placeholder="e.g., ₹1L - ₹1Cr"
                 />
@@ -173,7 +186,7 @@ const EditProductGuideDialog: React.FC<Props> = ({ open, onClose, data, onSave }
                   label="Tenure"
                   fullWidth
                   size="small"
-                  value={item.tenure}
+                  value={item.tenure || ""}
                   onChange={(e) => handleChange(index, "tenure", e.target.value)}
                   placeholder="e.g., 1-8 years"
                 />
@@ -185,11 +198,11 @@ const EditProductGuideDialog: React.FC<Props> = ({ open, onClose, data, onSave }
 
       <Divider />
       <DialogActions sx={{ p: 2, gap: 1 }}>
-        <Button onClick={onClose} variant="outlined" sx={{ borderRadius: 2, px: 3 }}>
+        <Button onClick={handleClose} variant="outlined" sx={{ borderRadius: 2, px: 3 }}>
           Cancel
         </Button>
-        <Button variant="contained" onClick={handleSave} sx={{ borderRadius: 2, px: 3 }}>
-          Save Changes
+        <Button variant="contained" onClick={handleSave} disabled={loading} sx={{ borderRadius: 2, px: 3 }}>
+          {loading ? "Saving..." : "Save Changes"}
         </Button>
       </DialogActions>
     </StyledDialog>

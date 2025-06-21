@@ -1,6 +1,6 @@
 "use client"
 
-import type React from "react"
+import React from "react"
 import { useState } from "react"
 import {
   Box,
@@ -20,10 +20,14 @@ import {
 } from "@mui/material"
 import { Edit, PhotoCamera, Save, Cancel, Verified } from "@mui/icons-material"
 import { useAppSelector } from "../../../hooks/useAppSelector"
+import { useAppDispatch } from "../../../hooks/useAppDispatch"
 import {
   selectUserData,
   selectUserDataLoading,
   selectUserDataError,
+  selectUserDataUpdating,
+  selectUserDataUpdateError,
+  updateUserData,
   isAdminUser,
   isManagerUser,
   isAssociateUser,
@@ -35,17 +39,118 @@ const ProfileSection: React.FC = () => {
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" as "success" | "error" })
 
   // Get user data from Redux store
+  const dispatch = useAppDispatch()
   const userData = useAppSelector(selectUserData)
   const loading = useAppSelector(selectUserDataLoading)
   const error = useAppSelector(selectUserDataError)
+  const updating = useAppSelector(selectUserDataUpdating)
+  const updateError = useAppSelector(selectUserDataUpdateError)
+
+  // Form state
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    mobile: "",
+    location: "",
+  })
+
+  // Initialize form data when userData changes
+  React.useEffect(() => {
+    if (userData) {
+      if (isAdminUser(userData) || isManagerUser(userData) || isAssociateUser(userData)) {
+        setFormData({
+          firstName: userData.firstName || "",
+          lastName: userData.lastName || "",
+          email: userData.email || "",
+          mobile: userData.mobile || "",
+          location: isManagerUser(userData) || isAssociateUser(userData) ? userData.location || "" : "",
+        })
+      }
+    }
+  }, [userData])
 
   const handleCloseSnackbar = () => {
     setSnackbar((prev) => ({ ...prev, open: false }))
   }
 
-  const handleSave = () => {
-    setSnackbar({ open: true, message: "Changes saved successfully!", severity: "success" })
+  const handleEdit = () => {
+    setEditing(true)
+  }
+
+  const handleCancel = () => {
+    // Reset form data to original values
+    if (userData) {
+      if (isAdminUser(userData) || isManagerUser(userData) || isAssociateUser(userData)) {
+        setFormData({
+          firstName: userData.firstName || "",
+          lastName: userData.lastName || "",
+          email: userData.email || "",
+          mobile: userData.mobile || "",
+          location: isManagerUser(userData) || isAssociateUser(userData) ? userData.location || "" : "",
+        })
+      }
+    }
     setEditing(false)
+  }
+
+  const handleSave = async () => {
+    if (!userData) return
+
+    try {
+      // Prepare update data based on role restrictions
+      let updateData: any = {}
+
+      if (isAdminUser(userData)) {
+        // Admin can edit all fields
+        updateData = {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          mobile: formData.mobile,
+        }
+      } else if (isManagerUser(userData)) {
+        // Manager can only edit location and mobile
+        updateData = {
+          mobile: formData.mobile,
+          location: formData.location,
+        }
+      } else if (isAssociateUser(userData)) {
+        // Associate can only edit location and mobile
+        updateData = {
+          mobile: formData.mobile,
+          location: formData.location,
+        }
+      }
+
+      await dispatch(updateUserData(updateData)).unwrap()
+      setSnackbar({ open: true, message: "Profile updated successfully!", severity: "success" })
+      setEditing(false)
+    } catch (error: any) {
+      setSnackbar({ open: true, message: error || "Failed to update profile", severity: "error" })
+    }
+  }
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }))
+  }
+
+  // Helper function to determine if field is editable
+  const isFieldEditable = (field: string) => {
+    if (!editing) return false
+
+    if (isAdminUser(userData)) {
+      return true // Admin can edit all fields
+    } else if (isManagerUser(userData)) {
+      return field === "mobile" || field === "location" // Manager can only edit mobile and location
+    } else if (isAssociateUser(userData)) {
+      return field === "mobile" || field === "location" // Associate can only edit mobile and location
+    }
+
+    return false
   }
 
   // Show loading state
@@ -104,37 +209,6 @@ const ProfileSection: React.FC = () => {
     return "N/A"
   }
 
-  const getFirstName = () => {
-    if (isAdminUser(userData) || isManagerUser(userData) || isAssociateUser(userData)) {
-      return userData.firstName
-    }
-    if (isPartnerUser(userData)) {
-      return userData.basicInfo.fullName.split(" ")[0] || ""
-    }
-    return ""
-  }
-
-  const getLastName = () => {
-    if (isAdminUser(userData) || isManagerUser(userData) || isAssociateUser(userData)) {
-      return userData.lastName
-    }
-    if (isPartnerUser(userData)) {
-      const nameParts = userData.basicInfo.fullName.split(" ")
-      return nameParts.slice(1).join(" ") || ""
-    }
-    return ""
-  }
-
-  const getLocation = () => {
-    if (isManagerUser(userData) || isAssociateUser(userData)) {
-      return userData.location
-    }
-    if (isPartnerUser(userData)) {
-      return `${userData.addressDetails.city}, ${userData.addressDetails.pincode}`
-    }
-    return ""
-  }
-
   const getProfilePhoto = () => {
     if (isPartnerUser(userData) && userData.documents.profilePhoto) {
       return userData.documents.profilePhoto
@@ -154,7 +228,7 @@ const ProfileSection: React.FC = () => {
           <Button
             variant="outlined"
             startIcon={<Edit />}
-            onClick={() => setEditing(true)}
+            onClick={handleEdit}
             sx={{
               borderColor: "#0f766e",
               color: "#0f766e",
@@ -244,46 +318,124 @@ const ProfileSection: React.FC = () => {
                 <TextField
                   fullWidth
                   label="First Name"
-                  value={getFirstName()}
-                  disabled={!editing}
-                  variant={editing ? "outlined" : "filled"}
+                  value={
+                    editing && isFieldEditable("firstName")
+                      ? formData.firstName
+                      : isAdminUser(userData) || isManagerUser(userData) || isAssociateUser(userData)
+                        ? userData.firstName
+                        : ""
+                  }
+                  onChange={(e) => handleInputChange("firstName", e.target.value)}
+                  disabled={!isFieldEditable("firstName")}
+                  variant={editing && isFieldEditable("firstName") ? "outlined" : "filled"}
+                  sx={{
+                    "& .MuiInputBase-input.Mui-disabled": {
+                      WebkitTextFillColor: editing && !isFieldEditable("firstName") ? "#94a3b8" : "#64748b",
+                    },
+                    ...(editing &&
+                      !isFieldEditable("firstName") && {
+                        "& .MuiFilledInput-root": {
+                          backgroundColor: "#f1f5f9",
+                        },
+                      }),
+                  }}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
                   label="Last Name"
-                  value={getLastName()}
-                  disabled={!editing}
-                  variant={editing ? "outlined" : "filled"}
+                  value={
+                    editing && isFieldEditable("lastName")
+                      ? formData.lastName
+                      : isAdminUser(userData) || isManagerUser(userData) || isAssociateUser(userData)
+                        ? userData.lastName
+                        : ""
+                  }
+                  onChange={(e) => handleInputChange("lastName", e.target.value)}
+                  disabled={!isFieldEditable("lastName")}
+                  variant={editing && isFieldEditable("lastName") ? "outlined" : "filled"}
+                  sx={{
+                    "& .MuiInputBase-input.Mui-disabled": {
+                      WebkitTextFillColor: editing && !isFieldEditable("lastName") ? "#94a3b8" : "#64748b",
+                    },
+                    ...(editing &&
+                      !isFieldEditable("lastName") && {
+                        "& .MuiFilledInput-root": {
+                          backgroundColor: "#f1f5f9",
+                        },
+                      }),
+                  }}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
                   label="Email"
-                  value={userData.email}
-                  disabled={!editing}
-                  variant={editing ? "outlined" : "filled"}
+                  value={editing && isFieldEditable("email") ? formData.email : userData.email}
+                  onChange={(e) => handleInputChange("email", e.target.value)}
+                  disabled={!isFieldEditable("email")}
+                  variant={editing && isFieldEditable("email") ? "outlined" : "filled"}
+                  sx={{
+                    "& .MuiInputBase-input.Mui-disabled": {
+                      WebkitTextFillColor: editing && !isFieldEditable("email") ? "#94a3b8" : "#64748b",
+                    },
+                    ...(editing &&
+                      !isFieldEditable("email") && {
+                        "& .MuiFilledInput-root": {
+                          backgroundColor: "#f1f5f9",
+                        },
+                      }),
+                  }}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
                   label="Phone"
-                  value={userData.mobile}
-                  disabled={!editing}
-                  variant={editing ? "outlined" : "filled"}
+                  value={editing && isFieldEditable("mobile") ? formData.mobile : userData.mobile}
+                  onChange={(e) => handleInputChange("mobile", e.target.value)}
+                  disabled={!isFieldEditable("mobile")}
+                  variant={editing && isFieldEditable("mobile") ? "outlined" : "filled"}
+                  sx={{
+                    "& .MuiInputBase-input.Mui-disabled": {
+                      WebkitTextFillColor: editing && !isFieldEditable("mobile") ? "#94a3b8" : "#64748b",
+                    },
+                    ...(editing &&
+                      !isFieldEditable("mobile") && {
+                        "& .MuiFilledInput-root": {
+                          backgroundColor: "#f1f5f9",
+                        },
+                      }),
+                  }}
                 />
               </Grid>
-              {showLocation && (
+              {showLocation && (isManagerUser(userData) || isAssociateUser(userData)) && (
                 <Grid item xs={12}>
                   <TextField
                     fullWidth
                     label="Location"
-                    value={getLocation()}
-                    disabled={!editing}
-                    variant={editing ? "outlined" : "filled"}
+                    value={
+                      editing && isFieldEditable("location")
+                        ? formData.location
+                        : isManagerUser(userData) || isAssociateUser(userData)
+                          ? userData.location
+                          : ""
+                    }
+                    onChange={(e) => handleInputChange("location", e.target.value)}
+                    disabled={!isFieldEditable("location")}
+                    variant={editing && isFieldEditable("location") ? "outlined" : "filled"}
+                    sx={{
+                      "& .MuiInputBase-input.Mui-disabled": {
+                        WebkitTextFillColor: editing && !isFieldEditable("location") ? "#94a3b8" : "#64748b",
+                      },
+                      ...(editing &&
+                        !isFieldEditable("location") && {
+                          "& .MuiFilledInput-root": {
+                            backgroundColor: "#f1f5f9",
+                          },
+                        }),
+                    }}
                   />
                 </Grid>
               )}
@@ -296,18 +448,20 @@ const ProfileSection: React.FC = () => {
             <Button
               variant="outlined"
               startIcon={<Cancel />}
-              onClick={() => setEditing(false)}
+              onClick={handleCancel}
               sx={{ borderColor: "#94a3b8", color: "#64748b" }}
+              disabled={updating}
             >
               Cancel
             </Button>
             <Button
               variant="contained"
-              startIcon={<Save />}
+              startIcon={updating ? <CircularProgress size={16} color="inherit" /> : <Save />}
               onClick={handleSave}
               sx={{ backgroundColor: "#0f766e", "&:hover": { backgroundColor: "#0e6660" } }}
+              disabled={updating}
             >
-              Save Changes
+              {updating ? "Saving..." : "Save Changes"}
             </Button>
           </Box>
         )}

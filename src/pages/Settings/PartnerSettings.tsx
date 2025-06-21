@@ -53,7 +53,14 @@ const PartnerSettings: React.FC = () => {
 
   const handleChange = (_event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue)
+    // Fetch fresh userData when switching tabs
+    dispatch(fetchUserData())
   }
+
+  // Fetch user data when tab changes
+  useEffect(() => {
+    dispatch(fetchUserData())
+  }, [value, dispatch])
 
   return (
     <Paper

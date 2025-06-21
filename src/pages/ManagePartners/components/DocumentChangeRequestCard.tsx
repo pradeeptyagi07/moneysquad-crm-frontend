@@ -15,9 +15,19 @@ import {
   DialogActions,
   TextField,
   Paper,
+  Chip,
 } from "@mui/material"
 import { Description, CheckCircle, Cancel, AccessTime, Visibility } from "@mui/icons-material"
-import type { DocumentChangeRequest } from "../types/changeRequestTypes"
+
+interface DocumentChangeRequest {
+  id: string
+  type: string
+  submittedAt: string
+  reason: string
+  status: string
+  previousData: Record<string, string>
+  currentData: Record<string, string | string[]>
+}
 
 interface DocumentChangeRequestCardProps {
   request: DocumentChangeRequest
@@ -55,23 +65,29 @@ const DocumentChangeRequestCard: React.FC<DocumentChangeRequestCardProps> = ({ r
     })
   }
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return "0 Bytes"
-    const k = 1024
-    const sizes = ["Bytes", "KB", "MB", "GB"]
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
-  }
-
   const getDocumentTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
-      panCard: "PAN Card",
-      aadharCard: "Aadhar Card",
-      bankPassbook: "Bank Passbook",
       profilePhoto: "Profile Photo",
+      panCard: "PAN Card",
+      aadharFront: "Aadhar Front",
+      aadharBack: "Aadhar Back",
+      cancelledCheque: "Cancelled Cheque",
+      gstCertificate: "GST Certificate",
+      aditional: "Additional Documents",
     }
-    return labels[type] || type
+    return labels[type] || type.charAt(0).toUpperCase() + type.slice(1)
   }
+
+  const getFileName = (url: string) => {
+    if (!url) return "Unknown file"
+    const parts = url.split("/")
+    const fileName = parts[parts.length - 1]
+    return decodeURIComponent(fileName)
+  }
+
+  // Get all document types that are being changed
+  const changedDocuments = Object.keys(request.currentData)
+  const totalDocuments = changedDocuments.length
 
   return (
     <>
@@ -105,7 +121,12 @@ const DocumentChangeRequestCard: React.FC<DocumentChangeRequestCardProps> = ({ r
               </Box>
               <Box>
                 <Typography variant="h6" sx={{ fontWeight: 600, color: "text.primary" }}>
-                  {getDocumentTypeLabel(request.documentType)} Update Request
+                  Document Update Request
+                  <Chip
+                    label={`${totalDocuments} Documents`}
+                    size="small"
+                    sx={{ ml: 1, bgcolor: "primary.main", color: "white" }}
+                  />
                 </Typography>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5 }}>
                   <AccessTime fontSize="small" sx={{ color: "text.secondary" }} />
@@ -125,73 +146,106 @@ const DocumentChangeRequestCard: React.FC<DocumentChangeRequestCardProps> = ({ r
               mb: 1.5,
             }}
           >
-            <Grid container spacing={3}>
-              <Grid item xs={12} md={6}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, color: "text.secondary" }}>
-                  Current Document
-                </Typography>
-                <Paper
-                  sx={{
-                    p: 1.5,
-                    borderRadius: 2,
-                    bgcolor: "rgba(0,0,0,0.02)",
-                    border: "1px solid rgba(0,0,0,0.1)",
-                  }}
-                >
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 1 }}>
-                    <Description color="action" />
-                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                      {request.currentDocument.name}
-                    </Typography>
-                  </Box>
-                  <Typography variant="caption" color="text.secondary">
-                    Size: {formatFileSize(request.currentDocument.size)} • Uploaded:{" "}
-                    {formatDate(request.currentDocument.uploadedAt)}
-                  </Typography>
-                  <Box sx={{ mt: 1 }}>
-                    <Button
-                      size="small"
-                      startIcon={<Visibility />}
-                      onClick={() => window.open(request.currentDocument.url, "_blank")}
+            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, color: "text.secondary" }}>
+              Documents Being Updated ({totalDocuments})
+            </Typography>
+
+            <Grid container spacing={2}>
+              {changedDocuments.map((docType) => {
+                const currentDoc = request.previousData[docType]
+                const newDoc = request.currentData[docType]
+                const newDocUrl = Array.isArray(newDoc) ? newDoc[0] : newDoc
+
+                return (
+                  <Grid item xs={12} key={docType}>
+                    <Paper
+                      sx={{
+                        p: 2,
+                        borderRadius: 2,
+                        bgcolor: "rgba(0,0,0,0.02)",
+                        border: "1px solid rgba(0,0,0,0.1)",
+                      }}
                     >
-                      View
-                    </Button>
-                  </Box>
-                </Paper>
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, color: "primary.main" }}>
-                  New Document
-                </Typography>
-                <Paper
-                  sx={{
-                    p: 1.5,
-                    borderRadius: 2,
-                    bgcolor: "rgba(25,118,210,0.05)",
-                    border: "1px solid rgba(25,118,210,0.2)",
-                  }}
-                >
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 1 }}>
-                    <Description color="primary" />
-                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                      {request.newDocument.name}
-                    </Typography>
-                  </Box>
-                  <Typography variant="caption" color="text.secondary">
-                    Size: {formatFileSize(request.newDocument.size)} • Uploaded:{" "}
-                    {formatDate(request.newDocument.uploadedAt)}
-                  </Typography>
-                  <Box sx={{ mt: 1 }}>
-                    <Button
-                      size="small"
-                      startIcon={<Visibility />}
-                      onClick={() => window.open(request.newDocument.url, "_blank")}
-                    >
-                      View
-                    </Button>
-                  </Box>
-                </Paper>
-              </Grid>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: "primary.main" }}>
+                        {getDocumentTypeLabel(docType)}
+                      </Typography>
+
+                      <Grid container spacing={2}>
+                        <Grid item xs={12} md={6}>
+                          <Typography variant="caption" sx={{ fontWeight: 600, color: "text.secondary" }}>
+                            Current Document
+                          </Typography>
+                          <Box
+                            sx={{
+                              p: 1.5,
+                              borderRadius: 1,
+                              bgcolor: "rgba(255,0,0,0.05)",
+                              border: "1px solid rgba(255,0,0,0.2)",
+                              mt: 0.5,
+                            }}
+                          >
+                            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+                              <Description fontSize="small" color="error" />
+                              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: "0.8rem" }}>
+                                {currentDoc ? getFileName(currentDoc) : "No current document"}
+                              </Typography>
+                            </Box>
+                            {currentDoc && (
+                              <Button
+                                size="small"
+                                startIcon={<Visibility />}
+                                onClick={() => window.open(currentDoc, "_blank")}
+                                sx={{ fontSize: "0.7rem" }}
+                              >
+                                View Current
+                              </Button>
+                            )}
+                          </Box>
+                        </Grid>
+
+                        <Grid item xs={12} md={6}>
+                          <Typography variant="caption" sx={{ fontWeight: 600, color: "primary.main" }}>
+                            New Document
+                          </Typography>
+                          <Box
+                            sx={{
+                              p: 1.5,
+                              borderRadius: 1,
+                              bgcolor: "rgba(25,118,210,0.05)",
+                              border: "1px solid rgba(25,118,210,0.2)",
+                              mt: 0.5,
+                            }}
+                          >
+                            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+                              <Description fontSize="small" color="primary" />
+                              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: "0.8rem" }}>
+                                {newDocUrl ? getFileName(newDocUrl) : "No new document"}
+                              </Typography>
+                            </Box>
+                            {Array.isArray(newDoc) && newDoc.length > 1 && (
+                              <Chip
+                                label={`+${newDoc.length - 1} more files`}
+                                size="small"
+                                sx={{ mb: 1, fontSize: "0.7rem" }}
+                              />
+                            )}
+                            {newDocUrl && (
+                              <Button
+                                size="small"
+                                startIcon={<Visibility />}
+                                onClick={() => window.open(newDocUrl, "_blank")}
+                                sx={{ fontSize: "0.7rem" }}
+                              >
+                                View New
+                              </Button>
+                            )}
+                          </Box>
+                        </Grid>
+                      </Grid>
+                    </Paper>
+                  </Grid>
+                )
+              })}
             </Grid>
           </Box>
 
@@ -222,7 +276,7 @@ const DocumentChangeRequestCard: React.FC<DocumentChangeRequestCardProps> = ({ r
                 onClick={() => setDeclineDialogOpen(true)}
                 sx={{ borderRadius: 2 }}
               >
-                Decline
+                Decline All
               </Button>
               <Button
                 variant="contained"
@@ -234,7 +288,7 @@ const DocumentChangeRequestCard: React.FC<DocumentChangeRequestCardProps> = ({ r
                   background: "linear-gradient(135deg, #4caf50 0%, #45a049 100%)",
                 }}
               >
-                Approve
+                Approve All
               </Button>
             </Box>
           )}
@@ -246,8 +300,7 @@ const DocumentChangeRequestCard: React.FC<DocumentChangeRequestCardProps> = ({ r
         <DialogTitle>Approve Document Change Request</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Are you sure you want to approve this {getDocumentTypeLabel(request.documentType).toLowerCase()} change
-            request?
+            Are you sure you want to approve all {totalDocuments} document changes in this request?
           </Typography>
           <TextField
             fullWidth
@@ -262,7 +315,7 @@ const DocumentChangeRequestCard: React.FC<DocumentChangeRequestCardProps> = ({ r
         <DialogActions>
           <Button onClick={() => setApproveDialogOpen(false)}>Cancel</Button>
           <Button onClick={handleApprove} variant="contained" color="success">
-            Approve Request
+            Approve All Documents
           </Button>
         </DialogActions>
       </Dialog>
@@ -272,7 +325,7 @@ const DocumentChangeRequestCard: React.FC<DocumentChangeRequestCardProps> = ({ r
         <DialogTitle>Decline Document Change Request</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Please provide a reason for declining this request:
+            Please provide a reason for declining all {totalDocuments} document changes:
           </Typography>
           <TextField
             fullWidth
@@ -288,7 +341,7 @@ const DocumentChangeRequestCard: React.FC<DocumentChangeRequestCardProps> = ({ r
         <DialogActions>
           <Button onClick={() => setDeclineDialogOpen(false)}>Cancel</Button>
           <Button onClick={handleDecline} variant="contained" color="error" disabled={!declineReason.trim()}>
-            Decline Request
+            Decline All Documents
           </Button>
         </DialogActions>
       </Dialog>

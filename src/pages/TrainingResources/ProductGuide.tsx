@@ -1,7 +1,20 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useDispatch, useSelector } from "react-redux"
+import type { AppDispatch } from "../../store"
+import {
+  fetchProductInfo,
+  updateProductGuides,
+  selectProductInfo,
+  selectProductInfoLoading,
+  selectProductInfoUpdateLoading,
+  selectProductInfoUpdateSuccess,
+  clearProductInfoUpdateSuccess,
+  type ProductGuideItem,
+} from "../../store/slices/resourceAndSupportSlice"
+import { selectUserData, isAdminUser } from "../../store/slices/userDataSlice"
 import {
   Card,
   CardContent,
@@ -79,66 +92,35 @@ const LoanTypeChip = styled(Chip)(({ theme }) => ({
   },
 }))
 
-interface Product {
-  type: string
-  interestRate: string
-  processingFees: string
-  loanAmount: string
-  tenure: string
-}
-
-const initialGuide: Product[] = [
-  {
-    type: "PL -- Term Loan",
-    interestRate: "10.5% - 18%",
-    processingFees: "4999 - 1%",
-    loanAmount: "₹1L - ₹1Cr",
-    tenure: "1-8 years",
-  },
-  {
-    type: "PL -- Overdraft",
-    interestRate: "13.5% - 16%",
-    processingFees: "1% - 2%",
-    loanAmount: "₹1L - ₹1Cr",
-    tenure: "1-8 years",
-  },
-  {
-    type: "BL -- Term Loan",
-    interestRate: "14% - 24%",
-    processingFees: "1% - 2%",
-    loanAmount: "₹5L - ₹5Cr",
-    tenure: "1-5 years",
-  },
-  {
-    type: "BL -- Overdraft",
-    interestRate: "15% - 19%",
-    processingFees: "1.5% - 2%",
-    loanAmount: "₹10L - ₹3Cr",
-    tenure: "1-5 years",
-  },
-  {
-    type: "SEP -- Term Loan",
-    interestRate: "10.5% - 14%",
-    processingFees: "9999 - 2%",
-    loanAmount: "₹5L - ₹3Cr",
-    tenure: "1-5 years",
-  },
-  {
-    type: "SEP -- Overdraft",
-    interestRate: "11.5% - 15%",
-    processingFees: "1% - 2%",
-    loanAmount: "₹5L - ₹2Cr",
-    tenure: "1-5 years",
-  },
-]
-
 const ProductGuide: React.FC = () => {
+  const dispatch = useDispatch<AppDispatch>()
+  const productInfo = useSelector(selectProductInfo)
+  const loading = useSelector(selectProductInfoLoading)
+  const updateLoading = useSelector(selectProductInfoUpdateLoading)
+  const updateSuccess = useSelector(selectProductInfoUpdateSuccess)
+  const userData = useSelector(selectUserData)
+  const isAdmin = isAdminUser(userData)
+
   const [open, setOpen] = useState(false)
-  const [guide, setGuide] = useState<Product[]>(initialGuide)
   const theme = useTheme()
 
-  const handleSave = (updatedGuide: Product[]) => {
-    setGuide(updatedGuide)
+  useEffect(() => {
+    if (!productInfo) {
+      dispatch(fetchProductInfo())
+    }
+  }, [dispatch, productInfo])
+
+  useEffect(() => {
+    if (updateSuccess) {
+      setOpen(false)
+      dispatch(clearProductInfoUpdateSuccess())
+    }
+  }, [updateSuccess, dispatch])
+
+  const handleSave = (updatedGuide: ProductGuideItem[]) => {
+    // Remove _id fields before sending to API
+    const guidesWithoutId = updatedGuide.map(({ _id, ...guide }) => guide)
+    dispatch(updateProductGuides(guidesWithoutId))
   }
 
   const getLoanTypeClass = (type: string) => {
@@ -146,6 +128,26 @@ const ProductGuide: React.FC = () => {
     if (type.includes("Overdraft")) return "overdraft"
     return ""
   }
+
+  if (loading) {
+    return (
+      <StyledCard>
+        <HeaderBox>
+          <Box display="flex" alignItems="center" gap={2}>
+            <TrendingUpIcon sx={{ fontSize: 28, color: "primary.main" }} />
+            <Typography variant="h6" fontWeight={600} color="text.primary">
+              Product Guide
+            </Typography>
+          </Box>
+        </HeaderBox>
+        <CardContent sx={{ p: 3, textAlign: "center" }}>
+          <Typography>Loading...</Typography>
+        </CardContent>
+      </StyledCard>
+    )
+  }
+
+  const guide = productInfo?.guides || []
 
   return (
     <StyledCard>
@@ -156,15 +158,17 @@ const ProductGuide: React.FC = () => {
             Product Guide
           </Typography>
         </Box>
-        <IconButton
-          onClick={() => setOpen(true)}
-          sx={{
-            color: "primary.main",
-            "&:hover": { backgroundColor: alpha(theme.palette.primary.main, 0.1) },
-          }}
-        >
-          <EditIcon />
-        </IconButton>
+        {isAdmin && (
+          <IconButton
+            onClick={() => setOpen(true)}
+            sx={{
+              color: "primary.main",
+              "&:hover": { backgroundColor: alpha(theme.palette.primary.main, 0.1) },
+            }}
+          >
+            <EditIcon />
+          </IconButton>
+        )}
       </HeaderBox>
 
       <CardContent sx={{ p: 0 }}>
@@ -180,7 +184,7 @@ const ProductGuide: React.FC = () => {
           </TableHead>
           <TableBody>
             {guide.map((product, idx) => (
-              <TableRow key={idx}>
+              <TableRow key={product._id || idx}>
                 <TableCell>
                   <LoanTypeChip label={product.type} className={getLoanTypeClass(product.type)} />
                 </TableCell>
@@ -202,7 +206,15 @@ const ProductGuide: React.FC = () => {
         </StyledTable>
       </CardContent>
 
-      <EditProductGuideDialog open={open} onClose={() => setOpen(false)} data={guide} onSave={handleSave} />
+      {isAdmin && (
+        <EditProductGuideDialog
+          open={open}
+          onClose={() => setOpen(false)}
+          data={guide}
+          onSave={handleSave}
+          loading={updateLoading}
+        />
+      )}
     </StyledCard>
   )
 }

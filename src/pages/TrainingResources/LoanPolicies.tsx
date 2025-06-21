@@ -1,7 +1,19 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useDispatch, useSelector } from "react-redux"
+import type { AppDispatch } from "../../store"
+import {
+  fetchProductInfo,
+  updateProductPolicies,
+  selectProductInfo,
+  selectProductInfoLoading,
+  selectProductInfoUpdateLoading,
+  selectProductInfoUpdateSuccess,
+  clearProductInfoUpdateSuccess,
+} from "../../store/slices/resourceAndSupportSlice"
+import { selectUserData, isAdminUser } from "../../store/slices/userDataSlice"
 import {
   Card,
   CardContent,
@@ -80,63 +92,77 @@ const StyledListItem = styled(ListItem)(({ theme }) => ({
   },
 }))
 
-const initialPolicies = {
-  eligibilityCriteria: {
-    "PL -- Term Loan": ["Net Salary: 15000+", "Age: 21-59 Years", "CIBIL: 650+", "Work Experience: 3+ Months"],
-    "PL -- Overdraft": ["Net Salary: 25000+", "Age: 21-59 Years", "CIBIL: 690+", "Work Experience: 6+ Months"],
-    "BL -- Term Loan": [
-      "Minimum Turnover: 30 Lakhs",
-      "Age: 23-65 Years",
-      "CIBIL: 650+",
-      "Vintage: 6+ Months",
-      "Average Balance: 30,000+",
-    ],
-    "BL -- Overdraft": [
-      "Minimum Turnover: 80 Lakhs+",
-      "Age: 23-65 Years",
-      "CIBIL: 690+",
-      "Vintage: 2+ Years",
-      "Average Balance: 1 Lakh+",
-    ],
-    "SEP -- Term Loan": ["Age: 23-59 Years", "CIBIL: 680+", "Professional Certificate: 6+ Months old"],
-    "SEP -- Overdraft": ["Net Salary: 15000+", "Age: 21-59 Years", "CIBIL: 650+", "Work Experience: 3+ Months"],
-  },
-  eligibilityCalculation: {
-    "PL -- Term Loan": [
-      "Loan amount from one lender is mostly 10-30 times of net salary.",
-      "After loan, monthly obligations to be not more than 75% of net salary.",
-      "Existing Loans and Card dues can be clubbed to create a single loan.",
-      "Applicant working in top Corporates/Govt have higher chances of approval.",
-    ],
-    "PL -- Overdraft": [
-      "OD amount from one lender is usually 10-20 times of net salary.",
-      "Monthly obligations not more than 75% of net salary.",
-      "Preferred for top corporate/Govt employees.",
-    ],
-    "BL -- Term Loan": [
-      "Loan Amount is usually up to 10x Avg. Bank Balance.",
-      "10 Cr Turnover → 40–50L loan possible.",
-      "1 Cr Turnover → ~70K EMI possible.",
-      "Higher loan = better interest & charges.",
-    ],
-    "BL -- Overdraft": [
-      "OD usually 7–10x Avg. Bank Balance.",
-      "10 Cr Turnover → 30–40L OD possible.",
-      "Higher OD = better terms.",
-    ],
-    "SEP -- Term Loan": [
-      "Older certificate = higher loan eligibility.",
-      "High annual receipts (5 Cr+) → 50L+ loan possible.",
-    ],
-    "SEP -- Overdraft": ["Older certificate = more OD eligibility.", "Receipts of 5 Cr+ → 50L+ OD possible."],
-  },
-}
-
 const LoanPolicies: React.FC = () => {
-  const [policies, setPolicies] = useState(initialPolicies)
+  const dispatch = useDispatch<AppDispatch>()
+  const productInfo = useSelector(selectProductInfo)
+  const loading = useSelector(selectProductInfoLoading)
+  const updateLoading = useSelector(selectProductInfoUpdateLoading)
+  const updateSuccess = useSelector(selectProductInfoUpdateSuccess)
+  const userData = useSelector(selectUserData)
+  const isAdmin = isAdminUser(userData)
+
   const [openEligibility, setOpenEligibility] = useState(false)
   const [openCalculation, setOpenCalculation] = useState(false)
   const theme = useTheme()
+
+  useEffect(() => {
+    if (!productInfo) {
+      dispatch(fetchProductInfo())
+    }
+  }, [dispatch, productInfo])
+
+  useEffect(() => {
+    if (updateSuccess) {
+      setOpenEligibility(false)
+      setOpenCalculation(false)
+      dispatch(clearProductInfoUpdateSuccess())
+    }
+  }, [updateSuccess, dispatch])
+
+  const handleSaveEligibility = (newCriteria: Record<string, string[]>) => {
+    if (productInfo?.policies) {
+      dispatch(
+        updateProductPolicies({
+          ...productInfo.policies,
+          eligibilityCriteria: newCriteria,
+        }),
+      )
+    }
+  }
+
+  const handleSaveCalculation = (newCalc: Record<string, string[]>) => {
+    if (productInfo?.policies) {
+      dispatch(
+        updateProductPolicies({
+          ...productInfo.policies,
+          eligibilityCalculation: newCalc,
+        }),
+      )
+    }
+  }
+
+  if (loading) {
+    return (
+      <StyledCard>
+        <HeaderBox>
+          <Box display="flex" alignItems="center" gap={2}>
+            <PolicyIcon color="primary" />
+            <Typography variant="h6" fontWeight={600}>
+              Loan Policies
+            </Typography>
+          </Box>
+        </HeaderBox>
+        <CardContent sx={{ p: 3, textAlign: "center" }}>
+          <Typography>Loading...</Typography>
+        </CardContent>
+      </StyledCard>
+    )
+  }
+
+  const policies = productInfo?.policies || {
+    eligibilityCriteria: {},
+    eligibilityCalculation: {},
+  }
 
   return (
     <StyledCard>
@@ -158,16 +184,18 @@ const LoanPolicies: React.FC = () => {
               Eligibility Criteria
             </Typography>
           </Box>
-          <IconButton
-            onClick={() => setOpenEligibility(true)}
-            sx={{
-              color: "white",
-              background: alpha("#fff", 0.2),
-              "&:hover": { background: alpha("#fff", 0.3) },
-            }}
-          >
-            <EditIcon />
-          </IconButton>
+          {isAdmin && (
+            <IconButton
+              onClick={() => setOpenEligibility(true)}
+              sx={{
+                color: "white",
+                background: alpha("#fff", 0.2),
+                "&:hover": { background: alpha("#fff", 0.3) },
+              }}
+            >
+              <EditIcon />
+            </IconButton>
+          )}
         </SectionHeader>
 
         <Grid container spacing={3}>
@@ -202,16 +230,18 @@ const LoanPolicies: React.FC = () => {
               Eligibility Calculation
             </Typography>
           </Box>
-          <IconButton
-            onClick={() => setOpenCalculation(true)}
-            sx={{
-              color: "white",
-              background: alpha("#fff", 0.2),
-              "&:hover": { background: alpha("#fff", 0.3) },
-            }}
-          >
-            <EditIcon />
-          </IconButton>
+          {isAdmin && (
+            <IconButton
+              onClick={() => setOpenCalculation(true)}
+              sx={{
+                color: "white",
+                background: alpha("#fff", 0.2),
+                "&:hover": { background: alpha("#fff", 0.3) },
+              }}
+            >
+              <EditIcon />
+            </IconButton>
+          )}
         </SectionHeader>
 
         <Grid container spacing={3}>
@@ -238,20 +268,26 @@ const LoanPolicies: React.FC = () => {
           ))}
         </Grid>
 
-        {/* Dialogs */}
-        <EditEligibilityDialog
-          open={openEligibility}
-          onClose={() => setOpenEligibility(false)}
-          data={policies.eligibilityCriteria}
-          onSave={(newCriteria) => setPolicies((prev) => ({ ...prev, eligibilityCriteria: newCriteria }))}
-        />
+        {/* Dialogs - Only render for admin */}
+        {isAdmin && (
+          <>
+            <EditEligibilityDialog
+              open={openEligibility}
+              onClose={() => setOpenEligibility(false)}
+              data={policies.eligibilityCriteria}
+              onSave={handleSaveEligibility}
+              loading={updateLoading}
+            />
 
-        <EditCalculationDialog
-          open={openCalculation}
-          onClose={() => setOpenCalculation(false)}
-          data={policies.eligibilityCalculation}
-          onSave={(newCalc) => setPolicies((prev) => ({ ...prev, eligibilityCalculation: newCalc }))}
-        />
+            <EditCalculationDialog
+              open={openCalculation}
+              onClose={() => setOpenCalculation(false)}
+              data={policies.eligibilityCalculation}
+              onSave={handleSaveCalculation}
+              loading={updateLoading}
+            />
+          </>
+        )}
       </CardContent>
     </StyledCard>
   )

@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Box,
   Grid,
@@ -17,8 +17,13 @@ import {
   FormControlLabel,
   Radio,
   Alert,
+  Autocomplete,
+  CircularProgress,
 } from "@mui/material"
 import { Info, Visibility, VisibilityOff } from "@mui/icons-material"
+import { useDispatch, useSelector } from "react-redux"
+import type { RootState, AppDispatch } from "../../../../store"
+import { fetchBanks } from "../../../../store/slices/lenderLoanSlice"
 import type { PartnerFormData } from "../index"
 
 interface BankDetailsProps {
@@ -30,6 +35,9 @@ const accountTypes = ["Savings", "Current", "Others"]
 const relationshipOptions = ["Self", "Company", "Spouse", "Parent", "Others"]
 
 const BankDetails: React.FC<BankDetailsProps> = ({ formData, updateFormData }) => {
+  const dispatch = useDispatch<AppDispatch>()
+  const { banks, loading: banksLoading } = useSelector((state: RootState) => state.lenderLoan)
+
   const [errors, setErrors] = useState({
     accountHolderName: "",
     accountType: "",
@@ -44,6 +52,13 @@ const BankDetails: React.FC<BankDetailsProps> = ({ formData, updateFormData }) =
 
   const [showAccountNumber, setShowAccountNumber] = useState(false)
   const [showConfirmAccountNumber, setShowConfirmAccountNumber] = useState(false)
+
+  // Fetch banks on component mount
+  useEffect(() => {
+    if (banks.length === 0) {
+      dispatch(fetchBanks())
+    }
+  }, [dispatch, banks.length])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -70,6 +85,19 @@ const BankDetails: React.FC<BankDetailsProps> = ({ formData, updateFormData }) =
     }
 
     updateFormData({ [name]: value })
+  }
+
+  const handleBankChange = (event: any, newValue: any) => {
+    const bankName = newValue ? newValue.name : ""
+    updateFormData({ bankName })
+
+    // Clear error if bank is selected
+    if (bankName && errors.bankName) {
+      setErrors({
+        ...errors,
+        bankName: "",
+      })
+    }
   }
 
   const validateField = (name: string, value: string) => {
@@ -195,20 +223,43 @@ const BankDetails: React.FC<BankDetailsProps> = ({ formData, updateFormData }) =
           </TextField>
         </Grid>
 
+        {/* Bank Name - Searchable Dropdown */}
         <Grid item xs={12} md={6}>
-          <TextField
-            fullWidth
-            required
-            label="Bank Name"
-            name="bankName"
-            value={formData.bankName}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            error={!!errors.bankName}
-            helperText={errors.bankName}
-            InputProps={{
-              sx: { borderRadius: 2 },
-            }}
+          <Autocomplete
+            options={banks}
+            getOptionLabel={(option) => option.name}
+            value={banks.find((bank) => bank.name === formData.bankName) || null}
+            onChange={handleBankChange}
+            loading={banksLoading}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                required
+                label="Bank Name"
+                error={!!errors.bankName}
+                helperText={errors.bankName}
+                InputProps={{
+                  ...params.InputProps,
+                  sx: { borderRadius: 2 },
+                  endAdornment: (
+                    <>
+                      {banksLoading ? <CircularProgress color="inherit" size={20} /> : null}
+                      {params.InputProps.endAdornment}
+                    </>
+                  ),
+                }}
+              />
+            )}
+            renderOption={(props, option) => (
+              <li {...props} key={option._id}>
+                {option.name}
+              </li>
+            )}
+            filterOptions={(options, { inputValue }) =>
+              options.filter((option) => option.name.toLowerCase().includes(inputValue.toLowerCase()))
+            }
+            noOptionsText="No banks found"
+            sx={{ width: "100%" }}
           />
         </Grid>
 

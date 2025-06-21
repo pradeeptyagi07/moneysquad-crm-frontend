@@ -1,6 +1,18 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useDispatch, useSelector } from "react-redux"
+import type { AppDispatch } from "../../store"
+import {
+  fetchProductInfo,
+  updateProductDocuments,
+  selectProductInfo,
+  selectProductInfoLoading,
+  selectProductInfoUpdateLoading,
+  selectProductInfoUpdateSuccess,
+  clearProductInfoUpdateSuccess,
+} from "../../store/slices/resourceAndSupportSlice"
+import { selectUserData, isAdminUser } from "../../store/slices/userDataSlice"
 import {
   Card,
   CardContent,
@@ -21,126 +33,59 @@ import BusinessIcon from "@mui/icons-material/Business"
 import PersonIcon from "@mui/icons-material/Person"
 import EditDocumentsDialog from "./EditDocumentsDialog"
 
-const initialDocuments = {
-  "PL - Term Loan/Overdraft": {
-    icon: <PersonIcon />,
-    color: "#1976d2",
-    subcategories: {
-      "Personal Loan": [
-        "PAN, Aadhar, Photo (Applicant KYC)*",
-        "Latest 3 Payslips",
-        "Salary A/C Bank Statement (Last 3 Months)*",
-        "Latest Form-16 (optional)",
-      ],
-    },
-  },
-  "BL - Term Loan/Overdraft": {
-    icon: <BusinessIcon />,
-    color: "#388e3c",
-    subcategories: {
-      Proprietorship: [
-        "PAN, Aadhar, Photo (Proprietor KYC)*",
-        "GST Certificate, Udyam Certificate*",
-        "Bank Statement (Last 6 Months)*",
-        "Latest E Bill (Proof of Ownership)",
-        "GSTR3Bs - last 12 months",
-        "ITR, Computation - last 2 years",
-        "Complete Financials with P&L - last 2 years",
-        "Tax Audit Report - last 2 years",
-      ],
-      Partnership: [
-        "PAN, Aadhar, Photo (2 Partners' KYC)*",
-        "Firm PAN Card*",
-        "Partnership Deed*",
-        "GST Certificate, Udyam Certificate*",
-        "Bank Statement (Last 6 Months)*",
-        "Latest E Bill (Proof of Ownership)",
-        "GSTR3Bs - last 12 months",
-        "ITR, Computation - last 2 years",
-        "Complete Financials with P&L - last 2 years",
-        "Tax Audit Report - last 2 years",
-      ],
-      LLP: [
-        "PAN, Aadhar, Photo (2 Partners' KYC)*",
-        "Firm PAN Card*",
-        "Certification of Incorporation*",
-        "Partnership Deed*",
-        "GST Certificate, Udyam Certificate*",
-        "Bank Statement (Last 6 Months)*",
-        "Latest E Bill (Proof of Ownership)",
-        "GSTR3Bs - last 12 months",
-        "ITR, Computation - last 2 years",
-        "Complete Financials with P&L - last 2 years",
-        "Tax Audit Report - last 2 years",
-      ],
-      "Private Limited / Limited": [
-        "PAN, Aadhar, Photo (2 Directors' KYC)*",
-        "Company PAN Card*",
-        "Certification of Incorporation*",
-        "MOA, AOA*",
-        "List of Directors & Shareholders*",
-        "GST Certificate, Udyam Certificate*",
-        "Bank Statement (Last 6 Months)*",
-        "Latest E Bill (Proof of Ownership)",
-        "GSTR3Bs - last 12 months",
-        "ITR, Computation - last 2 years",
-        "Complete Financials with P&L - last 2 years",
-        "Independent, Tax Audit Report - last 2 years",
-      ],
-    },
-  },
-  "SEP - Term Loan/Overdraft": {
-    icon: <DescriptionIcon />,
-    color: "#f57c00",
-    subcategories: {
-      Doctor: [
-        "PAN, Aadhar, Photo (Applicant KYC)*",
-        "Doctor Degree Certificate*",
-        "Medical Council Certificate*",
-        "Hospital/Clinic Address Proof",
-        "Bank Statement (Last 6 Months)*",
-        "ITR, Computation - last 2 years",
-        "Complete Financials with P&L - last 2 years",
-      ],
-      CA: [
-        "PAN, Aadhar, Photo (Applicant KYC)*",
-        "Certificate of Practice*",
-        "Certificate of Membership*",
-        "Office Address Proof",
-        "Bank Statement (Last 6 Months)*",
-        "ITR, Computation - last 2 years",
-        "Complete Financials with P&L - last 2 years",
-      ],
-      CS: [
-        "PAN, Aadhar, Photo (Applicant KYC)*",
-        "Certificate of Practice*",
-        "Professional Qualification Certificate*",
-        "Office Address Proof",
-        "Bank Statement (Last 6 Months)*",
-        "ITR, Computation - last 2 years",
-        "Complete Financials with P&L - last 2 years",
-      ],
-      Architect: [
-        "PAN, Aadhar, Photo (Applicant KYC)*",
-        "Architect Degree Certificate*",
-        "Council of Architecture (CoA) license*",
-        "Office Address Proof",
-        "Bank Statement (Last 6 Months)*",
-        "ITR, Computation - last 2 years",
-        "Complete Financials with P&L - last 2 years",
-      ],
-    },
-  },
+const getIconForCategory = (category: string) => {
+  if (category.includes("PL")) return <PersonIcon />
+  if (category.includes("BL")) return <BusinessIcon />
+  if (category.includes("SEP")) return <DescriptionIcon />
+  return <DescriptionIcon />
 }
 
 const DocumentsList = () => {
-  const [open, setOpen] = useState(false)
-  const [documents, setDocuments] = useState(initialDocuments)
+  const dispatch = useDispatch<AppDispatch>()
+  const productInfo = useSelector(selectProductInfo)
+  const loading = useSelector(selectProductInfoLoading)
+  const updateLoading = useSelector(selectProductInfoUpdateLoading)
+  const updateSuccess = useSelector(selectProductInfoUpdateSuccess)
+  const userData = useSelector(selectUserData)
+  const isAdmin = isAdminUser(userData)
 
-  const handleSave = (updatedDocuments: typeof initialDocuments) => {
-    setDocuments(updatedDocuments)
-    setOpen(false)
+  const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    if (!productInfo) {
+      dispatch(fetchProductInfo())
+    }
+  }, [dispatch, productInfo])
+
+  useEffect(() => {
+    if (updateSuccess) {
+      setOpen(false)
+      dispatch(clearProductInfoUpdateSuccess())
+    }
+  }, [updateSuccess, dispatch])
+
+  const handleSave = (updatedDocuments: typeof documents) => {
+    dispatch(updateProductDocuments(updatedDocuments))
   }
+
+  if (loading) {
+    return (
+      <Card
+        variant="outlined"
+        sx={{
+          borderRadius: 3,
+          border: "1px solid #e0e0e0",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+        }}
+      >
+        <CardContent sx={{ p: 3, textAlign: "center" }}>
+          <Typography>Loading...</Typography>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const documents = productInfo?.documents || {}
 
   const renderDocumentItem = (doc: string, index: number) => {
     const isMandatory = doc.includes("*")
@@ -191,15 +136,17 @@ const DocumentsList = () => {
             <Typography variant="h6" sx={{ fontWeight: 600, color: "#1a1a1a" }}>
               Documents Required
             </Typography>
-            <IconButton
-              onClick={() => setOpen(true)}
-              sx={{
-                backgroundColor: "#f5f5f5",
-                "&:hover": { backgroundColor: "#e0e0e0" },
-              }}
-            >
-              <EditIcon fontSize="small" />
-            </IconButton>
+            {isAdmin && (
+              <IconButton
+                onClick={() => setOpen(true)}
+                sx={{
+                  backgroundColor: "#f5f5f5",
+                  "&:hover": { backgroundColor: "#e0e0e0" },
+                }}
+              >
+                <EditIcon fontSize="small" />
+              </IconButton>
+            )}
           </Box>
 
           {Object.entries(documents).map(([category, data], categoryIndex) => (
@@ -235,7 +182,7 @@ const DocumentsList = () => {
                       alignItems: "center",
                     }}
                   >
-                    {data.icon}
+                    {getIconForCategory(category)}
                   </Box>
                   <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
                     {category}
@@ -306,7 +253,15 @@ const DocumentsList = () => {
         </CardContent>
       </Card>
 
-      <EditDocumentsDialog open={open} onClose={() => setOpen(false)} documents={documents} onSave={handleSave} />
+      {isAdmin && (
+        <EditDocumentsDialog
+          open={open}
+          onClose={() => setOpen(false)}
+          documents={documents}
+          onSave={handleSave}
+          loading={updateLoading}
+        />
+      )}
     </>
   )
 }

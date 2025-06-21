@@ -21,10 +21,12 @@ import {
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore"
 import AddIcon from "@mui/icons-material/Add"
 import DeleteIcon from "@mui/icons-material/Delete"
+import PersonIcon from "@mui/icons-material/Person"
+import BusinessIcon from "@mui/icons-material/Business"
+import DescriptionIcon from "@mui/icons-material/Description"
 
 interface DocumentsData {
   [category: string]: {
-    icon: React.ReactElement
     color: string
     subcategories: {
       [subcategory: string]: string[]
@@ -37,9 +39,23 @@ interface EditDocumentsDialogProps {
   onClose: () => void
   documents: DocumentsData
   onSave: (documents: DocumentsData) => void
+  loading?: boolean
 }
 
-const EditDocumentsDialog: React.FC<EditDocumentsDialogProps> = ({ open, onClose, documents, onSave }) => {
+const getIconForCategory = (category: string) => {
+  if (category.includes("PL")) return <PersonIcon />
+  if (category.includes("BL")) return <BusinessIcon />
+  if (category.includes("SEP")) return <DescriptionIcon />
+  return <DescriptionIcon />
+}
+
+const EditDocumentsDialog: React.FC<EditDocumentsDialogProps> = ({
+  open,
+  onClose,
+  documents,
+  onSave,
+  loading = false,
+}) => {
   const [tempDocuments, setTempDocuments] = useState<DocumentsData>(documents)
 
   useEffect(() => {
@@ -131,7 +147,7 @@ const EditDocumentsDialog: React.FC<EditDocumentsDialogProps> = ({ open, onClose
                     alignItems: "center",
                   }}
                 >
-                  {data.icon}
+                  {getIconForCategory(category)}
                 </Box>
                 <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
                   {category}
@@ -208,8 +224,8 @@ const EditDocumentsDialog: React.FC<EditDocumentsDialogProps> = ({ open, onClose
         <Button onClick={onClose} sx={{ mr: 1 }}>
           Cancel
         </Button>
-        <Button variant="contained" onClick={handleSave}>
-          Save Changes
+        <Button variant="contained" onClick={handleSave} disabled={loading}>
+          {loading ? "Saving..." : "Save Changes"}
         </Button>
       </DialogActions>
     </Dialog>
