@@ -14,10 +14,10 @@ const PartnerLayout = () => {
     { text: "Offers", icon: "LocalOffer", path: "/partner/offers" },
     { text: "Commissions", icon: "AttachMoney", path: "/partner/commissions" },
     { text: "Team Management", icon: "Groups", path: "/partner/team-management" },
+    { text: "Training & Resources", icon: "TrainingResources", path: "/partner/training-resorces" }, // ✅ Add this
 
     { text: "Settings", icon: "Settings", path: "/partner/settings" },
-    { text: "Help & Support", icon: "Help", path: "help-support" }, // ✅ Add this
-    { text: "Training & Resources", icon: "TrainingResources", path: "training-resorces" }, // ✅ Add this
+    { text: "Help & Support", icon: "Help", path: "/partner/help-support" }, // ✅ Add this
 
   ];
 

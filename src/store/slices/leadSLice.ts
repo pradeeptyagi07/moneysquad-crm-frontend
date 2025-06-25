@@ -1,105 +1,112 @@
 // src/store/slices/leadSlice.ts
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axiosInstance from "../../services/api";
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit"
+import axiosInstance from "../../services/api"
 
 export interface DisbursementData {
-  loanAmount: number;
-  tenureMonths: number;
-  interestRatePA: number;
-  processingFee: number;
-  insuranceCharges: number;
-  loanScheme: string;
-  lanNumber: string;
-  actualDisbursedDate: string;
+  loanAmount: number
+  tenureMonths: number
+  interestRatePA: number
+  processingFee: number
+  insuranceCharges: number
+  loanScheme: string
+  lanNumber: string
+  actualDisbursedDate: string
 }
 
 export interface LeadTimelineEvent {
-  _id: string;
-  leadId: string;
-  applicantName: string;
-  status: string;
-  message: string;
-  rejectImage: string | null;
-  rejectReason: string | null;
-  rejectComment: string | null;
-  closeReason: string | null;
-  createdAt: string;
-  __v: number;
+  _id: string
+  leadId: string
+  applicantName: string
+  status: string
+  message: string
+  rejectImage: string | null
+  rejectReason: string | null
+  rejectComment: string | null
+  closeReason: string | null
+  createdAt: string
+  __v: number
 }
 
 export interface LeadTimeline {
-  created?: LeadTimelineEvent;
-  assigned?: LeadTimelineEvent;
-  login?: LeadTimelineEvent;
-  rejected?: LeadTimelineEvent;
-  [key: string]: LeadTimelineEvent | undefined;
+  created?: LeadTimelineEvent
+  assigned?: LeadTimelineEvent
+  login?: LeadTimelineEvent
+  rejected?: LeadTimelineEvent
+  [key: string]: LeadTimelineEvent | undefined
 }
 
 // --- 3. New helper types to match response ---
 export interface Pincode {
-  pincode: string;
-  state: string;
-  city: string;
-  _id: string;
+  pincode: string
+  state: string
+  city: string
+  _id: string
 }
 
 export interface Loan {
-  type: string;
-  amount: number;
-  _id: string;
+  type: string
+  amount: number
+  _id: string
 }
 
 export interface Partner {
-  _id: string;
-  partnerId: string;
-  basicInfo: { fullName: string };
+  _id: string
+  partnerId: string
+  basicInfo: {
+    fullName: string
+    mobile: string
+    email: string
+  }
 }
 
 // --- 4. Updated Lead type matching new API ---
 export interface Manager {
-  _id: string;
-  firstName: string;
-  lastName: string;
-  managerId: string;
+  _id: string
+  firstName: string
+  lastName: string
+  managerId: string
+  email: string
+  mobile: string
 }
 
 export interface Associate {
-  _id: string;
-  firstName: string;
-  lastName: string;
-  associateDisplayId: string;
+  _id: string
+  firstName: string
+  lastName: string
+  associateDisplayId: string
+  email: string
+  mobile: string
 }
 
 // --- 4. Updated Lead type matching new API ---
 export interface Lead {
-  id: string;                          
-  leadId: string;                      
-  applicantName: string;
-  applicantProfile: string;
-  email: string;
-  mobile: string;
-  pincode: Pincode;
-  comments: string;
-  loan: Loan;
-  lenderType: string | null;
-  partnerId: Partner;
-  manager: Manager | null;             // ← updated
-  associate: Associate | null;         // ← already object
-  status: string;
-  createdAt: string;
-  disbursedData: DisbursementData | null;
-  statusUpdatedAt: string;
-  businessName: string;
+  id: string
+  leadId: string
+  applicantName: string
+  applicantProfile: string
+  email: string
+  mobile: string
+  pincode: Pincode
+  comments: string
+  loan: Loan
+  lenderType: string | null
+  partnerId: Partner
+  manager: Manager | null // ← updated with email & mobile
+  associate: Associate | null // ← updated with email & mobile
+  status: string
+  createdAt: string
+  disbursedData: DisbursementData | null
+  statusUpdatedAt: string
+  businessName: string
 }
 
-
 interface LeadState {
-  leads: Lead[];
-  currentLead: Lead | null;
-  currentTimeline: LeadTimeline | null;
-  loading: boolean;
-  error: string | null;
-  success: string | null;
+  leads: Lead[]
+  currentLead: Lead | null
+  currentTimeline: LeadTimeline | null
+  loading: boolean
+  error: string | null
+  success: string | null
 }
 
 const initialState: LeadState = {

@@ -12,7 +12,6 @@ import {
   selectProductInfoUpdateSuccess,
   clearProductInfoUpdateSuccess,
 } from "../../store/slices/resourceAndSupportSlice"
-import { selectUserData, isAdminUser } from "../../store/slices/userDataSlice"
 import {
   Card,
   CardContent,
@@ -32,6 +31,7 @@ import DescriptionIcon from "@mui/icons-material/Description"
 import BusinessIcon from "@mui/icons-material/Business"
 import PersonIcon from "@mui/icons-material/Person"
 import EditDocumentsDialog from "./EditDocumentsDialog"
+import { useAuth } from "../../hooks/useAuth"
 
 const getIconForCategory = (category: string) => {
   if (category.includes("PL")) return <PersonIcon />
@@ -46,8 +46,9 @@ const DocumentsList = () => {
   const loading = useSelector(selectProductInfoLoading)
   const updateLoading = useSelector(selectProductInfoUpdateLoading)
   const updateSuccess = useSelector(selectProductInfoUpdateSuccess)
-  const userData = useSelector(selectUserData)
-  const isAdmin = isAdminUser(userData)
+
+  const { userRole } = useAuth() // ✅ Use context
+  const isAdmin = userRole === "admin" || userRole === "superadmin"
 
   const [open, setOpen] = useState(false)
 
@@ -64,28 +65,11 @@ const DocumentsList = () => {
     }
   }, [updateSuccess, dispatch])
 
+  const documents = productInfo?.documents || {}
+
   const handleSave = (updatedDocuments: typeof documents) => {
     dispatch(updateProductDocuments(updatedDocuments))
   }
-
-  if (loading) {
-    return (
-      <Card
-        variant="outlined"
-        sx={{
-          borderRadius: 3,
-          border: "1px solid #e0e0e0",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-        }}
-      >
-        <CardContent sx={{ p: 3, textAlign: "center" }}>
-          <Typography>Loading...</Typography>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  const documents = productInfo?.documents || {}
 
   const renderDocumentItem = (doc: string, index: number) => {
     const isMandatory = doc.includes("*")
@@ -111,6 +95,23 @@ const DocumentsList = () => {
           {doc}
         </Typography>
       </Box>
+    )
+  }
+
+  if (loading) {
+    return (
+      <Card
+        variant="outlined"
+        sx={{
+          borderRadius: 3,
+          border: "1px solid #e0e0e0",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+        }}
+      >
+        <CardContent sx={{ p: 3, textAlign: "center" }}>
+          <Typography>Loading...</Typography>
+        </CardContent>
+      </Card>
     )
   }
 
@@ -189,6 +190,7 @@ const DocumentsList = () => {
                   </Typography>
                 </Box>
               </AccordionSummary>
+
               <AccordionDetails sx={{ p: 3 }}>
                 <Grid container spacing={3}>
                   {Object.entries(data.subcategories).map(([subcat, docs], subcatIndex) => (

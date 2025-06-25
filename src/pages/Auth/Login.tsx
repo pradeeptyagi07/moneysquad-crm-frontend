@@ -384,7 +384,7 @@ const Login: React.FC = () => {
             <Button
               variant="outlined"
               fullWidth
-              onClick={() => navigate("/sign-up/become-partner")}
+              onClick={() => navigate("/become-partner")}
               sx={{
                 py: { xs: 1.2, sm: 1.5 },
                 borderRadius: 2,

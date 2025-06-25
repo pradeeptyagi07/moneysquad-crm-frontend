@@ -3,7 +3,7 @@ import axios from "axios";
 const axiosInstance = axios.create({
   // baseURL: "http://178.236.185.187:5002/api",
   baseURL: "https://api.moneysquad.in/api/",
-  // baseURL: "https://firewire-employment-lip-jean.trycloudflare.com/api",
+  // baseURL: "https://midi-memorabilia-workers-syndication.trycloudflare.com/api",
 
   timeout: 10000,
 });

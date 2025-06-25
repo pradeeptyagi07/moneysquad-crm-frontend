@@ -13,7 +13,6 @@ import {
   selectProductInfoUpdateSuccess,
   clearProductInfoUpdateSuccess,
 } from "../../store/slices/resourceAndSupportSlice"
-import { selectUserData, isAdminUser } from "../../store/slices/userDataSlice"
 import {
   Card,
   CardContent,
@@ -35,6 +34,7 @@ import CalculateIcon from "@mui/icons-material/Calculate"
 import CheckCircleIcon from "@mui/icons-material/CheckCircle"
 import EditEligibilityDialog from "./EditEligibilityDialog"
 import EditCalculationDialog from "./EditCalculationDialog"
+import { useAuth } from "../../hooks/useAuth"
 
 const StyledCard = styled(Card)(({ theme }) => ({
   borderRadius: theme.spacing(2),
@@ -98,8 +98,9 @@ const LoanPolicies: React.FC = () => {
   const loading = useSelector(selectProductInfoLoading)
   const updateLoading = useSelector(selectProductInfoUpdateLoading)
   const updateSuccess = useSelector(selectProductInfoUpdateSuccess)
-  const userData = useSelector(selectUserData)
-  const isAdmin = isAdminUser(userData)
+
+  const { userRole } = useAuth() // ✅ Use context
+  const isAdmin = userRole === "admin" || userRole === "superadmin"
 
   const [openEligibility, setOpenEligibility] = useState(false)
   const [openCalculation, setOpenCalculation] = useState(false)
@@ -125,7 +126,7 @@ const LoanPolicies: React.FC = () => {
         updateProductPolicies({
           ...productInfo.policies,
           eligibilityCriteria: newCriteria,
-        }),
+        })
       )
     }
   }
@@ -136,7 +137,7 @@ const LoanPolicies: React.FC = () => {
         updateProductPolicies({
           ...productInfo.policies,
           eligibilityCalculation: newCalc,
-        }),
+        })
       )
     }
   }
@@ -268,7 +269,7 @@ const LoanPolicies: React.FC = () => {
           ))}
         </Grid>
 
-        {/* Dialogs - Only render for admin */}
+        {/* Dialogs - only render for admin */}
         {isAdmin && (
           <>
             <EditEligibilityDialog

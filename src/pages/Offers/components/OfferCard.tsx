@@ -16,7 +16,10 @@ import {
 } from "@mui/material";
 import { Star, Edit, Delete, MoreVert } from "@mui/icons-material";
 import { useAuth } from "../../../hooks/useAuth";
-import { loanTypeColors, type BankOffer } from "../../../store/slices/offersSlice";
+import {
+  loanTypeColors,
+  type BankOffer,
+} from "../../../store/slices/offersSlice";
 
 interface OfferCardProps {
   offer: BankOffer;
@@ -55,8 +58,10 @@ const OfferCard: React.FC<OfferCardProps> = ({
     return () => clearInterval(timer);
   }, [offer.offerValidity]);
 
-  const isExpired = !!offer.offerValidity && new Date(offer.offerValidity) < new Date();
-  const { gradient, textColor } = loanTypeColors[offer.loanType] || loanTypeColors.Other;
+  const isExpired =
+    !!offer.offerValidity && new Date(offer.offerValidity) < new Date();
+  const { gradient, textColor } =
+    loanTypeColors[offer.loanType] || loanTypeColors.Other;
 
   const handleMenuClick = (e: React.MouseEvent<HTMLElement>) => {
     e.stopPropagation();
@@ -82,48 +87,60 @@ const OfferCard: React.FC<OfferCardProps> = ({
       <Card
         onClick={() => !isExpired && onViewDetails(offer)}
         sx={{
-          height: '100%',
+          height: "100%",
           borderRadius: 3,
-          boxShadow: '0 6px 18px rgba(0,0,0,0.1)',
-          transition: 'transform 0.3s',
-          '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 10px 30px rgba(0,0,0,0.15)' },
+          boxShadow: "0 6px 18px rgba(0,0,0,0.1)",
+          transition: "transform 0.3s",
+          "&:hover": {
+            transform: "translateY(-4px)",
+            boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
+          },
           opacity: isExpired ? 0.5 : 1,
-          position: 'relative',
-          overflow: 'hidden',
+          position: "relative",
+          overflow: "hidden",
         }}
       >
         {/* Image Section */}
         {offer.bankImage && (
-          <Box sx={{ position: 'relative', height: 180, width: '100%' }}>
+          <Box sx={{ position: "relative", height: 180, width: "100%" }}>
             <Box
               component="img"
               src={offer.bankImage}
               alt={offer.bankName}
-              sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              sx={{ width: "100%", height: "100%", objectFit: "cover" }}
             />
             {/* Featured Pulse */}
             {offer.isFeatured && (
               <Box
                 sx={{
-                  position: 'absolute',
+                  position: "absolute",
                   top: 12,
                   right: 12,
                   width: 36,
                   height: 36,
-                  borderRadius: '50%',
-                  bgcolor: 'warning.main',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  animation: 'featurePulse 2s ease-in-out infinite',
-                  '@keyframes featurePulse': {
-                    '0%': { transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(255,193,7,0.4)' },
-                    '50%': { transform: 'scale(1.2)', boxShadow: '0 0 0 12px rgba(255,193,7,0)' },
-                    '100%': { transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(255,193,7,0.4)' },
+                  borderRadius: "50%",
+                  bgcolor: "warning.main",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  animation: "featurePulse 2s ease-in-out infinite",
+                  "@keyframes featurePulse": {
+                    "0%": {
+                      transform: "scale(1)",
+                      boxShadow: "0 0 0 0 rgba(255,193,7,0.4)",
+                    },
+                    "50%": {
+                      transform: "scale(1.2)",
+                      boxShadow: "0 0 0 12px rgba(255,193,7,0)",
+                    },
+                    "100%": {
+                      transform: "scale(1)",
+                      boxShadow: "0 0 0 0 rgba(255,193,7,0.4)",
+                    },
                   },
                 }}
               >
-                <Star sx={{ color: 'common.white', fontSize: 20 }} />
+                <Star sx={{ color: "common.white", fontSize: 20 }} />
               </Box>
             )}
           </Box>
@@ -131,19 +148,24 @@ const OfferCard: React.FC<OfferCardProps> = ({
 
         {/* Validity & Timer */}
         {offer.offerValidity && (
-          <Box sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            px: 2,
-            py: 1,
-            bgcolor: 'grey.50',
-            borderBottom: '1px solid rgba(0,0,0,0.08)',
-          }}>
-            <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              px: 2,
+              py: 1,
+              bgcolor: "grey.50",
+              borderBottom: "1px solid rgba(0,0,0,0.08)",
+            }}
+          >
+            <Typography
+              variant="body2"
+              sx={{ fontWeight: 600, color: "text.primary" }}
+            >
               {timeLeft}
             </Typography>
-            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+            <Typography variant="caption" sx={{ color: "text.secondary" }}>
               Valid until {new Date(offer.offerValidity).toLocaleDateString()}
             </Typography>
           </Box>
@@ -154,7 +176,14 @@ const OfferCard: React.FC<OfferCardProps> = ({
           <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
             {offer.bankName}
           </Typography>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              mb: 2,
+            }}
+          >
             <Chip
               label={offer.loanType}
               size="small"
@@ -172,37 +201,47 @@ const OfferCard: React.FC<OfferCardProps> = ({
           </Typography>
           <Grid container spacing={1} sx={{ mb: 2 }}>
             <Grid item xs={6}>
-              <Typography variant="caption" color="text.secondary">Interest Rate</Typography>
-              <Typography variant="body1" sx={{ fontWeight: 700 }}>{offer.interestRate}%</Typography>
+              <Typography variant="caption" color="text.secondary">
+                Interest Rate
+              </Typography>
+              <Typography variant="body1" sx={{ fontWeight: 700 }}>
+                {offer.interestRate}%
+              </Typography>
             </Grid>
             <Grid item xs={6}>
-              <Typography variant="caption" color="text.secondary">Processing Fee</Typography>
-              <Typography variant="body1" sx={{ fontWeight: 700 }}>₹{offer.processingFee}</Typography>
+              <Typography variant="caption" color="text.secondary">
+                Processing Fee
+              </Typography>
+              <Typography variant="body1" sx={{ fontWeight: 700 }}>
+                {offer?.processingFeeType === "percentage"
+                  ? `${offer.processingFee}%`
+                  : `₹${offer.processingFee}`}
+              </Typography>
             </Grid>
           </Grid>
           <Button
             fullWidth
             variant="contained"
             disabled={isExpired}
-            sx={{ mt: 1, borderRadius: 3, textTransform: 'none' }}
+            sx={{ mt: 1, borderRadius: 3, textTransform: "none" }}
           >
             View Details
           </Button>
         </CardContent>
 
         {/* Admin Menu */}
-        {userRole === 'admin' && (
-          <>  
+        {userRole === "admin" && (
+          <>
             <IconButton
               size="small"
               onClick={handleMenuClick}
               sx={{
-                pointerEvents: 'auto',
+                pointerEvents: "auto",
                 zIndex: 2,
-                position: 'absolute',
+                position: "absolute",
                 top: 12,
                 left: 12,
-                bgcolor: 'grey.100',
+                bgcolor: "grey.100",
               }}
             >
               <MoreVert fontSize="small" />
@@ -211,8 +250,8 @@ const OfferCard: React.FC<OfferCardProps> = ({
               anchorEl={anchorEl}
               open={openMenu}
               onClose={handleMenuClose}
-              onClick={e => e.stopPropagation()}
-              PaperProps={{ sx: { borderRadius: 2, pointerEvents: 'auto' } }}
+              onClick={(e) => e.stopPropagation()}
+              PaperProps={{ sx: { borderRadius: 2, pointerEvents: "auto" } }}
             >
               <MenuItem onClick={handleEdit}>
                 <Edit fontSize="small" sx={{ mr: 1 }} /> Edit

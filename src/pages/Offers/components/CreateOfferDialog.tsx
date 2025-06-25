@@ -68,13 +68,20 @@ const Transition = React.forwardRef(function Transition(
 
 const getIconComponent = (name: string) => {
   switch (name) {
-    case "CreditCard": return <CreditCard fontSize="small" />;
-    case "Home": return <Home fontSize="small" />;
-    case "Business": return <Business fontSize="small" />;
-    case "School": return <School fontSize="small" />;
-    case "DirectionsCar": return <DirectionsCar fontSize="small" />;
-    case "Diamond": return <Diamond fontSize="small" />;
-    case "AccountBalance": return <AccountBalance fontSize="small" />;
+    case "CreditCard":
+      return <CreditCard fontSize="small" />;
+    case "Home":
+      return <Home fontSize="small" />;
+    case "Business":
+      return <Business fontSize="small" />;
+    case "School":
+      return <School fontSize="small" />;
+    case "DirectionsCar":
+      return <DirectionsCar fontSize="small" />;
+    case "Diamond":
+      return <Diamond fontSize="small" />;
+    case "AccountBalance":
+      return <AccountBalance fontSize="small" />;
     case "LocalOffer":
     default:
       return <LocalOffer fontSize="small" />;
@@ -87,15 +94,20 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
   editOffer,
 }) => {
   const dispatch = useAppDispatch();
-  const { loanTypes, lenders, error: lenderError } = useAppSelector(
-    (state) => state.lenderLoan
-  );
+  const {
+    loanTypes,
+    lenders,
+    error: lenderError,
+  } = useAppSelector((state) => state.lenderLoan);
   const { loading } = useAppSelector((state) => state.offers);
 
   const [featureInput, setFeatureInput] = useState("");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
   const [imageError, setImageError] = useState(false);
+  const [processingFeeType, setProcessingFeeType] = useState<
+    "percentage" | "rupee"
+  >("rupee");
 
   useEffect(() => {
     dispatch(fetchLoanTypes());
@@ -119,6 +131,8 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
     offerValidity: "",
     interestRate: "",
     processingFee: "",
+    processingFeeType: "rupee",
+
     keyFeatures: [],
     isFeatured: false,
     eligibility: {
@@ -133,6 +147,8 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
   useEffect(() => {
     if (editOffer) {
       setNewOffer({ ...editOffer });
+      setProcessingFeeType(editOffer.processingFeeType || "rupee");
+
       if (typeof editOffer.bankImage === "string") {
         setImagePreview(editOffer.bankImage);
       }
@@ -170,9 +186,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
     }
   }, [open, editOffer]);
 
-  const handleNewOfferChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleNewOfferChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     if (name.startsWith("eligibility.")) {
       const field = name.split(".")[1];
@@ -210,9 +224,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
     }
   };
 
-  const handleImageUpload = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0]) {
       const file = e.target.files[0];
       setSelectedImage(file);
@@ -235,11 +247,9 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
   const handleSubmitOffer = () => {
     const offerData: CreateOfferRequest = {
       bankName: newOffer.bankName || "",
-      bankImage:
-        selectedImage || newOffer.bankImage || DEFAULT_BANK_LOGO,
+      bankImage: selectedImage || newOffer.bankImage || DEFAULT_BANK_LOGO,
       offerHeadline: newOffer.offerHeadline || "",
-      offerValidity:
-        newOffer.offerValidity || new Date().toISOString(),
+      offerValidity: newOffer.offerValidity || new Date().toISOString(),
       loanType: newOffer.loanType || "",
       interestRate: parseFloat(
         newOffer.interestRate?.toString().replace("%", "") || "0"
@@ -247,6 +257,8 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
       processingFee: parseFloat(
         newOffer.processingFee?.toString().replace(/[₹,]/g, "") || "0"
       ),
+      processingFeeType: processingFeeType,
+
       keyFeatures: newOffer.keyFeatures || [],
       isFeatured: newOffer.isFeatured || false,
       eligibility: {
@@ -258,14 +270,12 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
           newOffer.eligibility?.maxAge !== undefined
             ? Number(newOffer.eligibility.maxAge)
             : undefined,
-        minIncome:
-          newOffer.eligibility?.minIncome
-            ? parseFloat(
-                newOffer.eligibility.minIncome.toString().replace(/[₹,]/g, "")
-              )
-            : undefined,
-        employmentType:
-          newOffer.eligibility?.employmentType || "",
+        minIncome: newOffer.eligibility?.minIncome
+          ? parseFloat(
+              newOffer.eligibility.minIncome.toString().replace(/[₹,]/g, "")
+            )
+          : undefined,
+        employmentType: newOffer.eligibility?.employmentType || "",
         maxCreditScore:
           newOffer.eligibility?.maxCreditScore !== undefined
             ? Number(newOffer.eligibility.maxCreditScore)
@@ -274,9 +284,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
     };
 
     if (editOffer) {
-      dispatch(
-        updateOffer({ id: editOffer._id, offerData })
-      )
+      dispatch(updateOffer({ id: editOffer._id, offerData }))
         .unwrap()
         .then(onClose)
         .catch((err) => console.error(err));
@@ -291,9 +299,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
   const displayImageUrl = imageError
     ? DEFAULT_BANK_LOGO
     : imagePreview ||
-      (typeof newOffer.bankImage === "string"
-        ? newOffer.bankImage
-        : "");
+      (typeof newOffer.bankImage === "string" ? newOffer.bankImage : "");
 
   return (
     <Dialog
@@ -304,11 +310,19 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
       TransitionComponent={Transition}
     >
       <DialogTitle>
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
           <Typography variant="h6">
             {editOffer ? "Edit Offer" : "Create New Offer"}
           </Typography>
-          <IconButton onClick={onClose}><Close /></IconButton>
+          <IconButton onClick={onClose}>
+            <Close />
+          </IconButton>
         </Box>
       </DialogTitle>
 
@@ -339,8 +353,13 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
                     bgcolor: "background.default",
                     cursor: "pointer",
                     transition: "all 0.2s",
-                    "&:hover": { borderColor: "primary.main", bgcolor: "primary.lighter" },
-                    backgroundImage: displayImageUrl ? `url(${displayImageUrl})` : "none",
+                    "&:hover": {
+                      borderColor: "primary.main",
+                      bgcolor: "primary.lighter",
+                    },
+                    backgroundImage: displayImageUrl
+                      ? `url(${displayImageUrl})`
+                      : "none",
                     backgroundSize: "contain",
                     backgroundPosition: "center",
                     backgroundRepeat: "no-repeat",
@@ -348,7 +367,9 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
                 >
                   {!displayImageUrl && (
                     <>
-                      <Image sx={{ fontSize: 40, color: "text.secondary", mb: 1 }} />
+                      <Image
+                        sx={{ fontSize: 40, color: "text.secondary", mb: 1 }}
+                      />
                       <Typography variant="body2" color="text.secondary">
                         Click to upload bank logo
                       </Typography>
@@ -407,7 +428,15 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
                   value={formatDateForDisplay(newOffer.offerValidity)}
                   onChange={handleDateChange}
                   format="dd/MM/yyyy"
-                  slotProps={{ textField: { fullWidth: true, sx: { mb: 3 }, InputProps: { sx: { borderRadius: 2 } }, placeholder: "dd/mm/yyyy", required: true } }}
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      sx: { mb: 3 },
+                      InputProps: { sx: { borderRadius: 2 } },
+                      placeholder: "dd/mm/yyyy",
+                      required: true,
+                    },
+                  }}
                 />
               </LocalizationProvider>
             </Grid>
@@ -445,7 +474,12 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
                 onChange={handleNewOfferChange}
                 placeholder="e.g. 10.50"
                 sx={{ mb: 3 }}
-                InputProps={{ sx: { borderRadius: 2 }, endAdornment: <InputAdornment position="end">%</InputAdornment> }}
+                InputProps={{
+                  sx: { borderRadius: 2 },
+                  endAdornment: (
+                    <InputAdornment position="end">%</InputAdornment>
+                  ),
+                }}
               />
             </Grid>
             <Grid item xs={12} md={8}>
@@ -456,20 +490,56 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
                 name="processingFee"
                 value={newOffer.processingFee || ""}
                 onChange={handleNewOfferChange}
-                placeholder="e.g. 1500"
+                placeholder={
+                  processingFeeType === "rupee" ? "e.g. 1500" : "e.g. 2"
+                }
                 sx={{ mb: 3 }}
-                InputProps={{ sx: { borderRadius: 2 } }}
+                InputProps={{
+                  sx: { borderRadius: 2 },
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <TextField
+                        select
+                        value={processingFeeType}
+                        onChange={(e) =>
+                          setProcessingFeeType(
+                            e.target.value as "percentage" | "rupee"
+                          )
+                        }
+                        variant="standard"
+                        sx={{ minWidth: 80 }}
+                        InputProps={{ disableUnderline: true }}
+                      >
+                        <MenuItem value="rupee">₹</MenuItem>
+                        <MenuItem value="percentage">%</MenuItem>
+                      </TextField>
+                    </InputAdornment>
+                  ),
+                }}
               />
             </Grid>
 
             {/* Featured Toggle */}
             <Grid item xs={12} md={6}>
-              <Box sx={{ display: "flex", alignItems: "center", height: "100%", pl: 2 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  height: "100%",
+                  pl: 2,
+                }}
+              >
                 <Button
                   variant={newOffer.isFeatured ? "contained" : "outlined"}
                   startIcon={newOffer.isFeatured ? <Star /> : <StarBorder />}
                   onClick={handleToggleFeatured}
-                  sx={{ borderRadius: 2, ...(newOffer.isFeatured && { background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" }) }}
+                  sx={{
+                    borderRadius: 2,
+                    ...(newOffer.isFeatured && {
+                      background:
+                        "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                    }),
+                  }}
                 >
                   {newOffer.isFeatured ? "Featured Offer" : "Mark as Featured"}
                 </Button>
@@ -478,7 +548,9 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
 
             {/* Key Features */}
             <Grid item xs={12}>
-              <Typography variant="subtitle1" gutterBottom>Key Features</Typography>
+              <Typography variant="subtitle1" gutterBottom>
+                Key Features
+              </Typography>
               <Box sx={{ display: "flex", mb: 2 }}>
                 <TextField
                   fullWidth
@@ -492,18 +564,48 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
                   variant="contained"
                   onClick={handleAddFeature}
                   disabled={!featureInput.trim()}
-                  sx={{ ml: 1, borderRadius: 2, minWidth: 100, background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)", "&.Mui-disabled": { background: "#e2e8f0", color: "#94a3b8" } }}
-                >Add</Button>
+                  sx={{
+                    ml: 1,
+                    borderRadius: 2,
+                    minWidth: 100,
+                    background:
+                      "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+                    "&.Mui-disabled": {
+                      background: "#e2e8f0",
+                      color: "#94a3b8",
+                    },
+                  }}
+                >
+                  Add
+                </Button>
               </Box>
-              <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, minHeight: 100, bgcolor: "background.default" }}>
+              <Paper
+                variant="outlined"
+                sx={{
+                  p: 2,
+                  borderRadius: 2,
+                  minHeight: 100,
+                  bgcolor: "background.default",
+                }}
+              >
                 {newOffer.keyFeatures && newOffer.keyFeatures.length > 0 ? (
                   <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
                     {newOffer.keyFeatures.map((feat, i) => (
-                      <Chip key={i} label={feat} onDelete={() => handleRemoveFeature(i)} sx={{ mb: 1 }} />
+                      <Chip
+                        key={i}
+                        label={feat}
+                        onDelete={() => handleRemoveFeature(i)}
+                        sx={{ mb: 1 }}
+                      />
                     ))}
                   </Box>
                 ) : (
-                  <Typography variant="body2" color="text.secondary" align="center" sx={{ py: 2 }}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    align="center"
+                    sx={{ py: 2 }}
+                  >
                     No features added yet.
                   </Typography>
                 )}
@@ -512,23 +614,68 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
 
             {/* Eligibility Criteria */}
             <Grid item xs={12}>
-              <Typography variant="subtitle1" gutterBottom sx={{ mt: 2 }}>Eligibility Criteria</Typography>
+              <Typography variant="subtitle1" gutterBottom sx={{ mt: 2 }}>
+                Eligibility Criteria
+              </Typography>
               <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
                 <Grid container spacing={2}>
                   <Grid item xs={12} md={6}>
-                    <TextField fullWidth label="Minimum Age" name="eligibility.minAge" type="number" placeholder="e.g. 23" value={newOffer.eligibility?.minAge || ""} onChange={handleNewOfferChange} InputProps={{ sx: { borderRadius: 2 } }} />
+                    <TextField
+                      fullWidth
+                      label="Minimum Age"
+                      name="eligibility.minAge"
+                      type="number"
+                      placeholder="e.g. 23"
+                      value={newOffer.eligibility?.minAge || ""}
+                      onChange={handleNewOfferChange}
+                      InputProps={{ sx: { borderRadius: 2 } }}
+                    />
                   </Grid>
                   <Grid item xs={12} md={6}>
-                    <TextField fullWidth label="Maximum Age" name="eligibility.maxAge" type="number" placeholder="e.g. 60" value={newOffer.eligibility?.maxAge || ""} onChange={handleNewOfferChange} InputProps={{ sx: { borderRadius: 2 } }} />
+                    <TextField
+                      fullWidth
+                      label="Maximum Age"
+                      name="eligibility.maxAge"
+                      type="number"
+                      placeholder="e.g. 60"
+                      value={newOffer.eligibility?.maxAge || ""}
+                      onChange={handleNewOfferChange}
+                      InputProps={{ sx: { borderRadius: 2 } }}
+                    />
                   </Grid>
                   <Grid item xs={12} md={6}>
-                    <TextField fullWidth label="Minimum Income" name="eligibility.minIncome" placeholder="e.g. 25000" value={newOffer.eligibility?.minIncome || ""} onChange={handleNewOfferChange} InputProps={{ sx: { borderRadius: 2 } }} />
+                    <TextField
+                      fullWidth
+                      label="Minimum Income"
+                      name="eligibility.minIncome"
+                      placeholder="e.g. 25000"
+                      value={newOffer.eligibility?.minIncome || ""}
+                      onChange={handleNewOfferChange}
+                      InputProps={{ sx: { borderRadius: 2 } }}
+                    />
                   </Grid>
                   <Grid item xs={12} md={6}>
-                    <TextField fullWidth label="Employment Type" name="eligibility.employmentType" placeholder="e.g. Salaried" value={newOffer.eligibility?.employmentType || ""} onChange={handleNewOfferChange} InputProps={{ sx: { borderRadius: 2 } }} />
+                    <TextField
+                      fullWidth
+                      label="Employment Type"
+                      name="eligibility.employmentType"
+                      placeholder="e.g. Salaried"
+                      value={newOffer.eligibility?.employmentType || ""}
+                      onChange={handleNewOfferChange}
+                      InputProps={{ sx: { borderRadius: 2 } }}
+                    />
                   </Grid>
                   <Grid item xs={12} md={6}>
-                    <TextField fullWidth label="Minimum Credit Score" name="eligibility.maxCreditScore" type="number" placeholder="e.g. 850" value={newOffer.eligibility?.maxCreditScore || ""} onChange={handleNewOfferChange} InputProps={{ sx: { borderRadius: 2 } }} />
+                    <TextField
+                      fullWidth
+                      label="Minimum Credit Score"
+                      name="eligibility.maxCreditScore"
+                      type="number"
+                      placeholder="e.g. 850"
+                      value={newOffer.eligibility?.maxCreditScore || ""}
+                      onChange={handleNewOfferChange}
+                      InputProps={{ sx: { borderRadius: 2 } }}
+                    />
                   </Grid>
                 </Grid>
               </Paper>
@@ -551,7 +698,11 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
             loading
           }
           startIcon={
-            loading ? <CircularProgress size={20} color="inherit" /> : <CheckCircle />
+            loading ? (
+              <CircularProgress size={20} color="inherit" />
+            ) : (
+              <CheckCircle />
+            )
           }
           sx={{
             borderRadius: 2,

@@ -60,6 +60,8 @@ const LeadsFilterBar: React.FC<LeadsFilterBarProps> = ({
             onChange={(e) => onStatusChange(e.target.value)}
           >
             <MenuItem value="all">All</MenuItem>
+            <MenuItem value="new lead">New Lead</MenuItem>
+
             <MenuItem value="pending">Pending</MenuItem>
             <MenuItem value="login">Login</MenuItem>
             <MenuItem value="approved">Approved</MenuItem>

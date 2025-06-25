@@ -62,7 +62,7 @@ const AppRoutes = () => {
       element: isAuthenticated ? <Navigate to={getRedirect()} replace /> : <Login />,
     },
     {
-      path: "/sign-up/become-partner",
+      path: "/become-partner",
       element: <BecomePartner />,
     },
     {

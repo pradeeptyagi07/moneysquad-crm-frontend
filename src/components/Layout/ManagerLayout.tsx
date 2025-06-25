@@ -11,6 +11,13 @@ const ManagerLayout = () => {
   const menuItems = [
     { text: "Overview", icon: "Dashboard", path: "/manager/overview" },
     { text: "Leads", icon: "People", path: "/manager/leads" },
+        { text: "Offers", icon: "LocalOffer", path: "/manager/offers" },
+
+        {
+      text: "Training & Resources",
+      icon: "TrainingResources",
+      path: "/manager/training-resorces",
+    }, // ✅ Add this
     { text: "Settings", icon: "Settings", path: "/manager/settings" },
   ]
 

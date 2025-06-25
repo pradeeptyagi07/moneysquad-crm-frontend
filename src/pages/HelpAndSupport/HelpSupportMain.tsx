@@ -1,7 +1,15 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Box, Typography, IconButton, Stack, Divider, CircularProgress, Alert } from "@mui/material"
+import {
+  Box,
+  Typography,
+  IconButton,
+  Stack,
+  Divider,
+  CircularProgress,
+  Alert,
+} from "@mui/material"
 import EditIcon from "@mui/icons-material/Edit"
 import SupportCards from "./SupportCards"
 import LeadDocumentSection from "./LeadDocumentSection"
@@ -16,7 +24,7 @@ import {
   selectSupportError,
   clearError,
 } from "../../store/slices/resourceAndSupportSlice"
-import { selectUserData, isAdminUser } from "../../store/slices/userDataSlice"
+import { useAuth } from "../../hooks/useAuth"
 
 const HelpSupportMain = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -25,8 +33,9 @@ const HelpSupportMain = () => {
   const supportData = useAppSelector(selectSupportData)
   const loading = useAppSelector(selectSupportLoading)
   const error = useAppSelector(selectSupportError)
-  const userData = useAppSelector(selectUserData)
-  const isAdmin = isAdminUser(userData)
+
+  const { userRole } = useAuth() // ✅ Get role from AuthContext
+  const isAdmin = userRole === "admin"  // ✅ Define admin logic
 
   useEffect(() => {
     dispatch(fetchSupportData())
@@ -129,7 +138,11 @@ const HelpSupportMain = () => {
       <ContactInfoCards data={{ grievance: supportData.grievance, payout: supportData.payout }} />
 
       {isAdmin && (
-        <EditHelpSupportDialog open={isDialogOpen} onClose={() => setIsDialogOpen(false)} supportData={supportData} />
+        <EditHelpSupportDialog
+          open={isDialogOpen}
+          onClose={() => setIsDialogOpen(false)}
+          supportData={supportData}
+        />
       )}
     </Box>
   )

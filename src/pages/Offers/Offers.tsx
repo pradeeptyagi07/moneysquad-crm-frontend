@@ -169,9 +169,9 @@ const Offers: React.FC = () => {
 
         if (filterTab === 0) return matchesSearch // All
         if (filterTab === 1) return matchesSearch && offer.isFeatured // Featured
-        if (filterTab === 2) return matchesSearch && offer.loanType.startsWith("PL-") // Personal Loans (PL-)
-        if (filterTab === 3) return matchesSearch && offer.loanType.startsWith("BL-") // Business Loans (BL-)
-        if (filterTab === 4) return matchesSearch && offer.loanType.startsWith("SEPL-") // SEPL Loans (SEPL-)
+        if (filterTab === 2) return matchesSearch && offer.loanType.startsWith("PL") // Personal Loans (PL-)
+        if (filterTab === 3) return matchesSearch && offer.loanType.startsWith("BL") // Business Loans (BL-)
+        if (filterTab === 4) return matchesSearch && offer.loanType.startsWith("SEPL") // SEPL Loans (SEPL-)
 
         return matchesSearch
       })

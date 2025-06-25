@@ -12,10 +12,14 @@ const AssociateLayout = () => {
     { text: "Overview", icon: "Dashboard", path: "/associate/overview" },
     { text: "Leads", icon: "People", path: "/associate/leads" },
     { text: "Offers", icon: "LocalOffer", path: "/associate/offers" },
-    { text: "Settings", icon: "Settings", path: "/associate/settings" },
-      { text: "Help & Support", icon: "Help", path: "/help-support" }, // ✅ Add this
-      { text: "Training & Resources", icon: "TrainingResources", path: "training-resorces" }, // ✅ Add this
+    {
+      text: "Training & Resources",
+      icon: "TrainingResources",
+      path: "/associate/training-resorces",
+    }, // ✅ Add this
 
+    { text: "Settings", icon: "Settings", path: "/associate/settings" },
+    { text: "Help & Support", icon: "Help", path: "/associate/help-support" }, // ✅ Add this
   ];
 
   return (

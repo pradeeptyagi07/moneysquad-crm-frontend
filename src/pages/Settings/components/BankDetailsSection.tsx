@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState } from "react"
+import type React from "react";
+import { useEffect, useState } from "react";
 import {
   Box,
   Typography,
@@ -20,42 +20,53 @@ import {
   Snackbar,
   Alert,
   CircularProgress,
-} from "@mui/material"
-import { AccountBalance, Edit, Business, Receipt, Visibility, VisibilityOff } from "@mui/icons-material"
-import { useAppSelector } from "../../../hooks/useAppSelector"
-import { useAppDispatch } from "../../../hooks/useAppDispatch"
+  Autocomplete,
+} from "@mui/material";
+import {
+  AccountBalance,
+  Edit,
+  Business,
+  Receipt,
+  Visibility,
+  VisibilityOff,
+} from "@mui/icons-material";
+import { useAppSelector } from "../../../hooks/useAppSelector";
+import { useAppDispatch } from "../../../hooks/useAppDispatch";
 import {
   selectUserData,
   selectUserDataLoading,
   selectUserDataError,
   isPartnerUser,
-} from "../../../store/slices/userDataSlice"
+} from "../../../store/slices/userDataSlice";
 import {
   submitChangeRequest,
   selectChangeRequestLoading,
   selectChangeRequestError,
-} from "../../../store/slices/changeRequestSlice"
+} from "../../../store/slices/changeRequestSlice";
+import { fetchBanks } from "../../../store/slices/lenderLoanSlice";
 
 interface BankDetailsSectionProps {
   user?: {
-    accountHolderName?: string
-    accountType?: string
-    relationshipWithAccountHolder?: string
-    accountNumber?: string
-    ifscCode?: string
-    bankName?: string
-    branchName?: string
-    isGstBillingApplicable?: string
-  }
+    accountHolderName?: string;
+    accountType?: string;
+    relationshipWithAccountHolder?: string;
+    accountNumber?: string;
+    ifscCode?: string;
+    bankName?: string;
+    branchName?: string;
+    isGstBillingApplicable?: string;
+  };
 }
 
 const BankDetailsSection: React.FC<BankDetailsSectionProps> = () => {
-  const dispatch = useAppDispatch()
-  const [updateModalOpen, setUpdateModalOpen] = useState(false)
-  const [showAccountNumber, setShowAccountNumber] = useState(false)
-  const [snackbarOpen, setSnackbarOpen] = useState(false)
-  const [snackbarMessage, setSnackbarMessage] = useState("")
-  const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">("success")
+  const dispatch = useAppDispatch();
+  const [updateModalOpen, setUpdateModalOpen] = useState(false);
+  const [showAccountNumber, setShowAccountNumber] = useState(false);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">(
+    "success"
+  );
   const [newData, setNewData] = useState({
     accountHolderName: "",
     accountType: "",
@@ -65,15 +76,21 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = () => {
     bankName: "",
     branchName: "",
     isGstBillingApplicable: "",
-  })
-  const [reason, setReason] = useState("")
+  });
+  const [reason, setReason] = useState("");
 
   // Get user data from Redux store
-  const userData = useAppSelector(selectUserData)
-  const loading = useAppSelector(selectUserDataLoading)
-  const error = useAppSelector(selectUserDataError)
-  const changeRequestLoading = useAppSelector(selectChangeRequestLoading)
-  const changeRequestError = useAppSelector(selectChangeRequestError)
+  const userData = useAppSelector(selectUserData);
+  const loading = useAppSelector(selectUserDataLoading);
+  const error = useAppSelector(selectUserDataError);
+  const changeRequestLoading = useAppSelector(selectChangeRequestLoading);
+  const changeRequestError = useAppSelector(selectChangeRequestError);
+
+  const banks = useAppSelector((state) => state.lenderLoan.banks || []);
+
+  useEffect(() => {
+    dispatch(fetchBanks());
+  }, [dispatch]);
 
   // Use Redux data if available, otherwise fallback to empty
   const user =
@@ -88,7 +105,7 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = () => {
           bankName: "",
           branchName: "",
           isGstBillingApplicable: "",
-        }
+        };
 
   const handleRequestUpdate = () => {
     // Pre-fill with current data
@@ -101,9 +118,9 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = () => {
       bankName: user.bankName || "",
       branchName: user.branchName || "",
       isGstBillingApplicable: user.isGstBillingApplicable || "",
-    })
-    setUpdateModalOpen(true)
-  }
+    });
+    setUpdateModalOpen(true);
+  };
 
   const handleConfirmRequest = async () => {
     try {
@@ -116,7 +133,8 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = () => {
           accountNumber: user.accountNumber || "",
           ifscCode: user.ifscCode || "",
           branchName: user.branchName || "",
-          relationshipWithAccountHolder: user.relationshipWithAccountHolder || "",
+          relationshipWithAccountHolder:
+            user.relationshipWithAccountHolder || "",
           isGstBillingApplicable: user.isGstBillingApplicable || "",
         },
         currentData: {
@@ -130,46 +148,47 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = () => {
           isGstBillingApplicable: newData.isGstBillingApplicable,
         },
         reason: reason,
-      }
+      };
 
-      await dispatch(submitChangeRequest(requestData)).unwrap()
+      await dispatch(submitChangeRequest(requestData)).unwrap();
 
-      setSnackbarMessage("Bank details change request submitted successfully!")
-      setSnackbarSeverity("success")
-      setSnackbarOpen(true)
-      setUpdateModalOpen(false)
-      setReason("")
+      setSnackbarMessage("Bank details change request submitted successfully!");
+      setSnackbarSeverity("success");
+      setSnackbarOpen(true);
+      setUpdateModalOpen(false);
+      setReason("");
     } catch (error) {
-      setSnackbarMessage("Failed to submit change request. Please try again.")
-      setSnackbarSeverity("error")
-      setSnackbarOpen(true)
+      setSnackbarMessage("Failed to submit change request. Please try again.");
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
     }
-  }
+  };
 
   const maskAccountNumber = (accountNumber: string) => {
-    if (!accountNumber) return ""
-    return `****${accountNumber.slice(-4)}`
-  }
+    if (!accountNumber) return "";
+    return `****${accountNumber.slice(-4)}`;
+  };
 
-  const toggleAccountNumber = () => setShowAccountNumber(!showAccountNumber)
+  const toggleAccountNumber = () => setShowAccountNumber(!showAccountNumber);
 
   const getBankIcon = (bankName: string) => {
     // You can add bank-specific icons here
-    return <AccountBalance sx={{ fontSize: 40, color: "#1976d2" }} />
-  }
+    return <AccountBalance sx={{ fontSize: 40, color: "#1976d2" }} />;
+  };
 
-  const accountTypes = ["Savings", "Current", "Others"]
-  const relationshipOptions = ["Self", "Company", "Spouse", "Parent", "Others"]
-  const gstOptions = ["Yes", "No"]
+  const accountTypes = ["Savings", "Current", "Others"];
+  const relationshipOptions = ["Self", "Company", "Spouse", "Parent", "Others"];
+  const gstOptions = ["Yes", "No"];
 
-  const showGstBilling = newData.accountType === "Current" || newData.accountType === "Others"
+  const showGstBilling =
+    newData.accountType === "Current" || newData.accountType === "Others";
 
   if (loading) {
-    return <div>Loading bank details...</div>
+    return <div>Loading bank details...</div>;
   }
 
   if (error) {
-    return <div>Error loading bank details: {error}</div>
+    return <div>Error loading bank details: {error}</div>;
   }
 
   return (
@@ -187,7 +206,14 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = () => {
         }}
       >
         <CardContent sx={{ p: 4 }}>
-          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 3 }}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "flex-start",
+              mb: 3,
+            }}
+          >
             <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
               {getBankIcon(user.bankName || "")}
               <Box>
@@ -215,9 +241,14 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = () => {
             </Typography>
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <Typography variant="h5" fontWeight={600} letterSpacing={2}>
-                {showAccountNumber ? user.accountNumber : maskAccountNumber(user.accountNumber || "")}
+                {showAccountNumber
+                  ? user.accountNumber
+                  : maskAccountNumber(user.accountNumber || "")}
               </Typography>
-              <IconButton onClick={toggleAccountNumber} sx={{ color: "white", opacity: 0.8 }}>
+              <IconButton
+                onClick={toggleAccountNumber}
+                sx={{ color: "white", opacity: 0.8 }}
+              >
                 {showAccountNumber ? <VisibilityOff /> : <Visibility />}
               </IconButton>
             </Box>
@@ -272,7 +303,9 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = () => {
                 Relationship
               </Typography>
             </Box>
-            <Typography variant="body1">{user.relationshipWithAccountHolder}</Typography>
+            <Typography variant="body1">
+              {user.relationshipWithAccountHolder}
+            </Typography>
           </Paper>
         </Grid>
         <Grid item xs={12} md={6}>
@@ -285,7 +318,9 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = () => {
             </Box>
             <Chip
               label={user.isGstBillingApplicable || "No"}
-              color={user.isGstBillingApplicable === "Yes" ? "success" : "default"}
+              color={
+                user.isGstBillingApplicable === "Yes" ? "success" : "default"
+              }
               size="small"
             />
           </Paper>
@@ -293,7 +328,12 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = () => {
       </Grid>
 
       {/* Update Request Modal */}
-      <Dialog open={updateModalOpen} onClose={() => setUpdateModalOpen(false)} maxWidth="md" fullWidth>
+      <Dialog
+        open={updateModalOpen}
+        onClose={() => setUpdateModalOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
         <DialogTitle>
           <Typography variant="h6" fontWeight={600}>
             Request Bank Details Update
@@ -306,7 +346,12 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = () => {
           <Grid container spacing={3}>
             {/* Current Data Column */}
             <Grid item xs={12} md={6}>
-              <Typography variant="subtitle1" fontWeight={600} mb={2} color="text.secondary">
+              <Typography
+                variant="subtitle1"
+                fontWeight={600}
+                mb={2}
+                color="text.secondary"
+              >
                 Current Details
               </Typography>
               <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -321,7 +366,11 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = () => {
                     justifyContent: "center",
                   }}
                 >
-                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.75rem", mb: 0.5 }}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ fontSize: "0.75rem", mb: 0.5 }}
+                  >
                     Account Holder Name
                   </Typography>
                   <Typography variant="body1" fontWeight={500}>
@@ -339,7 +388,11 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = () => {
                     justifyContent: "center",
                   }}
                 >
-                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.75rem", mb: 0.5 }}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ fontSize: "0.75rem", mb: 0.5 }}
+                  >
                     Account Type
                   </Typography>
                   <Typography variant="body1" fontWeight={500}>
@@ -357,7 +410,11 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = () => {
                     justifyContent: "center",
                   }}
                 >
-                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.75rem", mb: 0.5 }}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ fontSize: "0.75rem", mb: 0.5 }}
+                  >
                     Relationship
                   </Typography>
                   <Typography variant="body1" fontWeight={500}>
@@ -375,7 +432,11 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = () => {
                     justifyContent: "center",
                   }}
                 >
-                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.75rem", mb: 0.5 }}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ fontSize: "0.75rem", mb: 0.5 }}
+                  >
                     Account Number
                   </Typography>
                   <Typography variant="body1" fontWeight={500}>
@@ -393,7 +454,11 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = () => {
                     justifyContent: "center",
                   }}
                 >
-                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.75rem", mb: 0.5 }}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ fontSize: "0.75rem", mb: 0.5 }}
+                  >
                     IFSC Code
                   </Typography>
                   <Typography variant="body1" fontWeight={500}>
@@ -411,7 +476,11 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = () => {
                     justifyContent: "center",
                   }}
                 >
-                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.75rem", mb: 0.5 }}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ fontSize: "0.75rem", mb: 0.5 }}
+                  >
                     Bank Name
                   </Typography>
                   <Typography variant="body1" fontWeight={500}>
@@ -429,14 +498,19 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = () => {
                     justifyContent: "center",
                   }}
                 >
-                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.75rem", mb: 0.5 }}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ fontSize: "0.75rem", mb: 0.5 }}
+                  >
                     Branch Name
                   </Typography>
                   <Typography variant="body1" fontWeight={500}>
                     {user.branchName}
                   </Typography>
                 </Box>
-                {(user.accountType === "Current" || user.accountType === "Others") && (
+                {(user.accountType === "Current" ||
+                  user.accountType === "Others") && (
                   <Box
                     sx={{
                       backgroundColor: "#f8fafc",
@@ -448,7 +522,11 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = () => {
                       justifyContent: "center",
                     }}
                   >
-                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.75rem", mb: 0.5 }}>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ fontSize: "0.75rem", mb: 0.5 }}
+                    >
                       GST Billing Applicable
                     </Typography>
                     <Typography variant="body1" fontWeight={500}>
@@ -461,7 +539,12 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = () => {
 
             {/* New Data Column */}
             <Grid item xs={12} md={6}>
-              <Typography variant="subtitle1" fontWeight={600} mb={2} color="primary">
+              <Typography
+                variant="subtitle1"
+                fontWeight={600}
+                mb={2}
+                color="primary"
+              >
                 New Details
               </Typography>
               <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -469,7 +552,12 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = () => {
                   fullWidth
                   label="Account Holder Name"
                   value={newData.accountHolderName}
-                  onChange={(e) => setNewData((prev) => ({ ...prev, accountHolderName: e.target.value }))}
+                  onChange={(e) =>
+                    setNewData((prev) => ({
+                      ...prev,
+                      accountHolderName: e.target.value,
+                    }))
+                  }
                   size="small"
                   sx={{ minHeight: "56px" }}
                 />
@@ -478,7 +566,12 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = () => {
                   fullWidth
                   label="Account Type"
                   value={newData.accountType}
-                  onChange={(e) => setNewData((prev) => ({ ...prev, accountType: e.target.value }))}
+                  onChange={(e) =>
+                    setNewData((prev) => ({
+                      ...prev,
+                      accountType: e.target.value,
+                    }))
+                  }
                   size="small"
                   sx={{ minHeight: "56px" }}
                   SelectProps={{ native: true }}
@@ -495,7 +588,12 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = () => {
                   fullWidth
                   label="Relationship with Account Holder"
                   value={newData.relationshipWithAccountHolder}
-                  onChange={(e) => setNewData((prev) => ({ ...prev, relationshipWithAccountHolder: e.target.value }))}
+                  onChange={(e) =>
+                    setNewData((prev) => ({
+                      ...prev,
+                      relationshipWithAccountHolder: e.target.value,
+                    }))
+                  }
                   size="small"
                   sx={{ minHeight: "56px" }}
                   SelectProps={{ native: true }}
@@ -511,7 +609,12 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = () => {
                   fullWidth
                   label="Account Number"
                   value={newData.accountNumber}
-                  onChange={(e) => setNewData((prev) => ({ ...prev, accountNumber: e.target.value }))}
+                  onChange={(e) =>
+                    setNewData((prev) => ({
+                      ...prev,
+                      accountNumber: e.target.value,
+                    }))
+                  }
                   size="small"
                   sx={{ minHeight: "56px" }}
                 />
@@ -519,24 +622,47 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = () => {
                   fullWidth
                   label="IFSC Code"
                   value={newData.ifscCode}
-                  onChange={(e) => setNewData((prev) => ({ ...prev, ifscCode: e.target.value }))}
+                  onChange={(e) =>
+                    setNewData((prev) => ({
+                      ...prev,
+                      ifscCode: e.target.value,
+                    }))
+                  }
                   size="small"
                   sx={{ minHeight: "56px" }}
                   helperText="Format: First 4 letters + 0 + 6 characters (e.g., HDFC0123456)"
                 />
-                <TextField
+                <Autocomplete
                   fullWidth
-                  label="Bank Name"
-                  value={newData.bankName}
-                  onChange={(e) => setNewData((prev) => ({ ...prev, bankName: e.target.value }))}
-                  size="small"
-                  sx={{ minHeight: "56px" }}
+                  options={banks.map((bank) => bank.name)}
+                  value={newData.bankName || ""}
+                  onChange={(_, value) =>
+                    setNewData((prev) => ({ ...prev, bankName: value || "" }))
+                  }
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Bank Name"
+                      size="small"
+                      sx={{ minHeight: "56px" }}
+                      placeholder="Start typing to search..."
+                    />
+                  )}
+                  freeSolo
+                  autoHighlight
+                  clearOnEscape
                 />
+
                 <TextField
                   fullWidth
                   label="Branch Name"
                   value={newData.branchName}
-                  onChange={(e) => setNewData((prev) => ({ ...prev, branchName: e.target.value }))}
+                  onChange={(e) =>
+                    setNewData((prev) => ({
+                      ...prev,
+                      branchName: e.target.value,
+                    }))
+                  }
                   size="small"
                   sx={{ minHeight: "56px" }}
                 />
@@ -546,7 +672,12 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = () => {
                     fullWidth
                     label="GST Billing Applicable"
                     value={newData.isGstBillingApplicable}
-                    onChange={(e) => setNewData((prev) => ({ ...prev, isGstBillingApplicable: e.target.value }))}
+                    onChange={(e) =>
+                      setNewData((prev) => ({
+                        ...prev,
+                        isGstBillingApplicable: e.target.value,
+                      }))
+                    }
                     size="small"
                     sx={{ minHeight: "56px" }}
                     SelectProps={{ native: true }}
@@ -578,7 +709,10 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = () => {
           </Box>
         </DialogContent>
         <DialogActions sx={{ p: 3 }}>
-          <Button onClick={() => setUpdateModalOpen(false)} disabled={changeRequestLoading}>
+          <Button
+            onClick={() => setUpdateModalOpen(false)}
+            disabled={changeRequestLoading}
+          >
             Cancel
           </Button>
           <Button
@@ -586,7 +720,9 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = () => {
             onClick={handleConfirmRequest}
             disabled={reason.trim() === "" || changeRequestLoading}
             sx={{ borderRadius: 2 }}
-            startIcon={changeRequestLoading ? <CircularProgress size={20} /> : null}
+            startIcon={
+              changeRequestLoading ? <CircularProgress size={20} /> : null
+            }
           >
             {changeRequestLoading ? "Submitting..." : "Confirm Request"}
           </Button>
@@ -600,12 +736,16 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = () => {
         onClose={() => setSnackbarOpen(false)}
         anchorOrigin={{ vertical: "top", horizontal: "center" }}
       >
-        <Alert onClose={() => setSnackbarOpen(false)} severity={snackbarSeverity} sx={{ width: "100%" }}>
+        <Alert
+          onClose={() => setSnackbarOpen(false)}
+          severity={snackbarSeverity}
+          sx={{ width: "100%" }}
+        >
           {snackbarMessage}
         </Alert>
       </Snackbar>
     </Box>
-  )
-}
+  );
+};
 
-export default BankDetailsSection
+export default BankDetailsSection;

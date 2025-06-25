@@ -4,7 +4,7 @@ import React from "react"
 
 import { useState } from "react"
 import type { FC } from "react"
-import { Box, Typography, TextField, Grid, Paper, Button, CircularProgress, Snackbar, Alert } from "@mui/material"
+import { Box, Typography, TextField, Grid, Paper, Button, CircularProgress, Snackbar, Alert, MenuItem } from "@mui/material"
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns"
 import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers"
 import { Edit, Save, Cancel } from "@mui/icons-material"
@@ -174,7 +174,7 @@ const PersonalDetailsSection: FC = () => {
     "More than 10 Years",
   ]
 
-  const teamStrengthOptions = ["1-2", "3-5", "5-10", "10-20", "20-50", "50+"]
+  const teamStrengthOptions = [ "<5", "5-10", "10-20", "20-50", "50+"]
 
   const focusProductOptions = [
     "Personal Loan",
@@ -186,10 +186,10 @@ const PersonalDetailsSection: FC = () => {
     "All Products",
   ]
 
-  const roleSelectionOptions = [
-    { value: "leadSharing", label: "Lead Sharing" },
-    { value: "directSelling", label: "Direct Selling" },
-  ]
+const roleSelectionOptions = [
+  { value: "fileSharing", label: "File Sharing" },
+  { value: "leadSharing", label: "Lead Sharing" },
+]
 
   return (
     <Box>
@@ -482,36 +482,37 @@ const PersonalDetailsSection: FC = () => {
             </TextField>
           </Grid>
           <Grid item xs={12} sm={6}>
-            <TextField
-              select
-              fullWidth
-              label="Role Selection"
-              value={isEditing ? tempData.roleSelection : user.roleSelection}
-              onChange={(e) => handleChange("roleSelection", e.target.value)}
-              disabled={!isEditing}
-              variant="outlined"
-              SelectProps={{
-                native: true,
-              }}
-              InputLabelProps={{
-                shrink: true,
-              }}
-              sx={{
-                backgroundColor: isEditing ? "#ffffff" : "#f8fafc",
-                "& .MuiInputBase-input.Mui-disabled": {
-                  WebkitTextFillColor: "#64748b",
-                },
-              }}
-            >
-              <option value="" disabled>
-                Select Role
-              </option>
-              {roleSelectionOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </TextField>
+        <TextField
+  select
+  fullWidth
+  label="Role Selection"
+  value={isEditing ? tempData.roleSelection : user.roleSelection}
+  onChange={(e) => handleChange("roleSelection", e.target.value)}
+  disabled={!isEditing}
+  variant="outlined"
+  SelectProps={{
+    native: false, // ⚠️ Use native: false for better compatibility
+  }}
+  InputLabelProps={{
+    shrink: true,
+  }}
+  sx={{
+    backgroundColor: isEditing ? "#ffffff" : "#f8fafc",
+    "& .MuiInputBase-input.Mui-disabled": {
+      WebkitTextFillColor: "#64748b",
+    },
+  }}
+>
+  <MenuItem value="">
+    <em>Select Role</em>
+  </MenuItem>
+  {roleSelectionOptions.map((option) => (
+    <MenuItem key={option.value} value={option.value}>
+      {option.label}
+    </MenuItem>
+  ))}
+</TextField>
+
           </Grid>
           <Grid item xs={12} sm={6}>
             <TextField

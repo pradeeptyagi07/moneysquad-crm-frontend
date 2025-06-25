@@ -16,6 +16,7 @@ interface Partner {
   documents: Record<string, any>;
   createdAt: string;
   updatedAt: string;
+  pendingChangeRequestCount:number;
   __v: number;
 }
 

@@ -1,28 +1,23 @@
+"use client"
+
 // src/components/Leads/LeadsActionMenu.tsx
 
-import React from "react";
-import { Menu, MenuItem, Typography, useTheme } from "@mui/material";
-import {
-  Visibility,
-  Edit,
-  FileCopy,
-  Assignment,
-  History,
-  AttachMoney,
-  Delete,
-} from "@mui/icons-material";
+import React from "react"
+import { Menu, MenuItem, Typography, useTheme } from "@mui/material"
+import { Visibility, Edit, FileCopy, Assignment, History, AttachMoney, Delete } from "@mui/icons-material"
 
-export type UserRoleType = "admin" | "manager" | "partner" | "associate";
+export type UserRoleType = "admin" | "manager" | "partner" | "associate"
 
 interface LeadsActionMenuProps {
-  anchorEl: HTMLElement | null;
-  open: boolean;
-  onClose: () => void;
-  onSelectAction: (action: string) => void;
-  userRole: UserRoleType;
-  currentStatus: string;
-  currentStatusUpdatedAt?: string;
-  disbursedData?: any;
+  anchorEl: HTMLElement | null
+  open: boolean
+  onClose: () => void
+  onSelectAction: (action: string) => void
+  userRole: UserRoleType
+  currentStatus: string
+  currentStatusUpdatedAt?: string
+  disbursedData?: any
+  lenderType?: string | null
 }
 
 const LeadsActionMenu: React.FC<LeadsActionMenuProps> = ({
@@ -34,15 +29,12 @@ const LeadsActionMenu: React.FC<LeadsActionMenuProps> = ({
   currentStatus,
   currentStatusUpdatedAt,
   disbursedData,
+  lenderType,
 }) => {
-  const theme = useTheme();
-  const now = new Date();
-  const updatedAt = currentStatusUpdatedAt
-    ? new Date(currentStatusUpdatedAt)
-    : null;
-  const daysSince = updatedAt
-    ? (now.getTime() - updatedAt.getTime()) / (1000 * 60 * 60 * 24)
-    : 0;
+  const theme = useTheme()
+  const now = new Date()
+  const updatedAt = currentStatusUpdatedAt ? new Date(currentStatusUpdatedAt) : null
+  const daysSince = updatedAt ? (now.getTime() - updatedAt.getTime()) / (1000 * 60 * 60 * 24) : 0
 
   let items = [
     { icon: <Visibility />, label: "view" },
@@ -53,28 +45,36 @@ const LeadsActionMenu: React.FC<LeadsActionMenuProps> = ({
     { icon: <History />, label: "timeline" },
     { icon: <AttachMoney />, label: "disbursement" },
     { icon: <Delete />, label: "delete" },
-  ];
+  ]
+
+  // Hide status action if lenderType is not present for ALL users
+  if (!lenderType) {
+    items = items.filter((i) => i.label !== "status")
+  }
 
   // Remove "status" action entirely if already rejected or closed
-  if (["new lead", "closed","expired"].includes(currentStatus)) {
-    items = items.filter((i) => i.label !== "status");
+  if (["new lead", "closed", "expired"].includes(currentStatus)) {
+    items = items.filter((i) => i.label !== "status")
   }
 
   // Admin: allow all except disbursement if not yet disbursed
   if (userRole === "admin") {
     if (currentStatus !== "disbursed") {
-      items = items.filter((i) => i.label !== "disbursement");
+      items = items.filter((i) => i.label !== "disbursement")
     }
   }
 
-  // Manager: remove delete & assign, then apply disbursement/edit rules
   if (userRole === "manager") {
-    items = items.filter((i) => i.label !== "delete" && i.label !== "assign");
-    if (currentStatus !== "disbursed") {
-      items = items.filter((i) => i.label !== "disbursement");
+    items = items.filter((i) => i.label !== "delete" && i.label !== "assign")
+
+    if (currentStatus === "disbursed") {
+      items = items.filter((i) => i.label !== "disbursement" && i.label !== "status")
+    } else {
+      items = items.filter((i) => i.label !== "disbursement")
     }
+
     if (currentStatus !== "pending" || daysSince > 30) {
-      items = items.filter((i) => i.label !== "edit");
+      items = items.filter((i) => i.label !== "edit")
     }
   }
 
@@ -82,35 +82,27 @@ const LeadsActionMenu: React.FC<LeadsActionMenuProps> = ({
   // - remove duplicate, assign, status, disbursement
   // - only allow edit & delete WHEN status === "new"
   if (userRole === "partner" || userRole === "associate") {
-    items = items.filter(
-      (i) =>
-        !["duplicate", "assign", "status", "disbursement"].includes(i.label)
-    );
+    items = items.filter((i) => !["duplicate", "assign", "status", "disbursement"].includes(i.label))
     if (currentStatus !== "new lead") {
-      items = items.filter((i) => !["edit", "delete"].includes(i.label));
+      items = items.filter((i) => !["edit", "delete"].includes(i.label))
     }
   }
 
   const getLabel = (label: string) => {
     if (label === "disbursement") {
-      return disbursedData ? "Edit Disbursement" : "Disbursement";
+      return disbursedData ? "Edit Disbursement" : "Disbursement"
     }
-    return label.charAt(0).toUpperCase() + label.slice(1);
-  };
+    return label.charAt(0).toUpperCase() + label.slice(1)
+  }
 
   return (
-    <Menu
-      anchorEl={anchorEl}
-      open={open}
-      onClose={onClose}
-      PaperProps={{ sx: { borderRadius: 2 } }}
-    >
+    <Menu anchorEl={anchorEl} open={open} onClose={onClose} PaperProps={{ sx: { borderRadius: 2 } }}>
       {items.map(({ icon, label }) => (
         <MenuItem
           key={label}
           onClick={() => {
-            onSelectAction(label);
-            onClose();
+            onSelectAction(label)
+            onClose()
           }}
           sx={{
             display: "flex",
@@ -130,7 +122,7 @@ const LeadsActionMenu: React.FC<LeadsActionMenuProps> = ({
         </MenuItem>
       ))}
     </Menu>
-  );
-};
+  )
+}
 
-export default LeadsActionMenu;
+export default LeadsActionMenu

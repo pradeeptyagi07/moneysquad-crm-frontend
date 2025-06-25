@@ -14,7 +14,7 @@ import {
   clearProductInfoUpdateSuccess,
   type ProductGuideItem,
 } from "../../store/slices/resourceAndSupportSlice"
-import { selectUserData, isAdminUser } from "../../store/slices/userDataSlice"
+
 import {
   Card,
   CardContent,
@@ -34,6 +34,7 @@ import { styled } from "@mui/material/styles"
 import EditIcon from "@mui/icons-material/Edit"
 import TrendingUpIcon from "@mui/icons-material/TrendingUp"
 import EditProductGuideDialog from "./EditProductGuideDialog"
+import { useAuth } from "../../hooks/useAuth"
 
 const StyledCard = styled(Card)(({ theme }) => ({
   background: "linear-gradient(145deg, #ffffff 0%, #f8f9ff 100%)",
@@ -98,8 +99,9 @@ const ProductGuide: React.FC = () => {
   const loading = useSelector(selectProductInfoLoading)
   const updateLoading = useSelector(selectProductInfoUpdateLoading)
   const updateSuccess = useSelector(selectProductInfoUpdateSuccess)
-  const userData = useSelector(selectUserData)
-  const isAdmin = isAdminUser(userData)
+
+  const { userRole } = useAuth() // ✅ Use from context
+  const isAdmin = userRole === "admin" || userRole === "superadmin" // ✅ Define admin logic
 
   const [open, setOpen] = useState(false)
   const theme = useTheme()
@@ -118,7 +120,6 @@ const ProductGuide: React.FC = () => {
   }, [updateSuccess, dispatch])
 
   const handleSave = (updatedGuide: ProductGuideItem[]) => {
-    // Remove _id fields before sending to API
     const guidesWithoutId = updatedGuide.map(({ _id, ...guide }) => guide)
     dispatch(updateProductGuides(guidesWithoutId))
   }

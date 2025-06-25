@@ -34,7 +34,8 @@ export interface FieldConfig {
  */
 export const getFieldConfig = (
   role: "admin" | "manager" | "partner" | "associate",
-  mode: "create" | "edit" | "duplicate"
+  mode: "create" | "edit" | "duplicate",
+  leadStatus?: string
 ): Record<FieldKey, FieldConfig> => {
   const isAdmin = role === "admin";
   const isManager = role === "manager";
@@ -107,7 +108,8 @@ export const getFieldConfig = (
     lenderName: {
       // Only visible for admin/manager in Edit or Duplicate
       visible: (isAdmin || isManager) && (isEdit || isDuplicate),
-      readOnly: false,
+      // Read-only if status is "login" OR existing conditions
+      readOnly: isEdit && !["pending", "new lead"].includes(leadStatus),
     },
   };
 };

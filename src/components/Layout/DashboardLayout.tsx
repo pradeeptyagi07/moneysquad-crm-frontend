@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   CssBaseline,
@@ -20,7 +20,7 @@ import {
   Avatar,
   ListItemAvatar,
   Button,
-} from "@mui/material"
+} from "@mui/material";
 import {
   Menu as MenuIcon,
   Dashboard,
@@ -35,23 +35,23 @@ import {
   MenuBook,
   LibraryBooks,
   GroupWork,
-} from "@mui/icons-material"
-import { useAuth } from "../../hooks/useAuth"
-import { useAppSelector } from "../../hooks/useAppSelector"
+} from "@mui/icons-material";
+import { useAuth } from "../../hooks/useAuth";
+import { useAppSelector } from "../../hooks/useAppSelector";
 
-const drawerWidth = 240
+const drawerWidth = 240;
 
 interface DashboardMenuItem {
-  text: string
-  icon: string
-  path: string
+  text: string;
+  icon: string;
+  path: string;
 }
 
 interface DashboardLayoutProps {
-  children: React.ReactNode
-  menuItems: DashboardMenuItem[]
-  userRole?: string
-  userName?: string
+  children: React.ReactNode;
+  menuItems: DashboardMenuItem[];
+  userRole?: string;
+  userName?: string;
 }
 
 const DashboardLayout = ({
@@ -60,65 +60,67 @@ const DashboardLayout = ({
   userRole: propUserRole,
   userName: propUserName,
 }: DashboardLayoutProps) => {
-  const [mobileOpen, setMobileOpen] = useState(false)
-  const navigate = useNavigate()
-  const { logout } = useAuth()
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const navigate = useNavigate();
+  const { logout } = useAuth();
 
   // Get user info from Redux state, fallback to props for backward compatibility
-  const auth = useAppSelector((state) => state.auth)
+  const auth = useAppSelector((state) => state.auth);
 
   // Get user name from either the user object or the userName property
-  let userName = propUserName || ""
+  let userName = propUserName || "";
   if (!userName && auth.user) {
     if (auth.user.firstName || auth.user.lastName) {
-      userName = `${auth.user.firstName || ""} ${auth.user.lastName || ""}`.trim()
+      userName = `${auth.user.firstName || ""} ${
+        auth.user.lastName || ""
+      }`.trim();
     } else if ((auth as any).user?.basicInfo?.fullName) {
-      userName = (auth as any).user.basicInfo.fullName
+      userName = (auth as any).user.basicInfo.fullName;
     }
   }
-  
 
   // Get user role
-  const userRole = propUserRole || auth.userRole || ""
+  const userRole = propUserRole || auth.userRole || "";
 
   const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen)
-  }
+    setMobileOpen(!mobileOpen);
+  };
 
   const handleLogout = () => {
-    logout()
-    navigate("/")
-  }
+    logout();
+    navigate("/");
+  };
 
   const getIcon = (iconName: string) => {
     switch (iconName) {
       case "Dashboard":
-        return <Dashboard />
+        return <Dashboard />;
       case "People":
-        return <People />
+        return <People />;
       case "LocalOffer":
-        return <LocalOffer />
+        return <LocalOffer />;
       case "AttachMoney":
-        return <AttachMoney />
+        return <AttachMoney />;
       case "Settings":
-        return <Settings />
+        return <Settings />;
       case "Groups":
-        return <Groups />
+        return <Groups />;
       case "SupervisorAccount":
-        return <SupervisorAccount />
+        return <SupervisorAccount />;
       case "Help":
-        return <HelpOutline />
+        return <HelpOutline />;
       case "TrainingResources":
-        return <LibraryBooks /> // More suitable than MenuBook for resources
+        return <LibraryBooks />; // More suitable than MenuBook for resources
       case "PartnerManagement":
-        return <GroupWork /> // Better reflects team/collab concept
+        return <GroupWork />; // Better reflects team/collab concept
       default:
-        return <Dashboard />
+        return <Dashboard />;
     }
-  }
+  };
 
   // Get the first character for the avatar, safely
-  const avatarText = userName && userName.length > 0 ? userName.charAt(0).toUpperCase() : "U"
+  const avatarText =
+    userName && userName.length > 0 ? userName.charAt(0).toUpperCase() : "U";
 
   const drawer = (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
@@ -127,21 +129,31 @@ const DashboardLayout = ({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          py: 1,
+          py: 2,
+          px: 2,
+          backgroundColor: "white",
         }}
       >
-        <Typography variant="h6" component="div" sx={{ fontWeight: "bold", color: "#0f766e" }}>
-          Money Squad
-        </Typography>
+        <Box
+          component="img"
+          src="/images/MoneySquad-logo.png"
+          alt="MoneySquad Logo"
+          sx={{
+            height: { xs: 30, sm: 40, md: 45 },
+            width: "auto",
+            objectFit: "contain",
+          }}
+        />
       </Toolbar>
+
       <Divider />
       <List sx={{ flexGrow: 1 }}>
         {menuItems.map((item) => (
           <ListItem key={item.text} disablePadding>
             <ListItemButton
               onClick={() => {
-                navigate(item.path)
-                setMobileOpen(false)
+                navigate(item.path);
+                setMobileOpen(false);
               }}
             >
               <ListItemIcon>{getIcon(item.icon)}</ListItemIcon>
@@ -175,7 +187,7 @@ const DashboardLayout = ({
         </Button>
       </Box>
     </div>
-  )
+  );
 
   return (
     <Box sx={{ display: "flex" }}>
@@ -185,11 +197,22 @@ const DashboardLayout = ({
         aria-label="open drawer"
         edge="start"
         onClick={handleDrawerToggle}
-        sx={{ mr: 2, display: { sm: "none" }, position: "fixed", top: 10, left: 10, zIndex: 1100 }}
+        sx={{
+          mr: 2,
+          display: { sm: "none" },
+          position: "fixed",
+          top: 10,
+          left: 10,
+          zIndex: 1100,
+        }}
       >
         <MenuIcon />
       </IconButton>
-      <Box component="nav" sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }} aria-label="mailbox folders">
+      <Box
+        component="nav"
+        sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
+        aria-label="mailbox folders"
+      >
         <Drawer
           variant="temporary"
           open={mobileOpen}
@@ -199,7 +222,10 @@ const DashboardLayout = ({
           }}
           sx={{
             display: { xs: "block", sm: "none" },
-            "& .MuiDrawer-paper": { boxSizing: "border-box", width: drawerWidth },
+            "& .MuiDrawer-paper": {
+              boxSizing: "border-box",
+              width: drawerWidth,
+            },
           }}
         >
           {drawer}
@@ -208,7 +234,10 @@ const DashboardLayout = ({
           variant="permanent"
           sx={{
             display: { xs: "none", sm: "block" },
-            "& .MuiDrawer-paper": { boxSizing: "border-box", width: drawerWidth },
+            "& .MuiDrawer-paper": {
+              boxSizing: "border-box",
+              width: drawerWidth,
+            },
           }}
           open
         >
@@ -226,7 +255,7 @@ const DashboardLayout = ({
         {children}
       </Box>
     </Box>
-  )
-}
+  );
+};
 
-export default DashboardLayout
+export default DashboardLayout;
