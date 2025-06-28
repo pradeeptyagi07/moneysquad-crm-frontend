@@ -1,8 +1,6 @@
 "use client";
 
-import type React from "react";
-
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Box,
@@ -18,9 +16,7 @@ import {
   Toolbar,
   Typography,
   Avatar,
-  ListItemAvatar,
   Button,
-  Chip,
 } from "@mui/material";
 import {
   Menu as MenuIcon,
@@ -38,6 +34,13 @@ import {
   GroupWork,
 } from "@mui/icons-material";
 import { useAuth } from "../../hooks/useAuth";
+import { useAppDispatch } from "../../hooks/useAppDispatch";
+import {
+  fetchUserData,
+  selectUserData,
+  isManagerUser,
+  isPartnerUser,
+} from "../../store/slices/userDataSlice";
 import { useAppSelector } from "../../hooks/useAppSelector";
 
 const drawerWidth = 260; // Slightly wider for premium feel
@@ -65,23 +68,34 @@ const DashboardLayout = ({
   const navigate = useNavigate();
   const location = useLocation();
   const { logout } = useAuth();
+  const dispatch = useAppDispatch();
 
-  // Get user info from Redux state, fallback to props for backward compatibility
+  // Fetch full user data (to get display IDs)
+  const userData = useAppSelector(selectUserData);
+  useEffect(() => {
+    dispatch(fetchUserData());
+  }, [dispatch]);
+
+  // Determine display ID based on user type
+  let displayId: string | null = null;
+  if (isManagerUser(userData)) {
+    displayId = userData.managerId;
+  } else if (isPartnerUser(userData)) {
+    displayId = userData.partnerId;
+  }
+
+  // Get user name from props or auth fallback
   const auth = useAppSelector((state) => state.auth);
-
-  // Get user name from either the user object or the userName property
   let userName = propUserName || "";
   if (!userName && auth.user) {
     if (auth.user.firstName || auth.user.lastName) {
-      userName = `${auth.user.firstName || ""} ${
-        auth.user.lastName || ""
-      }`.trim();
+      userName = `${auth.user.firstName || ""} ${auth.user.lastName || ""}`.trim();
     } else if ((auth as any).user?.basicInfo?.fullName) {
       userName = (auth as any).user.basicInfo.fullName;
     }
   }
 
-  // Get user role
+  // Determine user role string
   const userRole = propUserRole || auth.userRole || "";
 
   const handleDrawerToggle = () => {
@@ -120,18 +134,16 @@ const DashboardLayout = ({
     }
   };
 
-  // Check if current path matches menu item path
   const isActive = (path: string) => location.pathname === path;
 
-  // Get the first character for the avatar, safely
   const avatarText =
     userName && userName.length > 0 ? userName.charAt(0).toUpperCase() : "U";
 
   const drawer = (
-    <Box 
-      sx={{ 
-        display: "flex", 
-        flexDirection: "column", 
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
         height: "100%",
         background: "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)",
         position: "relative",
@@ -143,10 +155,10 @@ const DashboardLayout = ({
           width: "1px",
           height: "100%",
           background: "linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.05) 100%)",
-        }
+        },
       }}
     >
-      {/* Premium Logo Section */}
+      {/* Logo Section */}
       <Toolbar
         sx={{
           display: "flex",
@@ -154,7 +166,6 @@ const DashboardLayout = ({
           justifyContent: "center",
           py: 3,
           px: 2,
-          backgroundColor: "transparent",
           position: "relative",
           "&::after": {
             content: '""',
@@ -165,7 +176,7 @@ const DashboardLayout = ({
             width: "80%",
             height: "1px",
             background: "linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.1) 50%, transparent 100%)",
-          }
+          },
         }}
       >
         <Box
@@ -181,20 +192,13 @@ const DashboardLayout = ({
             "&:hover": {
               transform: "scale(1.02)",
               filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.15))",
-            }
+            },
           }}
         />
       </Toolbar>
 
-      {/* Navigation Menu */}
-      <List sx={{ 
-        flexGrow: 1, 
-        px: 2, 
-        py: 1,
-        "& .MuiListItem-root": {
-          mb: 0.5,
-        }
-      }}>
+      {/* Navigation */}
+      <List sx={{ flexGrow: 1, px: 2, py: 1, "& .MuiListItem-root": { mb: 0.5 } }}>
         {menuItems.map((item) => {
           const active = isActive(item.path);
           return (
@@ -212,23 +216,25 @@ const DashboardLayout = ({
                   position: "relative",
                   overflow: "hidden",
                   backgroundColor: active ? "rgba(15, 118, 110, 0.08)" : "transparent",
-                  "&::before": active ? {
-                    content: '""',
-                    position: "absolute",
-                    left: 0,
-                    top: 0,
-                    bottom: 0,
-                    width: "3px",
-                    backgroundColor: "#0f766e",
-                    borderRadius: "0 2px 2px 0",
-                  } : {},
+                  "&::before": active
+                    ? {
+                        content: '""',
+                        position: "absolute",
+                        left: 0,
+                        top: 0,
+                        bottom: 0,
+                        width: "3px",
+                        backgroundColor: "#0f766e",
+                        borderRadius: "0 2px 2px 0",
+                      }
+                    : {},
                   "&:hover": {
-                    backgroundColor: active 
-                      ? "rgba(15, 118, 110, 0.12)" 
+                    backgroundColor: active
+                      ? "rgba(15, 118, 110, 0.12)"
                       : "rgba(15, 118, 110, 0.04)",
                     transform: "translateX(2px)",
-                    boxShadow: active 
-                      ? "0 4px 20px rgba(15, 118, 110, 0.15)" 
+                    boxShadow: active
+                      ? "0 4px 20px rgba(15, 118, 110, 0.15)"
                       : "0 2px 10px rgba(0, 0, 0, 0.08)",
                   },
                   "& .MuiListItemIcon-root": {
@@ -245,73 +251,53 @@ const DashboardLayout = ({
                 }}
               >
                 <ListItemIcon>
-                  <Box sx={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center',
-                    transition: "transform 0.3s ease",
-                    transform: active ? "scale(1.1)" : "scale(1)",
-                  }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      transition: "transform 0.3s ease",
+                      transform: active ? "scale(1.1)" : "scale(1)",
+                    }}
+                  >
                     {getIcon(item.icon)}
                   </Box>
                 </ListItemIcon>
                 <ListItemText primary={item.text} />
-                {active && (
-                  <Box
-                    sx={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: "50%",
-                      backgroundColor: "#0f766e",
-                      ml: 1,
-                      animation: "pulse 2s infinite",
-                      "@keyframes pulse": {
-                        "0%": { opacity: 1 },
-                        "50%": { opacity: 0.5 },
-                        "100%": { opacity: 1 },
-                      }
-                    }}
-                  />
-                )}
+                {active && <Box sx={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: "#0f766e", ml: 1, animation: "pulse 2s infinite", "@keyframes pulse": { "0%": { opacity: 1 }, "50%": { opacity: 0.5 }, "100%": { opacity: 1 } } }} />}
               </ListItemButton>
             </ListItem>
           );
         })}
       </List>
 
-
-      {/* Compact Premium User Profile Section */}
-      <Box sx={{ 
-        p: 1.5, 
-        m: 1.5, 
-        mt: 0,
-        borderRadius: 2,
-        background: "linear-gradient(135deg, #0f766e 0%, #134e4a 100%)",
-        color: "white",
-        position: "relative",
-        overflow: "hidden",
-        boxShadow: "0 4px 16px rgba(15, 118, 110, 0.2)",
-        "&::before": {
-          content: '""',
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: "linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)",
+      {/* Profile Section */}
+      <Box
+        sx={{
+          p: 1.5,
+          m: 1.5,
+          mt: 0,
           borderRadius: 2,
-        }
-      }}>
-        <Box sx={{ 
-          display: "flex", 
-          alignItems: "center", 
-          gap: 1.5, 
-          mb: 1.5,
-          position: "relative", 
-          zIndex: 1 
-        }}>
-          <Avatar 
-            sx={{ 
+          background: "linear-gradient(135deg, #0f766e 0%, #134e4a 100%)",
+          color: "white",
+          position: "relative",
+          overflow: "hidden",
+          boxShadow: "0 4px 16px rgba(15, 118, 110, 0.2)",
+          "&::before": {
+            content: '""',
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)",
+            borderRadius: 2,
+          },
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1.5, position: "relative", zIndex: 1 }}>
+          <Avatar
+            sx={{
               bgcolor: "rgba(255, 255, 255, 0.2)",
               color: "white",
               width: 36,
@@ -324,33 +310,17 @@ const DashboardLayout = ({
             {avatarText}
           </Avatar>
           <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography 
-              variant="body2" 
-              sx={{ 
-                fontWeight: 600, 
-                color: "white",
-                fontSize: "0.875rem",
-                lineHeight: 1.2,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap"
-              }}
-            >
+            <Typography variant="body2" sx={{ fontWeight: 600, color: "white", fontSize: "0.875rem", lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {userName || "User"}
             </Typography>
-            <Typography 
-              variant="caption" 
-              sx={{ 
-                color: "rgba(255, 255, 255, 0.8)",
-                fontSize: "0.75rem",
-                lineHeight: 1,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap"
-              }}
-            >
-              {userRole || "Role"}  
+            <Typography variant="caption" sx={{ color: "rgba(255, 255, 255, 0.8)", fontSize: "0.75rem", lineHeight: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {userRole || "Role"}
             </Typography>
+            {displayId && (
+              <Typography variant="caption" sx={{ color: "rgba(255, 255, 255, 0.8)", fontSize: "0.75rem", lineHeight: 1 }}>
+                ID: {displayId}
+              </Typography>
+            )}
           </Box>
         </Box>
         <Button
@@ -359,7 +329,7 @@ const DashboardLayout = ({
           onClick={handleLogout}
           fullWidth
           size="small"
-          sx={{ 
+          sx={{
             position: "relative",
             zIndex: 1,
             borderColor: "rgba(255, 255, 255, 0.3)",
@@ -375,7 +345,7 @@ const DashboardLayout = ({
               borderColor: "rgba(255, 255, 255, 0.5)",
               backgroundColor: "rgba(255, 255, 255, 0.1)",
               transform: "translateY(-1px)",
-            }
+            },
           }}
         >
           Logout
@@ -410,40 +380,22 @@ const DashboardLayout = ({
       >
         <MenuIcon />
       </IconButton>
-      <Box
-        component="nav"
-        sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
-        aria-label="navigation menu"
-      >
+      <Box component="nav" sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }} aria-label="navigation menu">
         <Drawer
           variant="temporary"
           open={mobileOpen}
           onClose={handleDrawerToggle}
-          ModalProps={{
-            keepMounted: true,
-          }}
-          sx={{
-            display: { xs: "block", sm: "none" },
-            "& .MuiDrawer-paper": {
-              boxSizing: "border-box",
-              width: drawerWidth,
-              border: "none",
-              boxShadow: "0 20px 40px rgba(0, 0, 0, 0.1)",
-            },
+          ModalProps={{ keepMounted: true }}
+          sx={{ display: { xs: "block", sm: "none" },
+            "& .MuiDrawer-paper": { boxSizing: "border-box", width: drawerWidth, border: "none", boxShadow: "0 20px 40px rgba(0, 0, 0, 0.1)" },
           }}
         >
           {drawer}
         </Drawer>
         <Drawer
           variant="permanent"
-          sx={{
-            display: { xs: "none", sm: "block" },
-            "& .MuiDrawer-paper": {
-              boxSizing: "border-box",
-              width: drawerWidth,
-              border: "none",
-              boxShadow: "0 0 40px rgba(0, 0, 0, 0.08)",
-            },
+          sx={{ display: { xs: "none", sm: "block" },
+            "& .MuiDrawer-paper": { boxSizing: "border-box", width: drawerWidth, border: "none", boxShadow: "0 0 40px rgba(0, 0, 0, 0.08)" },
           }}
           open
         >
