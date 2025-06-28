@@ -413,7 +413,7 @@ const commissionSlice = createSlice({
         // Update the local state
         const lead = state.disbursedLeads.find((lead) => lead._id === payoutId)
         if (lead) {
-          lead.commission = commission * 100 // Convert back to percentage for display
+          lead.commission = commission
           lead.payoutStatus = payoutStatus
           lead.remark = remark
           lead.payoutStatusUpdatedAt = new Date().toISOString()

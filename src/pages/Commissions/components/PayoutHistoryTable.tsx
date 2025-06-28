@@ -137,13 +137,13 @@ const PayoutHistoryTable = () => {
               <TableCell>Payout Paid</TableCell>
               <TableCell>Payout Pending</TableCell>
               <TableCell>Payment Status</TableCell>
-              {isGSTApplicable && <TableCell>GST Status</TableCell>}
+              <TableCell>GST Status</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {paginatedData.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={isGSTApplicable ? 7 : 6} align="center">
+                <TableCell colSpan={7} align="center">
                   <Typography variant="body2" color="text.secondary">
                     {filteredData.length === 0 && monthlyBreakdown.length > 0
                       ? "No records match the selected filters"
@@ -166,17 +166,15 @@ const PayoutHistoryTable = () => {
                       size="small"
                     />
                   </TableCell>
-                  {isGSTApplicable && (
-                    <TableCell>
-                      <Chip
-                        label={row.gstStatus === "paid" ? "Paid" : row.gstStatus === "pending" ? "Pending" : "N/A"}
-                        color={
-                          row.gstStatus === "paid" ? "success" : row.gstStatus === "pending" ? "warning" : "default"
-                        }
-                        size="small"
-                      />
-                    </TableCell>
-                  )}
+                  <TableCell>
+                    <Chip
+                      label={row.gstStatus === "paid" ? "Paid" : row.gstStatus === "pending" ? "Pending" : row.gstStatus || "N/A"}
+                      color={
+                        row.gstStatus === "paid" ? "success" : row.gstStatus === "pending" ? "warning" : "default"
+                      }
+                      size="small"
+                    />
+                  </TableCell>
                 </TableRow>
               ))
             )}

@@ -16,6 +16,7 @@ import {
   Paper,
   IconButton,
   CircularProgress,
+  Divider,
 } from "@mui/material"
 import { Close } from "@mui/icons-material"
 import { useTheme } from "@mui/material/styles"
@@ -230,148 +231,163 @@ const LeadDetailsDialog: React.FC<LeadDetailsDialogProps> = ({ open, onClose, le
               </Grid>
             )}
 
-            {/* Assignment */}
+            {/* Assignment & Contact Details */}
             <Grid item xs={12}>
               <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-                Assignment
+                Assignment & Contact Details
               </Typography>
               <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={4}>
-                    <Typography variant="body2" color="textSecondary">
-                      Partner
+                <Grid container spacing={3}>
+                  {/* Partner Details */}
+                  <Grid item xs={12}>
+                    <Typography variant="subtitle2" fontWeight={600} color="primary.main" gutterBottom>
+                      Partner Information
                     </Typography>
-                    <Typography variant="body1">{lead.partnerId.basicInfo.fullName}</Typography>
-                  </Grid>
-                  <Grid item xs={12} sm={4}>
-                    <Typography variant="body2" color="textSecondary">
-                      Manager
-                    </Typography>
-                    {lead.manager ? (
-                      <Typography variant="body1">
-                        {lead.manager.firstName} {lead.manager.lastName}
-                      </Typography>
-                    ) : (
-                      <Chip label="Unassigned" variant="outlined" />
-                    )}
-                  </Grid>
-                  {lead.associate && (
-                    <Grid item xs={12} sm={4}>
-                      <Typography variant="body2" color="textSecondary">
-                        Associate
-                      </Typography>
-                      <Typography variant="body1">
-                        {lead.associate.firstName} {lead.associate.lastName} ({lead.associate.associateDisplayId})
-                      </Typography>
-                    </Grid>
-                  )}
-
-                  {/* Role-based Contact Details */}
-                  {userRole && (
-                    <>
-                      {/* Admin sees all contact details */}
-                      {userRole === "admin" && (
-                        <>
-                          {lead.partnerId && (
-                            <>
-                              <Grid item xs={12} sm={4}>
-                                <Typography variant="body2" color="textSecondary">
-                                  Partner Mobile
-                                </Typography>
-                                <Typography variant="body1">{lead.partnerId.basicInfo.mobile}</Typography>
-                              </Grid>
-                              <Grid item xs={12} sm={4}>
-                                <Typography variant="body2" color="textSecondary">
-                                  Partner Email
-                                </Typography>
-                                <Typography variant="body1">{lead.partnerId.basicInfo.email}</Typography>
-                              </Grid>
-                            </>
-                          )}
-                          {lead.manager && (
-                            <>
-                              <Grid item xs={12} sm={4}>
-                                <Typography variant="body2" color="textSecondary">
-                                  Manager Mobile
-                                </Typography>
-                                <Typography variant="body1">{lead.manager.mobile}</Typography>
-                              </Grid>
-                              <Grid item xs={12} sm={4}>
-                                <Typography variant="body2" color="textSecondary">
-                                  Manager Email
-                                </Typography>
-                                <Typography variant="body1">{lead.manager.email}</Typography>
-                              </Grid>
-                            </>
-                          )}
-                          {lead.associate && (
-                            <>
-                              <Grid item xs={12} sm={4}>
-                                <Typography variant="body2" color="textSecondary">
-                                  Associate Mobile
-                                </Typography>
-                                <Typography variant="body1">{lead.associate.mobile}</Typography>
-                              </Grid>
-                              <Grid item xs={12} sm={4}>
-                                <Typography variant="body2" color="textSecondary">
-                                  Associate Email
-                                </Typography>
-                                <Typography variant="body1">{lead.associate.email}</Typography>
-                              </Grid>
-                            </>
-                          )}
-                        </>
-                      )}
-
-                      {/* Manager sees Partner contact details */}
-                      {userRole === "manager" && lead.partnerId && (
+                    <Grid container spacing={2}>
+                      <Grid item xs={12} sm={4}>
+                        <Typography variant="body2" color="textSecondary">
+                          Name
+                        </Typography>
+                        <Typography variant="body1">{lead.partnerId.basicInfo.fullName}</Typography>
+                      </Grid>
+                      <Grid item xs={12} sm={4}>
+                        <Typography variant="body2" color="textSecondary">
+                          Partner ID
+                        </Typography>
+                        <Typography variant="body1">{lead.partnerId.partnerId}</Typography>
+                      </Grid>
+                      {/* Show Partner Contact Details based on role */}
+                      {(userRole === "admin" || userRole === "manager") && (
                         <>
                           <Grid item xs={12} sm={4}>
                             <Typography variant="body2" color="textSecondary">
-                              Partner Mobile
+                              Mobile
                             </Typography>
                             <Typography variant="body1">{lead.partnerId.basicInfo.mobile}</Typography>
                           </Grid>
                           <Grid item xs={12} sm={4}>
                             <Typography variant="body2" color="textSecondary">
-                              Partner Email
+                              Email
                             </Typography>
                             <Typography variant="body1">{lead.partnerId.basicInfo.email}</Typography>
                           </Grid>
                         </>
                       )}
+                    </Grid>
+                  </Grid>
 
-                      {/* Partner and Associate see Manager contact details */}
-                      {(userRole === "partner" || userRole === "associate") && lead.manager && (
-                        <>
+                  <Grid item xs={12}>
+                    <Divider />
+                  </Grid>
+
+                  {/* Manager Details */}
+                  <Grid item xs={12}>
+                    <Typography variant="subtitle2" fontWeight={600} color="primary.main" gutterBottom>
+                      Manager Information
+                    </Typography>
+                    {lead.manager ? (
+                      <Grid container spacing={2}>
+                        <Grid item xs={12} sm={4}>
+                          <Typography variant="body2" color="textSecondary">
+                            Name
+                          </Typography>
+                          <Typography variant="body1">
+                            {lead.manager.firstName} {lead.manager.lastName}
+                          </Typography>
+                        </Grid>
+                        {/* Show Manager Contact Details based on role */}
+                        {(userRole === "admin" || userRole === "partner" || userRole === "associate") && (
+                          <>
+                            <Grid item xs={12} sm={4}>
+                              <Typography variant="body2" color="textSecondary">
+                                Mobile
+                              </Typography>
+                              <Typography variant="body1">{lead.manager.mobile}</Typography>
+                            </Grid>
+                            <Grid item xs={12} sm={4}>
+                              <Typography variant="body2" color="textSecondary">
+                                Email
+                              </Typography>
+                              <Typography variant="body1">{lead.manager.email}</Typography>
+                            </Grid>
+                          </>
+                        )}
+                      </Grid>
+                    ) : (
+                      <Chip label="Unassigned" variant="outlined" />
+                    )}
+                  </Grid>
+
+                  {/* Associate Details */}
+                  {lead.associate && (
+                    <>
+                      <Grid item xs={12}>
+                        <Divider />
+                      </Grid>
+                      <Grid item xs={12}>
+                        <Typography variant="subtitle2" fontWeight={600} color="primary.main" gutterBottom>
+                          Associate Information
+                        </Typography>
+                        <Grid container spacing={2}>
                           <Grid item xs={12} sm={4}>
                             <Typography variant="body2" color="textSecondary">
-                              Manager Mobile
+                              Name
                             </Typography>
-                            <Typography variant="body1">{lead.manager.mobile}</Typography>
+                            <Typography variant="body1">
+                              {lead.associate.firstName} {lead.associate.lastName}
+                            </Typography>
                           </Grid>
                           <Grid item xs={12} sm={4}>
                             <Typography variant="body2" color="textSecondary">
-                              Manager Email
+                              Associate ID
                             </Typography>
-                            <Typography variant="body1">{lead.manager.email}</Typography>
+                            <Typography variant="body1">{lead.associate.associateDisplayId}</Typography>
                           </Grid>
-                        </>
-                      )}
+                          {/* Show Associate Contact Details for admin only */}
+                          {userRole === "admin" && (
+                            <>
+                              <Grid item xs={12} sm={4}>
+                                <Typography variant="body2" color="textSecondary">
+                                  Mobile
+                                </Typography>
+                                <Typography variant="body1">{lead.associate.mobile}</Typography>
+                              </Grid>
+                              <Grid item xs={12} sm={4}>
+                                <Typography variant="body2" color="textSecondary">
+                                  Email
+                                </Typography>
+                                <Typography variant="body1">{lead.associate.email}</Typography>
+                              </Grid>
+                            </>
+                          )}
+                        </Grid>
+                      </Grid>
                     </>
                   )}
 
-                  <Grid item xs={12} sm={4}>
-                    <Typography variant="body2" color="textSecondary">
-                      Created At
-                    </Typography>
-                    <Typography variant="body1">{new Date(lead.createdAt).toLocaleString()}</Typography>
+                  <Grid item xs={12}>
+                    <Divider />
                   </Grid>
-                  <Grid item xs={12} sm={4}>
-                    <Typography variant="body2" color="textSecondary">
-                      Last Status Update
+
+                  {/* Timestamps */}
+                  <Grid item xs={12}>
+                    <Typography variant="subtitle2" fontWeight={600} color="primary.main" gutterBottom>
+                      Timeline
                     </Typography>
-                    <Typography variant="body1">{new Date(lead.statusUpdatedAt).toLocaleString()}</Typography>
+                    <Grid container spacing={2}>
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant="body2" color="textSecondary">
+                          Created At
+                        </Typography>
+                        <Typography variant="body1">{new Date(lead.createdAt).toLocaleString()}</Typography>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant="body2" color="textSecondary">
+                          Last Status Update
+                        </Typography>
+                        <Typography variant="body1">{new Date(lead.statusUpdatedAt).toLocaleString()}</Typography>
+                      </Grid>
+                    </Grid>
                   </Grid>
                 </Grid>
               </Paper>

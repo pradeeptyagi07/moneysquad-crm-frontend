@@ -20,8 +20,18 @@ import {
   TablePagination,
   CircularProgress,
   Alert,
+  Button,
 } from "@mui/material"
-import { MoreVert, WarningAmberRounded, HourglassEmpty, Group, InfoOutlined, AccessTime } from "@mui/icons-material"
+import {
+  MoreVert,
+  WarningAmberRounded,
+  HourglassEmpty,
+  Group,
+  InfoOutlined,
+  AccessTime,
+  FileDownload,
+  GetApp,
+} from "@mui/icons-material"
 import { useAuth } from "../../../hooks/useAuth"
 import { useAppDispatch } from "../../../hooks/useAppDispatch"
 import { fetchDisbursedLeads } from "../../../store/slices/commissionSlice"
@@ -31,6 +41,7 @@ import PayoutDetailsDialog from "./PayoutDetailsDialog"
 import UpdatePayoutDialog from "./UpdatePayoutDetailsDialog"
 import UniversalFilterBar from "./UniversalFilterBar"
 import { useAppSelector } from "../../../hooks/useAppSelector"
+import { exportDisbursedLeadsToExcel, exportDisbursedLeadsToCSV } from "../utils/exportUtils"
 
 // Filter types defined locally
 interface DisbursedLeadsFilters {
@@ -128,6 +139,28 @@ const DisbursedLeadsTable: React.FC = () => {
     return true
   })
 
+  // Get current page data
+  const paginatedLeads = filteredLeads.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+
+  // Export functions
+  const handleExportExcel = () => {
+    const result = exportDisbursedLeadsToExcel(paginatedLeads, userRole, "disbursed_leads_current_page")
+    if (result.success) {
+      console.log(`Exported ${paginatedLeads.length} disbursed leads to Excel: ${result.filename}`)
+    } else {
+      console.error("Export failed:", result.error)
+    }
+  }
+
+  const handleExportCSV = () => {
+    const result = exportDisbursedLeadsToCSV(paginatedLeads, userRole, "disbursed_leads_current_page")
+    if (result.success) {
+      console.log(`Exported ${paginatedLeads.length} disbursed leads to CSV: ${result.filename}`)
+    } else {
+      console.error("Export failed:", result.error)
+    }
+  }
+
   if (disbursedLeadsLoading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
@@ -220,6 +253,16 @@ const DisbursedLeadsTable: React.FC = () => {
       {/* Filters */}
       <UniversalFilterBar filterType="disbursed-leads" onFiltersChange={handleFiltersChange} userRole={userRole} />
 
+      {/* Export Buttons */}
+      <Box sx={{ display: "flex", gap: 2, mb: 2, justifyContent: "flex-end" }}>
+        <Button variant="outlined" startIcon={<FileDownload />} onClick={handleExportExcel} size="small">
+          Export Excel
+        </Button>
+        <Button variant="outlined" startIcon={<GetApp />} onClick={handleExportCSV} size="small">
+          Export CSV
+        </Button>
+      </Box>
+
       {/* Table */}
       <TableContainer sx={{ mt: 2 }}>
         <Table stickyHeader>
@@ -240,7 +283,7 @@ const DisbursedLeadsTable: React.FC = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {filteredLeads.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => (
+            {paginatedLeads.map((row) => (
               <TableRow key={row._id} hover>
                 <TableCell>
                   <Typography variant="body2" color="text.secondary">

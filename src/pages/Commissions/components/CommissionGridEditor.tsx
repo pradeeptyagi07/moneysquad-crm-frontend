@@ -26,8 +26,10 @@ import {
   Card,
   CardContent,
   Paper,
+  IconButton,
+  Tooltip,
 } from "@mui/material"
-import { Search, Edit, TrendingUp } from "@mui/icons-material"
+import { Search, Edit, TrendingUp, Info, Diamond, Star, EmojiEvents } from "@mui/icons-material"
 import { useAuth } from "../../../hooks/useAuth"
 import { useAppDispatch } from "../../../hooks/useAppDispatch"
 import {
@@ -37,6 +39,7 @@ import {
   type CommissionEntry,
 } from "../../../store/slices/commissionSlice"
 import { useAppSelector } from "../../../hooks/useAppSelector"
+import TermsAndConditionsDialog from "./TermsAndConditionsDialog"
 
 interface CommissionGridEditorProps {
   plans: CommissionPlan[]
@@ -58,6 +61,8 @@ const CommissionGridEditor: React.FC<CommissionGridEditorProps> = ({ plans }) =>
   const [activePlan, setActivePlan] = useState("")
   const [activeSheet, setActiveSheet] = useState("")
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [termsDialogOpen, setTermsDialogOpen] = useState(false)
+  const [selectedPlanType, setSelectedPlanType] = useState("")
   const [searchTerm, setSearchTerm] = useState("")
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(10)
@@ -164,8 +169,8 @@ const CommissionGridEditor: React.FC<CommissionGridEditorProps> = ({ plans }) =>
 
   const handleOpenDialog = (entry: CommissionEntry, planId: string, sheetName: string) => {
     setEditData({
-      termLoan: (entry.termLoan * 100).toFixed(2),
-      overdraft: (entry.overdraft * 100).toFixed(2),
+      termLoan: entry.termLoan.toFixed(2),
+      overdraft: entry.overdraft.toFixed(2),
       remark: entry.remark,
       planId,
       sheetName,
@@ -183,22 +188,24 @@ const CommissionGridEditor: React.FC<CommissionGridEditorProps> = ({ plans }) =>
           sheetName: editData.sheetName,
           lenderId: editData.lenderId,
           data: {
-            termLoan: Number.parseFloat(editData.termLoan) / 100,
-            overdraft: Number.parseFloat(editData.overdraft) / 100,
+            termLoan: Number.parseFloat(editData.termLoan),
+            overdraft: Number.parseFloat(editData.overdraft),
             remark: editData.remark,
           },
         }),
       ).unwrap()
-
       setDialogOpen(false)
-    } catch (error) {
-      // Error is handled by the slice
-    }
+    } catch {}
   }
 
   const handleCloseDialog = () => {
     setDialogOpen(false)
     dispatch(clearError())
+  }
+
+  const handleOpenTermsDialog = (planType: string) => {
+    setSelectedPlanType(planType)
+    setTermsDialogOpen(true)
   }
 
   const getPlanTypeColor = (type: string) => {
@@ -215,7 +222,16 @@ const CommissionGridEditor: React.FC<CommissionGridEditorProps> = ({ plans }) =>
   }
 
   const getPlanTypeIcon = (type: string) => {
-    return <TrendingUp sx={{ color: getPlanTypeColor(type) }} />
+    switch (type.toLowerCase()) {
+      case "gold":
+        return <EmojiEvents sx={{ color: getPlanTypeColor(type) }} />
+      case "platinum":
+        return <Star sx={{ color: getPlanTypeColor(type) }} />
+      case "diamond":
+        return <Diamond sx={{ color: getPlanTypeColor(type) }} />
+      default:
+        return <TrendingUp sx={{ color: getPlanTypeColor(type) }} />
+    }
   }
 
   // Debug: Log the current plan data to verify correct mapping
@@ -248,18 +264,14 @@ const CommissionGridEditor: React.FC<CommissionGridEditorProps> = ({ plans }) =>
         <Card elevation={3} sx={{ mb: 3 }}>
           <CardContent>
             <Box display="flex" alignItems="center" gap={2} mb={2}>
-              {getPlanTypeIcon(partnerPlan.commissionType)}
               <Typography variant="h5" fontWeight="bold">
-                My Commission Grid - {partnerPlan.commissionType.toUpperCase()}
+                My Commission Grid
               </Typography>
-              <Chip
-                label={partnerPlan.commissionType.toUpperCase()}
-                sx={{
-                  backgroundColor: getPlanTypeColor(partnerPlan.commissionType),
-                  color: "black",
-                  fontWeight: "bold",
-                }}
-              />
+              <Tooltip title="View Terms & Conditions">
+                <IconButton onClick={() => handleOpenTermsDialog("")} sx={{ ml: "auto" }}>
+                  <Info color="primary" />
+                </IconButton>
+              </Tooltip>
             </Box>
 
             <TextField
@@ -304,16 +316,11 @@ const CommissionGridEditor: React.FC<CommissionGridEditorProps> = ({ plans }) =>
                     <TableCell sx={{ fontWeight: 500 }}>{page * rowsPerPage + index + 1}</TableCell>
                     <TableCell sx={{ fontWeight: 500 }}>{entry.lenderName}</TableCell>
                     <TableCell>
-                      <Chip
-                        label={`${(entry.termLoan * 100).toFixed(2)}%`}
-                        size="small"
-                        color="primary"
-                        variant="outlined"
-                      />
+                      <Chip label={`${entry.termLoan.toFixed(2)}%`} size="small" color="primary" variant="outlined" />
                     </TableCell>
                     <TableCell>
                       <Chip
-                        label={`${(entry.overdraft * 100).toFixed(2)}%`}
+                        label={`${entry.overdraft.toFixed(2)}%`}
                         size="small"
                         color="secondary"
                         variant="outlined"
@@ -336,6 +343,13 @@ const CommissionGridEditor: React.FC<CommissionGridEditorProps> = ({ plans }) =>
             onRowsPerPageChange={handleChangeRowsPerPage}
           />
         </Card>
+
+        <TermsAndConditionsDialog
+          open={termsDialogOpen}
+          onClose={() => setTermsDialogOpen(false)}
+          planType=""
+          isPartnerView={true}
+        />
       </Box>
     )
   }
@@ -380,6 +394,18 @@ const CommissionGridEditor: React.FC<CommissionGridEditorProps> = ({ plans }) =>
                   <Box display="flex" alignItems="center" gap={1}>
                     {getPlanTypeIcon(plan.commissionType)}
                     {plan.commissionType.toUpperCase()}
+                    <Tooltip title="View Terms & Conditions">
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleOpenTermsDialog(plan.commissionType)
+                        }}
+                        sx={{ ml: 1, p: 0.5 }}
+                      >
+                        <Info fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
                   </Box>
                 }
                 value={plan._id}
@@ -419,16 +445,11 @@ const CommissionGridEditor: React.FC<CommissionGridEditorProps> = ({ plans }) =>
                     <TableCell sx={{ fontWeight: 500 }}>{page * rowsPerPage + index + 1}</TableCell>
                     <TableCell sx={{ fontWeight: 500 }}>{entry.lenderName}</TableCell>
                     <TableCell>
-                      <Chip
-                        label={`${(entry.termLoan * 100).toFixed(2)}%`}
-                        size="small"
-                        color="primary"
-                        variant="outlined"
-                      />
+                      <Chip label={`${entry.termLoan.toFixed(2)}%`} size="small" color="primary" variant="outlined" />
                     </TableCell>
                     <TableCell>
                       <Chip
-                        label={`${(entry.overdraft * 100).toFixed(2)}%`}
+                        label={`${entry.overdraft.toFixed(2)}%`}
                         size="small"
                         color="secondary"
                         variant="outlined"
@@ -479,7 +500,6 @@ const CommissionGridEditor: React.FC<CommissionGridEditorProps> = ({ plans }) =>
               label="Term Loan %"
               fullWidth
               margin="dense"
-
               type="number"
               inputProps={{ step: "0.01", min: "0", max: "100" }}
               value={editData.termLoan}
@@ -520,6 +540,13 @@ const CommissionGridEditor: React.FC<CommissionGridEditorProps> = ({ plans }) =>
           </Box>
         </DialogContent>
       </Dialog>
+
+      <TermsAndConditionsDialog
+        open={termsDialogOpen}
+        onClose={() => setTermsDialogOpen(false)}
+        planType={selectedPlanType}
+        isPartnerView={false}
+      />
     </Box>
   )
 }

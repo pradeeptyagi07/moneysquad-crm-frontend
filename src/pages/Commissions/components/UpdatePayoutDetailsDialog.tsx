@@ -47,7 +47,7 @@ const UpdatePayoutDialog: React.FC<Props> = ({ open, onClose, lead }) => {
       const result = await dispatch(
         updatePayoutStatus({
           payoutId: lead._id,
-          commission: commission / 100, // Divide by 100 for backend
+          commission: commission,
           payoutStatus: status as "pending" | "paid",
           remark: remark,
         }),

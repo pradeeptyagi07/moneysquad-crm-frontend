@@ -58,15 +58,19 @@ const LeadsDataTable: React.FC<LeadsDataTableProps> = ({
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const [menuDbId, setMenuDbId] = useState<string | null>(null)
+  const [currentRowData, setCurrentRowData] = useState<any>(null)
 
-  const handleMenuOpen = (e: React.MouseEvent<HTMLElement>, dbId: string) => {
+  const handleMenuOpen = (e: React.MouseEvent<HTMLElement>, dbId: string, rowData: any) => {
     e.stopPropagation()
     setMenuDbId(dbId)
+    setCurrentRowData(rowData) // Store the entire row data
     setAnchorEl(e.currentTarget)
   }
+
   const handleMenuClose = () => {
     setAnchorEl(null)
     setMenuDbId(null)
+    setCurrentRowData(null)
   }
 
   const showPartnerCol = userRole === "admin" || userRole === "manager"
@@ -232,7 +236,7 @@ const LeadsDataTable: React.FC<LeadsDataTableProps> = ({
                     </TableCell>
 
                     <TableCell align="right">
-                      <IconButton size="small" onClick={(e) => handleMenuOpen(e, r.dbId)}>
+                      <IconButton size="small" onClick={(e) => handleMenuOpen(e, r.dbId, r)}>
                         <MoreVert />
                       </IconButton>
                       <LeadsActionMenu
@@ -268,10 +272,7 @@ const LeadsDataTable: React.FC<LeadsDataTableProps> = ({
                           }
                         }}
                         userRole={userRole as any}
-                        currentStatus={r.status}
-                        currentStatusUpdatedAt={r.lastUpdate}
-                        disbursedData={r.disbursedData}
-                        lenderType={r.lenderName}
+                        rowData={currentRowData} // Pass entire row data
                       />
                     </TableCell>
                   </TableRow>

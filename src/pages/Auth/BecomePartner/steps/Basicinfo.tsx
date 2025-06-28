@@ -25,7 +25,7 @@ interface BasicInfoProps {
 }
 
 const registrationTypes = ["Individual", "Proprietorship", "Partnership", "LLP", "Private Limited", "Other"]
-const teamStrengthOptions = ["<5", "5-10", "15-30", "30-50", "50+"]
+const teamStrengthOptions = ["<5", "5-15", "15-30", "30-50", "50+"]
 
 const BasicInfo: React.FC<BasicInfoProps> = ({ formData, updateFormData }) => {
   const dispatch = useAppDispatch()

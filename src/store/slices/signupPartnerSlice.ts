@@ -115,6 +115,12 @@ export const createPartner = createAsyncThunk(
       const response = await axiosInstance.post("/partner/create", formData)
       return response.data
     } catch (error: any) {
+      // Check for specific error message about existing partner
+      if (error.response?.data?.message === "Partner already exists") {
+        return rejectWithValue(
+          "This email or phone number is already registered to an account. Try Login instead or use a different Email ID to create a new account.",
+        )
+      }
       return rejectWithValue(error.response?.data?.message || "Partner creation failed")
     }
   },

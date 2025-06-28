@@ -92,12 +92,7 @@ const Preview: React.FC<PreviewProps> = ({ formData }) => {
             </Typography>
             <Typography variant="body1">{formData.email}</Typography>
           </Grid>
-          <Grid item xs={12} md={6}>
-            <Typography variant="subtitle2" color="text.secondary">
-              Pincode
-            </Typography>
-            <Typography variant="body1">{formData.pincode}</Typography>
-          </Grid>
+         
           <Grid item xs={12} md={6}>
             <Typography variant="subtitle2" color="text.secondary">
               Registration Type

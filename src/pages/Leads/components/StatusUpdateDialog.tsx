@@ -65,14 +65,15 @@ const closeReasonOptions = [
 
 // Valid next‐status transitions
 const statusTransitions: Record<LeadStatus, LeadStatus[]> = {
-  pending: ["login"],
-  login: ["approved", "rejected"],
-  approved: ["disbursed", "closed","rejected"],
+  pending: ["login", "closed"],           // added closed
+  login: ["approved", "rejected", "closed"], // added closed
+  approved: ["disbursed", "closed", "rejected"],
   disbursed: ["closed"],
-  rejected: ["approved"],
+  rejected: ["approved","closed"],
   closed: [],
-  expired: ["expired", "login"],
+  expired: ["login"],
 };
+
 
 interface StatusUpdateDialogProps {
   open: boolean;

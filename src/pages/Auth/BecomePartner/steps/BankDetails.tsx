@@ -52,13 +52,15 @@ const BankDetails: React.FC<BankDetailsProps> = ({ formData, updateFormData }) =
 
   const [showAccountNumber, setShowAccountNumber] = useState(false)
   const [showConfirmAccountNumber, setShowConfirmAccountNumber] = useState(false)
+  const [banksFetched, setBanksFetched] = useState(false)
 
-  // Fetch banks on component mount
+  // Fetch banks on component mount - only once
   useEffect(() => {
-    if (banks.length === 0) {
+    if (!banksFetched && banks.length === 0) {
       dispatch(fetchBanks())
+      setBanksFetched(true)
     }
-  }, [dispatch, banks.length])
+  }, [dispatch, banks.length, banksFetched])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target

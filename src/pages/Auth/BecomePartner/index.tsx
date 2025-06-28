@@ -164,7 +164,16 @@ const BecomePartner: React.FC = () => {
     } catch (error: any) {
       // show error in snackbar
       setSnackbarSeverity("error")
-      setSnackbarMessage(error.message || "Failed to register partner.")
+
+      // Check if it's the specific "Partner already exists" error
+      if (error.message && error.message.includes("Partner already exists")) {
+        setSnackbarMessage(
+          "This email or phone number is already registered to an account. Try Login instead or use a different Email ID to create a new account.",
+        )
+      } else {
+        setSnackbarMessage(error.message ||"This email or phone number is already registered to an account. Try Login instead or use a different Email ID to create a new account.")
+      }
+
       setSnackbarOpen(true)
       console.error("Submission failed:", error)
     } finally {

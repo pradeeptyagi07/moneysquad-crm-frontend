@@ -43,7 +43,7 @@ import PersonalDetailsSection from "./PersonalDetailsSection"
 import AddressDetailsSection from "./AddressDetailsSection"
 import BankDetailsSection from "./BankDetailsSection"
 import DocumentsSection from "./DocumentsSection"
-import { exportSinglePartnerToCSV, exportSinglePartnerToExcel } from "../utils/exportUtils"
+// import { exportSinglePartnerToCSV, exportSinglePartnerToExcel } from "../utils/exportUtils"
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -96,19 +96,19 @@ const PartnerDetailsDialog: React.FC<PartnerDetailsDialogProps> = ({ open, onClo
     setDownloadMenuAnchor(null)
   }
 
-  const handleDownloadCSV = () => {
-    if (partner) {
-      exportSinglePartnerToCSV(partner, `partner_${partner.partnerId}_details`)
-    }
-    handleDownloadMenuClose()
-  }
+  // const handleDownloadCSV = () => {
+  //   if (partner) {
+  //     exportSinglePartnerToCSV(partner, `partner_${partner.partnerId}_details`)
+  //   }
+  //   handleDownloadMenuClose()
+  // }
 
-  const handleDownloadExcel = () => {
-    if (partner) {
-      exportSinglePartnerToExcel(partner, `partner_${partner.partnerId}_details`)
-    }
-    handleDownloadMenuClose()
-  }
+  // const handleDownloadExcel = () => {
+  //   if (partner) {
+  //     exportSinglePartnerToExcel(partner, `partner_${partner.partnerId}_details`)
+  //   }
+  //   handleDownloadMenuClose()
+  // }
 
   if (!partner) return null
 
@@ -187,7 +187,7 @@ const PartnerDetailsDialog: React.FC<PartnerDetailsDialogProps> = ({ open, onClo
           </Box>
         </DialogTitle>
 
-        <Menu
+        {/* <Menu
           anchorEl={downloadMenuAnchor}
           open={Boolean(downloadMenuAnchor)}
           onClose={handleDownloadMenuClose}
@@ -207,7 +207,7 @@ const PartnerDetailsDialog: React.FC<PartnerDetailsDialogProps> = ({ open, onClo
             </ListItemIcon>
             <ListItemText primary="Download as Excel" />
           </MenuItem>
-        </Menu>
+        </Menu> */}
 
         <DialogContent dividers>
           {partner && (

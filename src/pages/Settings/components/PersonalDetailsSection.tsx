@@ -174,7 +174,7 @@ const PersonalDetailsSection: FC = () => {
     "More than 10 Years",
   ]
 
-  const teamStrengthOptions = [ "<5", "5-10", "10-20", "20-50", "50+"]
+  const teamStrengthOptions = [ "<5", "5-15", "10-20", "20-50", "50+"]
 
   const focusProductOptions = [
     "Personal Loan",

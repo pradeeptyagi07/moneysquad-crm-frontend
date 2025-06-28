@@ -3,7 +3,7 @@
 import type React from "react";
 
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Box,
   CssBaseline,
@@ -20,6 +20,7 @@ import {
   Avatar,
   ListItemAvatar,
   Button,
+  Chip,
 } from "@mui/material";
 import {
   Menu as MenuIcon,
@@ -39,7 +40,7 @@ import {
 import { useAuth } from "../../hooks/useAuth";
 import { useAppSelector } from "../../hooks/useAppSelector";
 
-const drawerWidth = 240;
+const drawerWidth = 260; // Slightly wider for premium feel
 
 interface DashboardMenuItem {
   text: string;
@@ -62,6 +63,7 @@ const DashboardLayout = ({
 }: DashboardLayoutProps) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { logout } = useAuth();
 
   // Get user info from Redux state, fallback to props for backward compatibility
@@ -110,28 +112,60 @@ const DashboardLayout = ({
       case "Help":
         return <HelpOutline />;
       case "TrainingResources":
-        return <LibraryBooks />; // More suitable than MenuBook for resources
+        return <LibraryBooks />;
       case "PartnerManagement":
-        return <GroupWork />; // Better reflects team/collab concept
+        return <GroupWork />;
       default:
         return <Dashboard />;
     }
   };
+
+  // Check if current path matches menu item path
+  const isActive = (path: string) => location.pathname === path;
 
   // Get the first character for the avatar, safely
   const avatarText =
     userName && userName.length > 0 ? userName.charAt(0).toUpperCase() : "U";
 
   const drawer = (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+    <Box 
+      sx={{ 
+        display: "flex", 
+        flexDirection: "column", 
+        height: "100%",
+        background: "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)",
+        position: "relative",
+        "&::before": {
+          content: '""',
+          position: "absolute",
+          top: 0,
+          right: 0,
+          width: "1px",
+          height: "100%",
+          background: "linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.05) 100%)",
+        }
+      }}
+    >
+      {/* Premium Logo Section */}
       <Toolbar
         sx={{
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          py: 2,
+          py: 3,
           px: 2,
-          backgroundColor: "white",
+          backgroundColor: "transparent",
+          position: "relative",
+          "&::after": {
+            content: '""',
+            position: "absolute",
+            bottom: 0,
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: "80%",
+            height: "1px",
+            background: "linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.1) 50%, transparent 100%)",
+          }
         }}
       >
         <Box
@@ -139,54 +173,215 @@ const DashboardLayout = ({
           src="/images/MoneySquad-logo.png"
           alt="MoneySquad Logo"
           sx={{
-            height: { xs: 30, sm: 40, md: 45 },
+            height: { xs: 35, sm: 45, md: 50 },
             width: "auto",
             objectFit: "contain",
+            filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.1))",
+            transition: "all 0.3s ease",
+            "&:hover": {
+              transform: "scale(1.02)",
+              filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.15))",
+            }
           }}
         />
       </Toolbar>
 
-      <Divider />
-      <List sx={{ flexGrow: 1 }}>
-        {menuItems.map((item) => (
-          <ListItem key={item.text} disablePadding>
-            <ListItemButton
-              onClick={() => {
-                navigate(item.path);
-                setMobileOpen(false);
+      {/* Navigation Menu */}
+      <List sx={{ 
+        flexGrow: 1, 
+        px: 2, 
+        py: 1,
+        "& .MuiListItem-root": {
+          mb: 0.5,
+        }
+      }}>
+        {menuItems.map((item) => {
+          const active = isActive(item.path);
+          return (
+            <ListItem key={item.text} disablePadding>
+              <ListItemButton
+                onClick={() => {
+                  navigate(item.path);
+                  setMobileOpen(false);
+                }}
+                sx={{
+                  borderRadius: 2,
+                  mb: 0.5,
+                  mx: 0,
+                  transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                  position: "relative",
+                  overflow: "hidden",
+                  backgroundColor: active ? "rgba(15, 118, 110, 0.08)" : "transparent",
+                  "&::before": active ? {
+                    content: '""',
+                    position: "absolute",
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: "3px",
+                    backgroundColor: "#0f766e",
+                    borderRadius: "0 2px 2px 0",
+                  } : {},
+                  "&:hover": {
+                    backgroundColor: active 
+                      ? "rgba(15, 118, 110, 0.12)" 
+                      : "rgba(15, 118, 110, 0.04)",
+                    transform: "translateX(2px)",
+                    boxShadow: active 
+                      ? "0 4px 20px rgba(15, 118, 110, 0.15)" 
+                      : "0 2px 10px rgba(0, 0, 0, 0.08)",
+                  },
+                  "& .MuiListItemIcon-root": {
+                    minWidth: 44,
+                    color: active ? "#0f766e" : "rgba(0, 0, 0, 0.7)",
+                    transition: "all 0.3s ease",
+                  },
+                  "& .MuiListItemText-primary": {
+                    fontWeight: active ? 600 : 500,
+                    color: active ? "#0f766e" : "rgba(0, 0, 0, 0.87)",
+                    fontSize: "0.925rem",
+                    transition: "all 0.3s ease",
+                  },
+                }}
+              >
+                <ListItemIcon>
+                  <Box sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    transition: "transform 0.3s ease",
+                    transform: active ? "scale(1.1)" : "scale(1)",
+                  }}>
+                    {getIcon(item.icon)}
+                  </Box>
+                </ListItemIcon>
+                <ListItemText primary={item.text} />
+                {active && (
+                  <Box
+                    sx={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: "50%",
+                      backgroundColor: "#0f766e",
+                      ml: 1,
+                      animation: "pulse 2s infinite",
+                      "@keyframes pulse": {
+                        "0%": { opacity: 1 },
+                        "50%": { opacity: 0.5 },
+                        "100%": { opacity: 1 },
+                      }
+                    }}
+                  />
+                )}
+              </ListItemButton>
+            </ListItem>
+          );
+        })}
+      </List>
+
+
+      {/* Compact Premium User Profile Section */}
+      <Box sx={{ 
+        p: 1.5, 
+        m: 1.5, 
+        mt: 0,
+        borderRadius: 2,
+        background: "linear-gradient(135deg, #0f766e 0%, #134e4a 100%)",
+        color: "white",
+        position: "relative",
+        overflow: "hidden",
+        boxShadow: "0 4px 16px rgba(15, 118, 110, 0.2)",
+        "&::before": {
+          content: '""',
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: "linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)",
+          borderRadius: 2,
+        }
+      }}>
+        <Box sx={{ 
+          display: "flex", 
+          alignItems: "center", 
+          gap: 1.5, 
+          mb: 1.5,
+          position: "relative", 
+          zIndex: 1 
+        }}>
+          <Avatar 
+            sx={{ 
+              bgcolor: "rgba(255, 255, 255, 0.2)",
+              color: "white",
+              width: 36,
+              height: 36,
+              fontSize: "1rem",
+              fontWeight: 600,
+              border: "2px solid rgba(255, 255, 255, 0.3)",
+            }}
+          >
+            {avatarText}
+          </Avatar>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                fontWeight: 600, 
+                color: "white",
+                fontSize: "0.875rem",
+                lineHeight: 1.2,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap"
               }}
             >
-              <ListItemIcon>{getIcon(item.icon)}</ListItemIcon>
-              <ListItemText primary={item.text} />
-            </ListItemButton>
-          </ListItem>
-        ))}
-      </List>
-      <Divider />
-      <Box sx={{ p: 2 }}>
-        <ListItem sx={{ px: 0 }}>
-          <ListItemAvatar>
-            <Avatar sx={{ bgcolor: "#0f766e" }}>{avatarText}</Avatar>
-          </ListItemAvatar>
-          <ListItemText
-            primary={userName || "User"}
-            secondary={userRole || "Role"}
-            primaryTypographyProps={{ fontWeight: "medium" }}
-            secondaryTypographyProps={{ variant: "caption" }}
-          />
-        </ListItem>
+              {userName || "User"}
+            </Typography>
+            <Typography 
+              variant="caption" 
+              sx={{ 
+                color: "rgba(255, 255, 255, 0.8)",
+                fontSize: "0.75rem",
+                lineHeight: 1,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap"
+              }}
+            >
+              {userRole || "Role"}  
+            </Typography>
+          </Box>
+        </Box>
         <Button
           variant="outlined"
-          color="primary"
           startIcon={<Logout fontSize="small" />}
           onClick={handleLogout}
           fullWidth
-          sx={{ mt: 1 }}
+          size="small"
+          sx={{ 
+            position: "relative",
+            zIndex: 1,
+            borderColor: "rgba(255, 255, 255, 0.3)",
+            color: "white",
+            fontWeight: 500,
+            textTransform: "none",
+            borderRadius: 1.5,
+            py: 0.5,
+            fontSize: "0.8rem",
+            minHeight: 32,
+            transition: "all 0.3s ease",
+            "&:hover": {
+              borderColor: "rgba(255, 255, 255, 0.5)",
+              backgroundColor: "rgba(255, 255, 255, 0.1)",
+              transform: "translateY(-1px)",
+            }
+          }}
         >
           Logout
         </Button>
       </Box>
-    </div>
+    </Box>
   );
 
   return (
@@ -201,9 +396,16 @@ const DashboardLayout = ({
           mr: 2,
           display: { sm: "none" },
           position: "fixed",
-          top: 10,
-          left: 10,
-          zIndex: 1100,
+          top: 16,
+          left: 16,
+          zIndex: 1300,
+          backgroundColor: "white",
+          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+          "&:hover": {
+            backgroundColor: "#f9fafb",
+            transform: "scale(1.05)",
+          },
+          transition: "all 0.3s ease",
         }}
       >
         <MenuIcon />
@@ -211,20 +413,22 @@ const DashboardLayout = ({
       <Box
         component="nav"
         sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
-        aria-label="mailbox folders"
+        aria-label="navigation menu"
       >
         <Drawer
           variant="temporary"
           open={mobileOpen}
           onClose={handleDrawerToggle}
           ModalProps={{
-            keepMounted: true, // Better open performance on mobile.
+            keepMounted: true,
           }}
           sx={{
             display: { xs: "block", sm: "none" },
             "& .MuiDrawer-paper": {
               boxSizing: "border-box",
               width: drawerWidth,
+              border: "none",
+              boxShadow: "0 20px 40px rgba(0, 0, 0, 0.1)",
             },
           }}
         >
@@ -237,6 +441,8 @@ const DashboardLayout = ({
             "& .MuiDrawer-paper": {
               boxSizing: "border-box",
               width: drawerWidth,
+              border: "none",
+              boxShadow: "0 0 40px rgba(0, 0, 0, 0.08)",
             },
           }}
           open
@@ -250,6 +456,8 @@ const DashboardLayout = ({
           flexGrow: 1,
           p: 3,
           width: { sm: `calc(100% - ${drawerWidth}px)` },
+          backgroundColor: "#fafbfc",
+          minHeight: "100vh",
         }}
       >
         {children}

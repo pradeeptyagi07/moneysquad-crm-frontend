@@ -1,12 +1,13 @@
-"use client";
+"use client"
 
-import { Outlet } from "react-router-dom";
-import { Box } from "@mui/material";
-import DashboardLayout from "./DashboardLayout";
-import { useAuth } from "../../hooks/useAuth";
+import { Outlet } from "react-router-dom"
+import { Box } from "@mui/material"
+import DashboardLayout from "./DashboardLayout"
+import { useAuth } from "../../hooks/useAuth"
+import Footer from "./Footer"
 
 const PartnerLayout = () => {
-  const { userName } = useAuth();
+  const { userName } = useAuth()
 
   const menuItems = [
     { text: "Overview", icon: "Dashboard", path: "/partner/overview" },
@@ -18,20 +19,18 @@ const PartnerLayout = () => {
 
     { text: "Settings", icon: "Settings", path: "/partner/settings" },
     { text: "Help & Support", icon: "Help", path: "/partner/help-support" }, // ✅ Add this
-
-  ];
+  ]
 
   return (
-    <DashboardLayout
-      menuItems={menuItems}
-      userRole="Partner"
-      userName={userName}
-    >
-      <Box sx={{ p: 3 }}>
-        <Outlet />
-      </Box>
-    </DashboardLayout>
-  );
-};
+    <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+      <DashboardLayout menuItems={menuItems} userRole="Partner" userName={userName}>
+        <Box sx={{ p: 3, flexGrow: 1 }}>
+          <Outlet />
+        </Box>
+      </DashboardLayout>
+      <Footer />
+    </Box>
+  )
+}
 
-export default PartnerLayout;
+export default PartnerLayout

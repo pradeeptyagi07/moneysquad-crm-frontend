@@ -1,6 +1,6 @@
-"use client";
+"use client"
 
-import React from "react";
+import React from "react"
 import {
   Box,
   Table,
@@ -20,7 +20,8 @@ import {
   Typography,
   Tooltip,
   TablePagination,
-} from "@mui/material";
+  Button,
+} from "@mui/material"
 import {
   MoreVert,
   Visibility,
@@ -31,132 +32,135 @@ import {
   Email,
   Phone,
   ChangeCircle,
-} from "@mui/icons-material";
-import PartnerDetailsDialog from "./PartnerDetailsDialog";
-import PartnerEditDialog from "./PartnerEditDialog";
-import PartnerChangeRequestDialog from "./PartnerChangeRequestDialog";
-import { useAppDispatch } from "../../../hooks/useAppDispatch";
-import { useAppSelector } from "../../../hooks/useAppSelector";
-import {
-  fetchAllPartners,
-  fetchPartnerById,
-  type Partner,
-} from "../../../store/slices/managePartnerSlice";
-import { updatePartnerById } from "../../../store/slices/managePartnerSlice";
+  FileDownload,
+  GetApp,
+} from "@mui/icons-material"
+import PartnerDetailsDialog from "./PartnerDetailsDialog"
+import PartnerEditDialog from "./PartnerEditDialog"
+import PartnerChangeRequestDialog from "./PartnerChangeRequestDialog"
+import { useAppDispatch } from "../../../hooks/useAppDispatch"
+import { useAppSelector } from "../../../hooks/useAppSelector"
+import { fetchAllPartners, fetchPartnerById, type Partner } from "../../../store/slices/managePartnerSlice"
+import { updatePartnerById } from "../../../store/slices/managePartnerSlice"
+import { exportPartnersToExcel, exportPartnersToCSV } from "../utils/exportUtils"
 
 interface PartnersTableProps {
-  partners: Partner[];
+  partners: Partner[]
 }
 
 const PartnersTable: React.FC<PartnersTableProps> = ({ partners }) => {
-  console.log("partners", partners);
-  const dispatch = useAppDispatch();
+  console.log("partners", partners)
+  const dispatch = useAppDispatch()
 
-  const partnerDetails = useAppSelector(
-    (state) => state.managePartners.selectedPartner
-  );
+  const partnerDetails = useAppSelector((state) => state.managePartners.selectedPartner)
 
-  console.log("partnerDetails in component →", partnerDetails);
+  console.log("partnerDetails in component →", partnerDetails)
 
-  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-  const [selectedPartnerId, setSelectedPartnerId] = React.useState<
-    string | null
-  >(null);
-  const [detailsDialogOpen, setDetailsDialogOpen] = React.useState(false);
-  const [editDialogOpen, setEditDialogOpen] = React.useState(false);
-  const [changeRequestDialogOpen, setChangeRequestDialogOpen] =
-    React.useState(false);
-  const [selectedPartner, setSelectedPartner] = React.useState<Partner | null>(
-    null
-  );
+  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null)
+  const [selectedPartnerId, setSelectedPartnerId] = React.useState<string | null>(null)
+  const [detailsDialogOpen, setDetailsDialogOpen] = React.useState(false)
+  const [editDialogOpen, setEditDialogOpen] = React.useState(false)
+  const [changeRequestDialogOpen, setChangeRequestDialogOpen] = React.useState(false)
+  const [selectedPartner, setSelectedPartner] = React.useState<Partner | null>(null)
 
-  const [page, setPage] = React.useState(0);
-  const [rowsPerPage, setRowsPerPage] = React.useState(10);
+  const [page, setPage] = React.useState(0)
+  const [rowsPerPage, setRowsPerPage] = React.useState(10)
 
-  const handleChangeRowsPerPage = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(Number.parseInt(event.target.value, 10))
+    setPage(0)
+  }
 
-  const paginatedPartners = partners.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
-  );
+  const paginatedPartners = partners.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
   const handleChangePage = (_event: unknown, newPage: number) => {
-    setPage(newPage);
-  };
+    setPage(newPage)
+  }
 
-  const handleMenuOpen = (
-    event: React.MouseEvent<HTMLElement>,
-    partnerId: string
-  ) => {
-    setAnchorEl(event.currentTarget);
-    setSelectedPartnerId(partnerId);
-  };
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, partnerId: string) => {
+    setAnchorEl(event.currentTarget)
+    setSelectedPartnerId(partnerId)
+  }
 
   const handleMenuClose = () => {
-    setAnchorEl(null);
-    setSelectedPartnerId(null);
-  };
+    setAnchorEl(null)
+    setSelectedPartnerId(null)
+  }
 
   const handleViewDetails = async (partnerId: string) => {
-    const partner = partners.find((p) => p.partnerId === partnerId);
+    const partner = partners.find((p) => p.partnerId === partnerId)
     if (partner?._id) {
-      console.log("Dispatching fetchPartnerById for:", partner._id);
-      setDetailsDialogOpen(true);
+      console.log("Dispatching fetchPartnerById for:", partner._id)
+      setDetailsDialogOpen(true)
 
-      const result = await dispatch(fetchPartnerById(partner._id));
-      console.log("Thunk result →", result);
+      const result = await dispatch(fetchPartnerById(partner._id))
+      console.log("Thunk result →", result)
     }
-  };
+  }
 
   const handleEditPartner = (partnerId: string) => {
-    handleMenuClose();
-    const partner = partners.find((p) => p.partnerId === partnerId) || null;
-    setSelectedPartner(partner);
-    setEditDialogOpen(true);
-  };
+    handleMenuClose()
+    const partner = partners.find((p) => p.partnerId === partnerId) || null
+    setSelectedPartner(partner)
+    setEditDialogOpen(true)
+  }
 
   const handleChangeRequests = (partnerId: string) => {
-    handleMenuClose();
-    const partner = partners.find((p) => p.partnerId === partnerId) || null;
-    setSelectedPartner(partner);
-    setChangeRequestDialogOpen(true);
-  };
+    handleMenuClose()
+    const partner = partners.find((p) => p.partnerId === partnerId) || null
+    setSelectedPartner(partner)
+    setChangeRequestDialogOpen(true)
+  }
 
   const handleCloseDetailsDialog = () => {
-    setDetailsDialogOpen(false);
-    setSelectedPartner(null);
-  };
+    setDetailsDialogOpen(false)
+    setSelectedPartner(null)
+  }
 
   const handleCloseEditDialog = () => {
-    setEditDialogOpen(false);
-    setSelectedPartner(null);
-  };
+    setEditDialogOpen(false)
+    setSelectedPartner(null)
+  }
 
   const handleCloseChangeRequestDialog = () => {
-    setChangeRequestDialogOpen(false);
-    setSelectedPartner(null);
-  };
+    setChangeRequestDialogOpen(false)
+    setSelectedPartner(null)
+  }
 
   const handleSavePartner = async (updatedPartner: any) => {
     if (selectedPartner && selectedPartner._id) {
       const updatePayload = {
         partnerId: selectedPartner._id,
         data: updatedPartner,
-      };
+      }
 
       try {
-        await dispatch(updatePartnerById(updatePayload)).unwrap();
-        await dispatch(fetchAllPartners());
-        setEditDialogOpen(false);
+        await dispatch(updatePartnerById(updatePayload)).unwrap()
+        await dispatch(fetchAllPartners())
+        setEditDialogOpen(false)
       } catch (error) {
-        console.error("Failed to update partner:", error);
+        console.error("Failed to update partner:", error)
       }
     }
-  };
+  }
+
+  // Export functions
+  const handleExportExcel = () => {
+    const result = exportPartnersToExcel(paginatedPartners, "partners_current_page")
+    if (result.success) {
+      console.log(`Exported ${paginatedPartners.length} partners to Excel: ${result.filename}`)
+    } else {
+      console.error("Export failed:", result.error)
+    }
+  }
+
+  const handleExportCSV = () => {
+    const result = exportPartnersToCSV(paginatedPartners, "partners_current_page")
+    if (result.success) {
+      console.log(`Exported ${paginatedPartners.length} partners to CSV: ${result.filename}`)
+    } else {
+      console.error("Export failed:", result.error)
+    }
+  }
 
   if (partners.length === 0) {
     return (
@@ -168,12 +172,22 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners }) => {
           Try adjusting your search or filters
         </Typography>
       </Box>
-    );
+    )
   }
 
   return (
     <>
-     <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: "none" }}>
+      {/* Export Buttons */}
+      <Box sx={{ display: "flex", gap: 2, mb: 2, justifyContent: "flex-end" }}>
+        <Button variant="outlined" startIcon={<FileDownload />} onClick={handleExportExcel} size="small">
+          Export Excel
+        </Button>
+        <Button variant="outlined" startIcon={<GetApp />} onClick={handleExportCSV} size="small">
+          Export CSV
+        </Button>
+      </Box>
+
+      <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: "none" }}>
         <Table sx={{ minWidth: 650 }}>
           <TableHead sx={{ bgcolor: "grey.50" }}>
             <TableRow>
@@ -185,7 +199,9 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners }) => {
               <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Joined On</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Change Requests</TableCell>
-              <TableCell align="right" sx={{ fontWeight: 600 }}>Actions</TableCell>
+              <TableCell align="right" sx={{ fontWeight: 600 }}>
+                Actions
+              </TableCell>
             </TableRow>
           </TableHead>
 
@@ -194,10 +210,7 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners }) => {
               <TableRow key={partner.partnerId} hover>
                 <TableCell>
                   <Box sx={{ display: "flex", alignItems: "center" }}>
-                    <Avatar
-                      src={partner.documents.profilePhoto}
-                      sx={{ mr: 2, bgcolor: "primary.main" }}
-                    >
+                    <Avatar src={partner.documents.profilePhoto} sx={{ mr: 2, bgcolor: "primary.main" }}>
                       <Person />
                     </Avatar>
                     <Box>
@@ -225,9 +238,7 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners }) => {
                 </TableCell>
 
                 <TableCell>
-                  <Typography variant="body2">
-                    {partner.basicInfo.registeringAs}
-                  </Typography>
+                  <Typography variant="body2">{partner.basicInfo.registeringAs}</Typography>
                 </TableCell>
 
                 <TableCell>
@@ -237,14 +248,14 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners }) => {
                       | "gold"
                       | "diamond"
                       | "platinum"
-                      | "n/a";
+                      | "n/a"
                     const planStyles = {
                       gold: { label: "Gold", icon: "🥇", bg: "#FFF8DC", color: "#DAA520" },
                       diamond: { label: "Diamond", icon: "💎", bg: "#E0FFFF", color: "#00BFFF" },
                       platinum: { label: "Platinum", icon: "🏆", bg: "#F8F8FF", color: "#A9A9A9" },
                       "n/a": { label: "N/A", icon: "❔", bg: "#ECEFF1", color: "#607D8B" },
-                    } as const;
-                    const style = planStyles[plan];
+                    } as const
+                    const style = planStyles[plan]
                     return (
                       <Chip
                         label={`${style.icon} ${style.label}`}
@@ -255,27 +266,18 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners }) => {
                           color: style.color,
                         }}
                       />
-                    );
+                    )
                   })()}
                 </TableCell>
 
                 <TableCell>
                   <Chip
-                    label={
-                      partner.personalInfo.roleSelection === "leadSharing"
-                        ? "Lead Sharing"
-                        : "File Sharing"
-                    }
+                    label={partner.personalInfo.roleSelection === "leadSharing" ? "Lead Sharing" : "File Sharing"}
                     size="small"
                     sx={{
                       bgcolor:
-                        partner.personalInfo.roleSelection === "leadSharing"
-                          ? "primary.lighter"
-                          : "secondary.lighter",
-                      color:
-                        partner.personalInfo.roleSelection === "leadSharing"
-                          ? "primary.dark"
-                          : "secondary.dark",
+                        partner.personalInfo.roleSelection === "leadSharing" ? "primary.lighter" : "secondary.lighter",
+                      color: partner.personalInfo.roleSelection === "leadSharing" ? "primary.dark" : "secondary.dark",
                       fontWeight: 600,
                     }}
                   />
@@ -283,13 +285,7 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners }) => {
 
                 <TableCell>
                   <Chip
-                    icon={
-                      partner.status === "active" ? (
-                        <CheckCircle fontSize="small" />
-                      ) : (
-                        <Block fontSize="small" />
-                      )
-                    }
+                    icon={partner.status === "active" ? <CheckCircle fontSize="small" /> : <Block fontSize="small" />}
                     label={partner.status === "active" ? "Active" : "Inactive"}
                     size="small"
                     color={partner.status === "active" ? "success" : "default"}
@@ -351,8 +347,6 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners }) => {
           />
         </Box>
 
-        
-
         <Menu
           id={`partner-menu-${selectedPartnerId}`}
           anchorEl={anchorEl}
@@ -364,8 +358,8 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners }) => {
           <MenuItem
             onClick={() => {
               if (selectedPartnerId) {
-                handleViewDetails(selectedPartnerId);
-                handleMenuClose();
+                handleViewDetails(selectedPartnerId)
+                handleMenuClose()
               }
             }}
           >
@@ -378,8 +372,8 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners }) => {
           <MenuItem
             onClick={() => {
               if (selectedPartnerId) {
-                handleEditPartner(selectedPartnerId);
-                handleMenuClose();
+                handleEditPartner(selectedPartnerId)
+                handleMenuClose()
               }
             }}
           >
@@ -392,7 +386,7 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners }) => {
           <MenuItem
             onClick={() => {
               if (selectedPartnerId) {
-                handleChangeRequests(selectedPartnerId);
+                handleChangeRequests(selectedPartnerId)
               }
             }}
           >
@@ -405,11 +399,7 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners }) => {
       </TableContainer>
 
       {/* Existing Dialogs */}
-      <PartnerDetailsDialog
-        open={detailsDialogOpen}
-        onClose={handleCloseDetailsDialog}
-        partner={partnerDetails}
-      />
+      <PartnerDetailsDialog open={detailsDialogOpen} onClose={handleCloseDetailsDialog} partner={partnerDetails} />
 
       <PartnerEditDialog
         open={editDialogOpen}
@@ -425,7 +415,7 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners }) => {
         partner={selectedPartner}
       />
     </>
-  );
-};
+  )
+}
 
-export default PartnersTable;
+export default PartnersTable

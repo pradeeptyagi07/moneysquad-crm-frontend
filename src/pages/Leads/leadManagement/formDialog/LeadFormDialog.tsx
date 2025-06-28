@@ -164,12 +164,23 @@ const LeadFormDialog: React.FC<LeadFormDialogProps> = ({ open, onClose, mode, ro
         onSuccess()
       }, 1200)
     } catch (err: any) {
-      // Check if it's duplicate mode and show specific error message
-      if (mode === "duplicate") {
-        setError("Doesn't Match the Criteria To Duplicate")
-      } else {
-        setError(err.message || "An unexpected error occurred.")
+      // Extract the actual error message from the API response
+      let errorMessage = "An unexpected error occurred."
+
+      if (err?.message) {
+        errorMessage = err.message
+      } else if (typeof err === "string") {
+        errorMessage = err
       }
+
+      // Check for specific duplicate error message
+      if (errorMessage.includes("A lead with the same lender type, email or mobile already exists")) {
+        errorMessage = "A lead with the same lender type, email or mobile already exists"
+      } else if (mode === "duplicate" && errorMessage.includes("Doesn't Match the Criteria")) {
+        errorMessage = "Doesn't Match the Criteria To Duplicate"
+      }
+
+      setError(errorMessage)
     } finally {
       setIsSubmitting(false)
     }
