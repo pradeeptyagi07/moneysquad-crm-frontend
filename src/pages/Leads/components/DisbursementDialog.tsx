@@ -26,7 +26,7 @@ import {
   editDisbursement,
   fetchAllLeads,
   Lead,
-} from "../../../store/slices/leadSlice";
+} from "../../../store/slices/leadSLice";
 
 interface DisbursementData {
   loanAmount: number;
