@@ -40,6 +40,7 @@ import {
   selectUserData,
   isManagerUser,
   isPartnerUser,
+  isAssociateUser,
 } from "../../store/slices/userDataSlice";
 import { useAppSelector } from "../../hooks/useAppSelector";
 
@@ -77,11 +78,14 @@ const DashboardLayout = ({
   }, [dispatch]);
 
   // Determine display ID based on user type
+  // Determine display ID based on user type
   let displayId: string | null = null;
   if (isManagerUser(userData)) {
     displayId = userData.managerId;
   } else if (isPartnerUser(userData)) {
     displayId = userData.partnerId;
+  } else if (isAssociateUser(userData)) {
+    displayId = userData.associateDisplayId;
   }
 
   // Get user name from props or auth fallback
@@ -89,7 +93,9 @@ const DashboardLayout = ({
   let userName = propUserName || "";
   if (!userName && auth.user) {
     if (auth.user.firstName || auth.user.lastName) {
-      userName = `${auth.user.firstName || ""} ${auth.user.lastName || ""}`.trim();
+      userName = `${auth.user.firstName || ""} ${
+        auth.user.lastName || ""
+      }`.trim();
     } else if ((auth as any).user?.basicInfo?.fullName) {
       userName = (auth as any).user.basicInfo.fullName;
     }
@@ -154,7 +160,8 @@ const DashboardLayout = ({
           right: 0,
           width: "1px",
           height: "100%",
-          background: "linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.05) 100%)",
+          background:
+            "linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.05) 100%)",
         },
       }}
     >
@@ -175,7 +182,8 @@ const DashboardLayout = ({
             transform: "translateX(-50%)",
             width: "80%",
             height: "1px",
-            background: "linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.1) 50%, transparent 100%)",
+            background:
+              "linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.1) 50%, transparent 100%)",
           },
         }}
       >
@@ -198,7 +206,9 @@ const DashboardLayout = ({
       </Toolbar>
 
       {/* Navigation */}
-      <List sx={{ flexGrow: 1, px: 2, py: 1, "& .MuiListItem-root": { mb: 0.5 } }}>
+      <List
+        sx={{ flexGrow: 1, px: 2, py: 1, "& .MuiListItem-root": { mb: 0.5 } }}
+      >
         {menuItems.map((item) => {
           const active = isActive(item.path);
           return (
@@ -215,7 +225,9 @@ const DashboardLayout = ({
                   transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                   position: "relative",
                   overflow: "hidden",
-                  backgroundColor: active ? "rgba(15, 118, 110, 0.08)" : "transparent",
+                  backgroundColor: active
+                    ? "rgba(15, 118, 110, 0.08)"
+                    : "transparent",
                   "&::before": active
                     ? {
                         content: '""',
@@ -264,7 +276,23 @@ const DashboardLayout = ({
                   </Box>
                 </ListItemIcon>
                 <ListItemText primary={item.text} />
-                {active && <Box sx={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: "#0f766e", ml: 1, animation: "pulse 2s infinite", "@keyframes pulse": { "0%": { opacity: 1 }, "50%": { opacity: 0.5 }, "100%": { opacity: 1 } } }} />}
+                {active && (
+                  <Box
+                    sx={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: "50%",
+                      backgroundColor: "#0f766e",
+                      ml: 1,
+                      animation: "pulse 2s infinite",
+                      "@keyframes pulse": {
+                        "0%": { opacity: 1 },
+                        "50%": { opacity: 0.5 },
+                        "100%": { opacity: 1 },
+                      },
+                    }}
+                  />
+                )}
               </ListItemButton>
             </ListItem>
           );
@@ -290,12 +318,22 @@ const DashboardLayout = ({
             left: 0,
             right: 0,
             bottom: 0,
-            background: "linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)",
+            background:
+              "linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)",
             borderRadius: 2,
           },
         }}
       >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1.5, position: "relative", zIndex: 1 }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1.5,
+            mb: 1.5,
+            position: "relative",
+            zIndex: 1,
+          }}
+        >
           <Avatar
             sx={{
               bgcolor: "rgba(255, 255, 255, 0.2)",
@@ -310,14 +348,42 @@ const DashboardLayout = ({
             {avatarText}
           </Avatar>
           <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography variant="body2" sx={{ fontWeight: 600, color: "white", fontSize: "0.875rem", lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <Typography
+              variant="body2"
+              sx={{
+                fontWeight: 600,
+                color: "white",
+                fontSize: "0.875rem",
+                lineHeight: 1.2,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
               {userName || "User"}
             </Typography>
-            <Typography variant="caption" sx={{ color: "rgba(255, 255, 255, 0.8)", fontSize: "0.75rem", lineHeight: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "rgba(255, 255, 255, 0.8)",
+                fontSize: "0.75rem",
+                lineHeight: 1,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
               {userRole || "Role"}
             </Typography>
             {displayId && (
-              <Typography variant="caption" sx={{ color: "rgba(255, 255, 255, 0.8)", fontSize: "0.75rem", lineHeight: 1 }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: "rgba(255, 255, 255, 0.8)",
+                  fontSize: "0.75rem",
+                  lineHeight: 1,
+                }}
+              >
                 ID: {displayId}
               </Typography>
             )}
@@ -380,22 +446,38 @@ const DashboardLayout = ({
       >
         <MenuIcon />
       </IconButton>
-      <Box component="nav" sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }} aria-label="navigation menu">
+      <Box
+        component="nav"
+        sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
+        aria-label="navigation menu"
+      >
         <Drawer
           variant="temporary"
           open={mobileOpen}
           onClose={handleDrawerToggle}
           ModalProps={{ keepMounted: true }}
-          sx={{ display: { xs: "block", sm: "none" },
-            "& .MuiDrawer-paper": { boxSizing: "border-box", width: drawerWidth, border: "none", boxShadow: "0 20px 40px rgba(0, 0, 0, 0.1)" },
+          sx={{
+            display: { xs: "block", sm: "none" },
+            "& .MuiDrawer-paper": {
+              boxSizing: "border-box",
+              width: drawerWidth,
+              border: "none",
+              boxShadow: "0 20px 40px rgba(0, 0, 0, 0.1)",
+            },
           }}
         >
           {drawer}
         </Drawer>
         <Drawer
           variant="permanent"
-          sx={{ display: { xs: "none", sm: "block" },
-            "& .MuiDrawer-paper": { boxSizing: "border-box", width: drawerWidth, border: "none", boxShadow: "0 0 40px rgba(0, 0, 0, 0.08)" },
+          sx={{
+            display: { xs: "none", sm: "block" },
+            "& .MuiDrawer-paper": {
+              boxSizing: "border-box",
+              width: drawerWidth,
+              border: "none",
+              boxShadow: "0 0 40px rgba(0, 0, 0, 0.08)",
+            },
           }}
           open
         >

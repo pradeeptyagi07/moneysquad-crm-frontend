@@ -1,4 +1,3 @@
-// src/pages/Leads/components/LeadTimelineDialog.tsx
 "use client"
 
 import type React from "react"
@@ -46,18 +45,16 @@ const LeadTimelineDialog: React.FC<LeadTimelineDialogProps> = ({ open, onClose, 
   const theme = useTheme()
   const dispatch = useAppDispatch()
   const { currentTimeline: timeline, loading } = useAppSelector((s) => s.leads)
+useEffect(() => {
+  if (open && lead?.leadId) {
+    dispatch(fetchLeadTimeline(lead.leadId))
+  }
+  return () => {
+    dispatch(clearTimeline())
+  }
+}, [open, lead?.leadId, dispatch])
 
-  // Fetch timeline on open; clear on close
-  useEffect(() => {
-    if (open && lead?.leadId) {
-      dispatch(fetchLeadTimeline(lead.leadId))
-    }
-    return () => {
-      dispatch(clearTimeline())
-    }
-  }, [open, lead?.leadId, dispatch]) // Fixed: use lead?.leadId instead of lead
 
-  // Flatten & sort newest→oldest
   const events: TimelineEvent[] = timeline ? (Object.values(timeline).filter(Boolean) as TimelineEvent[]) : []
   const sortedEvents = events.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
@@ -122,12 +119,14 @@ const LeadTimelineDialog: React.FC<LeadTimelineDialogProps> = ({ open, onClose, 
                   </Typography>
 
                   {/* Message */}
-                  <Typography variant="body2" sx={{ mt: 1 }}>
-                    <strong>Message:</strong> {event.message}
-                  </Typography>
+                  {event.message && (
+                    <Typography variant="body2" sx={{ mt: 1 }}>
+                      <strong>Message:</strong> {event.message}
+                    </Typography>
+                  )}
 
-                  {/* Rejection details (only when rejected) */}
-                  {event.status.toLowerCase() === "rejected" && (
+                  {/* Rejected-specific content */}
+                  {event.status.toLowerCase() === "rejected" ? (
                     <Box sx={{ mt: 1 }}>
                       {event.rejectReason && (
                         <Typography variant="body2" color="error">
@@ -136,34 +135,39 @@ const LeadTimelineDialog: React.FC<LeadTimelineDialogProps> = ({ open, onClose, 
                       )}
                       {event.rejectComment && (
                         <Typography variant="body2" sx={{ mt: 1 }}>
-                          <strong>Comment:</strong> {event.rejectComment}
+                          <strong>Reject Comment:</strong> {event.rejectComment}
                         </Typography>
                       )}
                       {event.rejectImage && (
-                        <Box
-                          component="img"
-                          src={event.rejectImage}
-                          alt="Rejection Proof"
-                          sx={{
-                            width: "100%",
-                            maxWidth: 300,
-                            mt: 1,
-                            borderRadius: 1,
-                          }}
-                        />
+                        <Box sx={{ mt: 1 }}>
+                          <a href={event.rejectImage} target="_blank" rel="noopener noreferrer">
+                            <img
+                              src={event.rejectImage}
+                              alt="Rejection Proof"
+                              style={{
+                                width: "100%",
+                                maxWidth: 300,
+                                borderRadius: 6,
+                                cursor: "pointer",
+                              }}
+                            />
+                          </a>
+                        </Box>
                       )}
                     </Box>
+                  ) : (
+                    event.rejectComment && (
+                      <Typography variant="body2" sx={{ mt: 1 }}>
+                        <strong>Comment:</strong> {event.rejectComment}
+                      </Typography>
+                    )
                   )}
 
-                  {/* Close details (only when closed) */}
-                  {event.status.toLowerCase() === "closed" && (
-                    <Box sx={{ mt: 1 }}>
-                      {event.closeReason && (
-                        <Typography variant="body2" color="warning.main">
-                          <strong>Close Reason:</strong> {event.closeReason}
-                        </Typography>
-                      )}
-                    </Box>
+                  {/* Closed-specific details */}
+                  {event.status.toLowerCase() === "closed" && event.closeReason && (
+                    <Typography variant="body2" color="warning.main" sx={{ mt: 1 }}>
+                      <strong>Close Reason:</strong> {event.closeReason}
+                    </Typography>
                   )}
 
                   {/* Timestamp */}
