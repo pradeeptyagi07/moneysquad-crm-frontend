@@ -5,7 +5,7 @@ const axiosInstance = axios.create({
   baseURL: "https://api.moneysquad.in/api/",
   // baseURL: "https://reservoir-basket-webcast-ap.trycloudflare.com/api",
 
-  timeout: 10000,
+  timeout: 30000,
 });
 
 axiosInstance.interceptors.request.use(
