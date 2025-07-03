@@ -47,6 +47,14 @@ const Transition = React.forwardRef(function Transition(
   return <Slide direction="up" ref={ref} {...props} />;
 });
 
+const formatDate = (dateStr: string) => {
+  const d = new Date(dateStr);
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
+};
+
 // Summary section with dynamic processing fee display
 const SummarySection: React.FC<{
   rate: number;
@@ -54,8 +62,7 @@ const SummarySection: React.FC<{
   valid?: string;
   feeType: "rupee" | "percentage";
 }> = ({ rate, fee, valid, feeType }) => {
-  const feeDisplay =
-    feeType === "percentage" ? `${fee}%` : `₹${fee}`;
+  const feeDisplay = feeType === "percentage" ? `${fee}%` : `₹${fee}`;
 
   return (
     <Card
@@ -68,7 +75,11 @@ const SummarySection: React.FC<{
       }}
     >
       <CardContent>
-        <Grid container justifyContent="space-around" sx={{ textAlign: "center" }}>
+        <Grid
+          container
+          justifyContent="space-around"
+          sx={{ textAlign: "center" }}
+        >
           <Grid item xs={4}>
             <Typography variant="subtitle2" color="text.secondary">
               Interest Rate
@@ -239,7 +250,7 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
       }-${selectedOffer.interestRate}-${selectedOffer._id}`;
 
       const validTill = selectedOffer?.offerValidity
-        ? new Date(selectedOffer.offerValidity).toLocaleDateString()
+        ? formatDate(selectedOffer.offerValidity)
         : undefined;
 
       let richText = `🏦 ${selectedOffer.bankName} - ${
@@ -254,16 +265,11 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
 
 ${selectedOffer.offerHeadline || "Great loan offer with competitive rates!"}`;
 
-      if (
-        selectedOffer.keyFeatures &&
-        selectedOffer.keyFeatures.length > 0
-      ) {
+      if (selectedOffer.keyFeatures && selectedOffer.keyFeatures.length > 0) {
         richText += `
 
 ✨ Key Features:
-${selectedOffer.keyFeatures
-  .map((feature) => `• ${feature}`)
-  .join("\n")}`;
+${selectedOffer.keyFeatures.map((feature) => `• ${feature}`).join("\n")}`;
       }
 
       await navigator.clipboard.writeText(richText);
@@ -289,7 +295,7 @@ ${selectedOffer.keyFeatures
   }, [open, offerId, dispatch]);
 
   const validTill = selectedOffer?.offerValidity
-    ? new Date(selectedOffer.offerValidity).toLocaleDateString()
+    ? formatDate(selectedOffer.offerValidity)
     : undefined;
 
   return (
@@ -316,10 +322,7 @@ ${selectedOffer.keyFeatures
             </Typography>
             <Box>
               {userRole === "admin" && selectedOffer && (
-                <IconButton
-                  onClick={() => setOpenEdit(true)}
-                  sx={{ mr: 1 }}
-                >
+                <IconButton onClick={() => setOpenEdit(true)} sx={{ mr: 1 }}>
                   <Edit />
                 </IconButton>
               )}
@@ -332,9 +335,7 @@ ${selectedOffer.keyFeatures
 
         <DialogContent sx={{ p: 0 }}>
           {detailsLoading ? (
-            <Box
-              sx={{ display: "flex", justifyContent: "center", py: 6 }}
-            >
+            <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
               <CircularProgress />
             </Box>
           ) : error ? (
@@ -355,9 +356,7 @@ ${selectedOffer.keyFeatures
                   overflow: "hidden",
                   cursor: "zoom-in",
                 }}
-                onClick={() =>
-                  window.open(selectedOffer.bankImage, "_blank")
-                }
+                onClick={() => window.open(selectedOffer.bankImage, "_blank")}
               >
                 <Box
                   component="img"
@@ -399,9 +398,7 @@ ${selectedOffer.keyFeatures
                   fee={selectedOffer.processingFee}
                   valid={validTill}
                   feeType={
-                    selectedOffer.processingFeeType as
-                      | "rupee"
-                      | "percentage"
+                    selectedOffer.processingFeeType as "rupee" | "percentage"
                   }
                 />
                 {selectedOffer.keyFeatures?.length > 0 && (
@@ -416,9 +413,7 @@ ${selectedOffer.keyFeatures
         </DialogContent>
 
         {selectedOffer && (
-          <DialogActions
-            sx={{ px: 3, py: 2, justifyContent: "space-between" }}
-          >
+          <DialogActions sx={{ px: 3, py: 2, justifyContent: "space-between" }}>
             <Button
               startIcon={
                 copyState === "copying" ? (

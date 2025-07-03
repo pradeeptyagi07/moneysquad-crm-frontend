@@ -30,7 +30,6 @@ const AssociateLayout = () => {
           <Outlet />
         </Box>
       </DashboardLayout>
-      <Footer />
     </Box>
   )
 }

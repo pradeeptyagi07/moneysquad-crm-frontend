@@ -28,7 +28,6 @@ const PartnerLayout = () => {
           <Outlet />
         </Box>
       </DashboardLayout>
-      <Footer />
     </Box>
   )
 }

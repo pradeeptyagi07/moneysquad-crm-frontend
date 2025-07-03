@@ -94,7 +94,7 @@ const AdminSettings: React.FC = () => {
           }}
         >
           <Tab icon={<Person />} label="Profile" iconPosition="start" {...a11yProps(0)} sx={{ px: 3 }} />
-          <Tab icon={<Security />} label="Security" iconPosition="start" {...a11yProps(1)} sx={{ px: 3 }} />
+          <Tab icon={<Security />} label="Reset Password" iconPosition="start" {...a11yProps(1)} sx={{ px: 3 }} />
           <Tab
             icon={<AccountBalance />}
             label="Lender & Loan Types"

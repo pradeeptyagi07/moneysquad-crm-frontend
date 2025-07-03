@@ -3,9 +3,10 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
+  useTheme,
+  useMediaQuery,
   Box,
   CssBaseline,
-  Divider,
   Drawer,
   IconButton,
   List,
@@ -17,21 +18,24 @@ import {
   Typography,
   Avatar,
   Button,
+  Tooltip,
+  Collapse,
 } from "@mui/material";
+import MenuIcon from "@mui/icons-material/Menu";
 import {
-  Menu as MenuIcon,
-  Dashboard,
-  People,
-  LocalOffer,
-  AttachMoney,
-  Settings,
-  Groups,
-  SupervisorAccount,
-  Logout,
-  HelpOutline,
-  MenuBook,
-  LibraryBooks,
-  GroupWork,
+  Dashboard as DashboardIcon,
+  People as PeopleIcon,
+  LocalOffer as LocalOfferIcon,
+  AttachMoney as AttachMoneyIcon,
+  Settings as SettingsIcon,
+  Groups as GroupsIcon,
+  SupervisorAccount as SupervisorAccountIcon,
+  HelpOutline as HelpOutlineIcon,
+  LibraryBooks as LibraryBooksIcon,
+  GroupWork as GroupWorkIcon,
+  Logout as LogoutIcon,
+  ExpandLess,
+  ExpandMore,
 } from "@mui/icons-material";
 import { useAuth } from "../../hooks/useAuth";
 import { useAppDispatch } from "../../hooks/useAppDispatch";
@@ -43,107 +47,267 @@ import {
   isAssociateUser,
 } from "../../store/slices/userDataSlice";
 import { useAppSelector } from "../../hooks/useAppSelector";
+import Footer from "./Footer";
 
-const drawerWidth = 260; // Slightly wider for premium feel
+// Responsive drawer widths - optimized for better space utilization
+const drawerWidths = {
+  xs: 240,
+  sm: 240,
+  md: 240,
+  lg: 260,
+  xl: 260,
+};
 
-interface DashboardMenuItem {
+export interface DashboardMenuItem {
   text: string;
   icon: string;
   path: string;
+  children?: DashboardMenuItem[];
 }
 
-interface DashboardLayoutProps {
+export interface DashboardLayoutProps {
   children: React.ReactNode;
   menuItems: DashboardMenuItem[];
   userRole?: string;
   userName?: string;
 }
 
-const DashboardLayout = ({
+const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   children,
   menuItems,
   userRole: propUserRole,
   userName: propUserName,
-}: DashboardLayoutProps) => {
+}) => {
+  const theme = useTheme();
+  const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
+  const isLgUp = useMediaQuery(theme.breakpoints.up("lg"));
+  const isXlUp = useMediaQuery(theme.breakpoints.up("xl"));
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const navigate = useNavigate();
   const location = useLocation();
   const { logout } = useAuth();
   const dispatch = useAppDispatch();
 
-  // Fetch full user data (to get display IDs)
+  // Get responsive drawer width
+  const getCurrentDrawerWidth = () => {
+    if (isXlUp) return drawerWidths.xl;
+    if (isLgUp) return drawerWidths.lg;
+    if (isMdUp) return drawerWidths.md;
+    return drawerWidths.sm;
+  };
+
+  const drawerWidth = getCurrentDrawerWidth();
+
+  // fetch full user data
   const userData = useAppSelector(selectUserData);
   useEffect(() => {
     dispatch(fetchUserData());
   }, [dispatch]);
 
-  // Determine display ID based on user type
-  // Determine display ID based on user type
+  // determine display ID
   let displayId: string | null = null;
-  if (isManagerUser(userData)) {
-    displayId = userData.managerId;
-  } else if (isPartnerUser(userData)) {
-    displayId = userData.partnerId;
-  } else if (isAssociateUser(userData)) {
-    displayId = userData.associateDisplayId;
+  if (isManagerUser(userData)) displayId = userData.managerId;
+  else if (isPartnerUser(userData)) displayId = userData.partnerId;
+  else if (isAssociateUser(userData)) displayId = userData.associateDisplayId;
+
+  // resolve name & role
+  const auth = useAppSelector((s) => (s as any).auth);
+  let resolvedName = propUserName || "";
+  if (!resolvedName && auth.user) {
+    const { firstName, lastName, basicInfo } = auth.user;
+    resolvedName =
+      [firstName, lastName].filter(Boolean).join(" ") ||
+      basicInfo?.fullName ||
+      "";
   }
+  const resolvedRole = propUserRole || (auth as any).userRole || "";
 
-  // Get user name from props or auth fallback
-  const auth = useAppSelector((state) => state.auth);
-  let userName = propUserName || "";
-  if (!userName && auth.user) {
-    if (auth.user.firstName || auth.user.lastName) {
-      userName = `${auth.user.firstName || ""} ${
-        auth.user.lastName || ""
-      }`.trim();
-    } else if ((auth as any).user?.basicInfo?.fullName) {
-      userName = (auth as any).user.basicInfo.fullName;
-    }
-  }
-
-  // Determine user role string
-  const userRole = propUserRole || auth.userRole || "";
-
-  const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
-  };
-
+  const handleDrawerToggle = () => setMobileOpen((open) => !open);
   const handleLogout = () => {
     logout();
     navigate("/");
   };
 
+  const handleExpandClick = (itemText: string) => {
+    setExpandedItems(prev => 
+      prev.includes(itemText) 
+        ? prev.filter(item => item !== itemText)
+        : [...prev, itemText]
+    );
+  };
+
   const getIcon = (iconName: string) => {
     switch (iconName) {
       case "Dashboard":
-        return <Dashboard />;
+        return <DashboardIcon />;
       case "People":
-        return <People />;
+        return <PeopleIcon />;
       case "LocalOffer":
-        return <LocalOffer />;
+        return <LocalOfferIcon />;
       case "AttachMoney":
-        return <AttachMoney />;
+        return <AttachMoneyIcon />;
       case "Settings":
-        return <Settings />;
+        return <SettingsIcon />;
       case "Groups":
-        return <Groups />;
+        return <GroupsIcon />;
       case "SupervisorAccount":
-        return <SupervisorAccount />;
+        return <SupervisorAccountIcon />;
       case "Help":
-        return <HelpOutline />;
+        return <HelpOutlineIcon />;
       case "TrainingResources":
-        return <LibraryBooks />;
+        return <LibraryBooksIcon />;
       case "PartnerManagement":
-        return <GroupWork />;
+        return <GroupWorkIcon />;
       default:
-        return <Dashboard />;
+        return <DashboardIcon />;
     }
   };
 
   const isActive = (path: string) => location.pathname === path;
+  const avatarText = resolvedName
+    ? resolvedName.charAt(0).toUpperCase()
+    : "U";
 
-  const avatarText =
-    userName && userName.length > 0 ? userName.charAt(0).toUpperCase() : "U";
+  // Truncate text with ellipsis for responsive display
+  const truncateText = (text: string, maxLength: number) => {
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + "...";
+  };
+
+  // Responsive text lengths - optimized for smaller drawer
+  const getMaxTextLength = () => {
+    if (isXlUp) return 22;
+    if (isLgUp) return 20;
+    if (isMdUp) return 18;
+    return 22; // Mobile has more space when drawer is full width
+  };
+
+  const renderMenuItem = (item: DashboardMenuItem, level: number = 0) => {
+    const active = isActive(item.path);
+    const hasChildren = item.children && item.children.length > 0;
+    const isExpanded = expandedItems.includes(item.text);
+    const maxTextLength = getMaxTextLength();
+    const displayText = truncateText(item.text, maxTextLength);
+    const shouldShowTooltip = item.text.length > maxTextLength;
+
+    return (
+      <React.Fragment key={item.text}>
+        <ListItem disablePadding>
+          <Tooltip 
+            title={shouldShowTooltip ? item.text : ""} 
+            placement="right"
+            arrow
+          >
+            <ListItemButton
+              onClick={() => {
+                if (hasChildren) {
+                  handleExpandClick(item.text);
+                } else {
+                  navigate(item.path);
+                  if (!isMdUp) setMobileOpen(false);
+                }
+              }}
+              sx={{
+                borderRadius: 2,
+                mb: 0.5,
+                mx: 0,
+                ml: level * 2,
+                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                position: "relative",
+                backgroundColor: active
+                  ? "rgba(15,118,110,0.08)"
+                  : "transparent",
+                minHeight: 48,
+                "&:hover": {
+                  backgroundColor: active
+                    ? "rgba(15,118,110,0.12)"
+                    : "rgba(15,118,110,0.04)",
+                  transform: "translateX(4px)",
+                  boxShadow: active
+                    ? "0 4px 20px rgba(15,118,110,0.15)"
+                    : "0 2px 10px rgba(0,0,0,0.08)",
+                },
+                "&:active": {
+                  transform: "translateX(2px)",
+                },
+              }}
+            >
+              <ListItemIcon
+                sx={{
+                  minWidth: { xs: 36, sm: 40 },
+                  color: active ? "#0f766e" : "rgba(0,0,0,0.7)",
+                  transition: "all 0.2s",
+                }}
+              >
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    transform: active ? "scale(1.1)" : "scale(1)",
+                    transition: "transform 0.3s",
+                  }}
+                >
+                  {getIcon(item.icon)}
+                </Box>
+              </ListItemIcon>
+              <ListItemText
+                primary={displayText}
+                sx={{
+                  "& .MuiListItemText-primary": {
+                    fontWeight: active ? 600 : 500,
+                    color: active ? "#0f766e" : "rgba(0,0,0,0.87)",
+                    fontSize: { xs: "0.85rem", sm: "0.875rem" },
+                    lineHeight: 1.2,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  },
+                }}
+              />
+              {hasChildren && (
+                <IconButton
+                  size="small"
+                  sx={{ 
+                    color: active ? "#0f766e" : "rgba(0,0,0,0.54)",
+                    minWidth: "auto",
+                    p: 0,
+                  }}
+                >
+                  {isExpanded ? <ExpandLess /> : <ExpandMore />}
+                </IconButton>
+              )}
+              {active && (
+                <Box
+                  sx={{
+                    width: { xs: 4, sm: 5, lg: 6 },
+                    height: { xs: 4, sm: 5, lg: 6 },
+                    borderRadius: "50%",
+                    backgroundColor: "#0f766e",
+                    ml: 1,
+                    animation: "pulse 2s infinite",
+                    "@keyframes pulse": {
+                      "0%": { opacity: 1 },
+                      "50%": { opacity: 0.5 },
+                      "100%": { opacity: 1 },
+                    },
+                  }}
+                />
+              )}
+            </ListItemButton>
+          </Tooltip>
+        </ListItem>
+        {hasChildren && (
+          <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+            <List component="div" disablePadding>
+              {item.children!.map((child) => renderMenuItem(child, level + 1))}
+            </List>
+          </Collapse>
+        )}
+      </React.Fragment>
+    );
+  };
 
   const drawer = (
     <Box
@@ -165,14 +329,15 @@ const DashboardLayout = ({
         },
       }}
     >
-      {/* Logo Section */}
-      <Toolbar
+      {/* Compact Logo */}
+      <Box
         sx={{
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          py: 3,
+          py: { xs: 1.5, sm: 2 },
           px: 2,
+          minHeight: { xs: 56, sm: 60 },
           position: "relative",
           "&::after": {
             content: '""',
@@ -180,10 +345,9 @@ const DashboardLayout = ({
             bottom: 0,
             left: "50%",
             transform: "translateX(-50%)",
-            width: "80%",
+            width: "60%",
             height: "1px",
-            background:
-              "linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.1) 50%, transparent 100%)",
+            background: "rgba(0,0,0,0.08)",
           },
         }}
       >
@@ -192,311 +356,257 @@ const DashboardLayout = ({
           src="/images/MoneySquad-logo.png"
           alt="MoneySquad Logo"
           sx={{
-            height: { xs: 35, sm: 45, md: 50 },
+            height: { xs: 28, sm: 32, md: 36 },
             width: "auto",
+            maxWidth: "85%",
             objectFit: "contain",
-            filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.1))",
-            transition: "all 0.3s ease",
+            filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.1))",
+            transition: "all 0.2s ease",
             "&:hover": {
               transform: "scale(1.02)",
-              filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.15))",
             },
           }}
         />
-      </Toolbar>
+      </Box>
 
-      {/* Navigation */}
+      {/* Navigation List */}
       <List
-        sx={{ flexGrow: 1, px: 2, py: 1, "& .MuiListItem-root": { mb: 0.5 } }}
-      >
-        {menuItems.map((item) => {
-          const active = isActive(item.path);
-          return (
-            <ListItem key={item.text} disablePadding>
-              <ListItemButton
-                onClick={() => {
-                  navigate(item.path);
-                  setMobileOpen(false);
-                }}
-                sx={{
-                  borderRadius: 2,
-                  mb: 0.5,
-                  mx: 0,
-                  transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                  position: "relative",
-                  overflow: "hidden",
-                  backgroundColor: active
-                    ? "rgba(15, 118, 110, 0.08)"
-                    : "transparent",
-                  "&::before": active
-                    ? {
-                        content: '""',
-                        position: "absolute",
-                        left: 0,
-                        top: 0,
-                        bottom: 0,
-                        width: "3px",
-                        backgroundColor: "#0f766e",
-                        borderRadius: "0 2px 2px 0",
-                      }
-                    : {},
-                  "&:hover": {
-                    backgroundColor: active
-                      ? "rgba(15, 118, 110, 0.12)"
-                      : "rgba(15, 118, 110, 0.04)",
-                    transform: "translateX(2px)",
-                    boxShadow: active
-                      ? "0 4px 20px rgba(15, 118, 110, 0.15)"
-                      : "0 2px 10px rgba(0, 0, 0, 0.08)",
-                  },
-                  "& .MuiListItemIcon-root": {
-                    minWidth: 44,
-                    color: active ? "#0f766e" : "rgba(0, 0, 0, 0.7)",
-                    transition: "all 0.3s ease",
-                  },
-                  "& .MuiListItemText-primary": {
-                    fontWeight: active ? 600 : 500,
-                    color: active ? "#0f766e" : "rgba(0, 0, 0, 0.87)",
-                    fontSize: "0.925rem",
-                    transition: "all 0.3s ease",
-                  },
-                }}
-              >
-                <ListItemIcon>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      transition: "transform 0.3s ease",
-                      transform: active ? "scale(1.1)" : "scale(1)",
-                    }}
-                  >
-                    {getIcon(item.icon)}
-                  </Box>
-                </ListItemIcon>
-                <ListItemText primary={item.text} />
-                {active && (
-                  <Box
-                    sx={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: "50%",
-                      backgroundColor: "#0f766e",
-                      ml: 1,
-                      animation: "pulse 2s infinite",
-                      "@keyframes pulse": {
-                        "0%": { opacity: 1 },
-                        "50%": { opacity: 0.5 },
-                        "100%": { opacity: 1 },
-                      },
-                    }}
-                  />
-                )}
-              </ListItemButton>
-            </ListItem>
-          );
-        })}
-      </List>
-
-      {/* Profile Section */}
-      <Box
         sx={{
-          p: 1.5,
-          m: 1.5,
-          mt: 0,
-          borderRadius: 2,
-          background: "linear-gradient(135deg, #0f766e 0%, #134e4a 100%)",
-          color: "white",
+          flexGrow: 1,
+          px: { xs: 1.5, sm: 2 },
+          py: 1,
+          overflowY: "auto",
+          overflowX: "hidden",
           position: "relative",
-          overflow: "hidden",
-          boxShadow: "0 4px 16px rgba(15, 118, 110, 0.2)",
-          "&::before": {
+          "&::-webkit-scrollbar": {
+            width: "6px",
+          },
+          "&::-webkit-scrollbar-track": {
+            background: "transparent",
+          },
+          "&::-webkit-scrollbar-thumb": {
+            backgroundColor: "rgba(0,0,0,0.2)",
+            borderRadius: "3px",
+            "&:hover": {
+              backgroundColor: "rgba(0,0,0,0.3)",
+            },
+          },
+          "&::after": {
             content: '""',
             position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
             bottom: 0,
-            background:
-              "linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)",
-            borderRadius: 2,
+            left: 0,
+            width: "100%",
+            height: 24,
+            background: "linear-gradient(rgba(248,250,252,0), #f8fafc 90%)",
+            pointerEvents: "none",
           },
         }}
       >
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 1.5,
-            mb: 1.5,
-            position: "relative",
-            zIndex: 1,
-          }}
-        >
+        {menuItems.map((item) => renderMenuItem(item))}
+      </List>
+
+      {/* Compact Professional Profile Section */}
+      <Box
+        sx={{
+          p: { xs: 1.2, sm: 1.5 },
+          m: { xs: 0.8, sm: 1 },
+          borderRadius: 2,
+          background: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
+          border: "1px solid rgba(0,0,0,0.08)",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+          position: "relative",
+        }}
+      >
+        <Box sx={{ 
+          display: "flex", 
+          alignItems: "center", 
+          mb: { xs: 1, sm: 1.2 },
+        }}>
           <Avatar
             sx={{
-              bgcolor: "rgba(255, 255, 255, 0.2)",
+              bgcolor: "#0f766e",
               color: "white",
-              width: 36,
-              height: 36,
-              fontSize: "1rem",
+              width: { xs: 32, sm: 36 },
+              height: { xs: 32, sm: 36 },
+              fontSize: { xs: "0.875rem", sm: "1rem" },
               fontWeight: 600,
-              border: "2px solid rgba(255, 255, 255, 0.3)",
+              boxShadow: "0 2px 8px rgba(15,118,110,0.2)",
+              border: "2px solid white",
             }}
           >
             {avatarText}
           </Avatar>
-          <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography
-              variant="body2"
-              sx={{
-                fontWeight: 600,
-                color: "white",
-                fontSize: "0.875rem",
-                lineHeight: 1.2,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {userName || "User"}
-            </Typography>
-            <Typography
-              variant="caption"
-              sx={{
-                color: "rgba(255, 255, 255, 0.8)",
-                fontSize: "0.75rem",
-                lineHeight: 1,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {userRole || "Role"}
-            </Typography>
-            {displayId && (
+          <Box sx={{ ml: 1.5, minWidth: 0, flex: 1 }}>
+            <Tooltip title={resolvedName || "User"} placement="top">
               <Typography
-                variant="caption"
+                variant="subtitle2"
                 sx={{
-                  color: "rgba(255, 255, 255, 0.8)",
-                  fontSize: "0.75rem",
-                  lineHeight: 1,
+                  fontWeight: 600,
+                  fontSize: { xs: "0.825rem", sm: "0.875rem" },
+                  color: "#1e293b",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  lineHeight: 1.2,
                 }}
               >
-                ID: {displayId}
+                {truncateText(resolvedName || "User", 16)}
               </Typography>
-            )}
+            </Tooltip>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.25 }}>
+              <Typography
+                variant="caption"
+                sx={{ 
+                  fontSize: { xs: "0.7rem", sm: "0.75rem" }, 
+                  color: "#64748b",
+                  fontWeight: 500,
+                }}
+              >
+                {truncateText(resolvedRole || "Role", 10)}
+              </Typography>
+              {displayId && (
+                <>
+                  <Box 
+                    sx={{ 
+                      width: 2, 
+                      height: 2, 
+                      borderRadius: "50%", 
+                      backgroundColor: "#cbd5e1" 
+                    }} 
+                  />
+                  <Typography
+                    variant="caption"
+                    sx={{ 
+                      fontSize: { xs: "0.7rem", sm: "0.75rem" }, 
+                      color: "#475569",
+                      fontFamily: "monospace",
+                      fontWeight: 500,
+                    }}
+                  >
+                    {displayId}
+                  </Typography>
+                </>
+              )}
+            </Box>
           </Box>
         </Box>
         <Button
           variant="outlined"
-          startIcon={<Logout fontSize="small" />}
+          startIcon={<LogoutIcon sx={{ fontSize: "16px !important" }} />}
           onClick={handleLogout}
           fullWidth
           size="small"
           sx={{
-            position: "relative",
-            zIndex: 1,
-            borderColor: "rgba(255, 255, 255, 0.3)",
-            color: "white",
-            fontWeight: 500,
+            borderColor: "#cbd5e1",
+            color: "#475569",
             textTransform: "none",
-            borderRadius: 1.5,
-            py: 0.5,
-            fontSize: "0.8rem",
-            minHeight: 32,
-            transition: "all 0.3s ease",
+            fontSize: { xs: "0.75rem", sm: "0.8rem" },
+            py: 0.6,
+            fontWeight: 500,
+            minHeight: { xs: 32, sm: 36 },
             "&:hover": {
-              borderColor: "rgba(255, 255, 255, 0.5)",
-              backgroundColor: "rgba(255, 255, 255, 0.1)",
-              transform: "translateY(-1px)",
+              borderColor: "#94a3b8",
+              backgroundColor: "rgba(71, 85, 105, 0.04)",
+              color: "#334155",
+            },
+            "&:active": {
+              transform: "translateY(0)",
             },
           }}
         >
-          Logout
+          Sign Out
         </Button>
       </Box>
     </Box>
   );
 
   return (
-    <Box sx={{ display: "flex" }}>
+    <>
+ <Box sx={{ display: "flex" }}>
       <CssBaseline />
-      <IconButton
-        color="inherit"
-        aria-label="open drawer"
-        edge="start"
-        onClick={handleDrawerToggle}
+
+      {/* Mobile Menu Button */}
+      {!isMdUp && (
+        <IconButton
+          color="inherit"
+          aria-label="open drawer"
+          edge="start"
+          onClick={handleDrawerToggle}
+          sx={{
+            position: "fixed",
+            top: { xs: 12, sm: 16 },
+            left: { xs: 12, sm: 16 },
+            zIndex: theme.zIndex.drawer + 1,
+            backgroundColor: "white",
+            color: "#0f766e",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+            width: { xs: 48, sm: 52 },
+            height: { xs: 48, sm: 52 },
+            "&:hover": { 
+              transform: "scale(1.05)",
+              backgroundColor: "#f8fafc",
+            },
+            "&:active": {
+              transform: "scale(0.95)",
+            },
+          }}
+        >
+          <MenuIcon />
+        </IconButton>
+      )}
+
+      {/* Responsive Drawer */}
+      <Drawer
+        variant={isMdUp ? "permanent" : "temporary"}
+        open={isMdUp || mobileOpen}
+        onClose={handleDrawerToggle}
+        ModalProps={{ keepMounted: true }}
         sx={{
-          mr: 2,
-          display: { sm: "none" },
-          position: "fixed",
-          top: 16,
-          left: 16,
-          zIndex: 1300,
-          backgroundColor: "white",
-          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-          "&:hover": {
-            backgroundColor: "#f9fafb",
-            transform: "scale(1.05)",
+          "& .MuiDrawer-paper": {
+            width: isMdUp ? drawerWidth : "min(80vw, 280px)",
+            border: "none",
+            boxShadow: isMdUp
+              ? "0 0 20px rgba(0,0,0,0.06)"
+              : "0 10px 40px rgba(0,0,0,0.12)",
+            transition: "width 0.2s ease",
           },
-          transition: "all 0.3s ease",
         }}
       >
-        <MenuIcon />
-      </IconButton>
-      <Box
-        component="nav"
-        sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
-        aria-label="navigation menu"
-      >
-        <Drawer
-          variant="temporary"
-          open={mobileOpen}
-          onClose={handleDrawerToggle}
-          ModalProps={{ keepMounted: true }}
-          sx={{
-            display: { xs: "block", sm: "none" },
-            "& .MuiDrawer-paper": {
-              boxSizing: "border-box",
-              width: drawerWidth,
-              border: "none",
-              boxShadow: "0 20px 40px rgba(0, 0, 0, 0.1)",
-            },
-          }}
-        >
-          {drawer}
-        </Drawer>
-        <Drawer
-          variant="permanent"
-          sx={{
-            display: { xs: "none", sm: "block" },
-            "& .MuiDrawer-paper": {
-              boxSizing: "border-box",
-              width: drawerWidth,
-              border: "none",
-              boxShadow: "0 0 40px rgba(0, 0, 0, 0.08)",
-            },
-          }}
-          open
-        >
-          {drawer}
-        </Drawer>
-      </Box>
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          p: 3,
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          backgroundColor: "#fafbfc",
-          minHeight: "100vh",
-        }}
-      >
+        {drawer}
+      </Drawer>
+      
+
+      {/* Main Content Area */}
+        {/* Main Content Area with sticky footer */}
+    <Box
+      component="main"
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        flexGrow: 1,
+        p: { xs: 2, sm: 3, lg: 4 },
+        pt: { xs: 8, sm: 3, lg: 4 },
+        width: { xs: "100%", md: `calc(100% - ${drawerWidth}px)` },
+        ml: { md: `${drawerWidth}px` },
+        backgroundColor: "#fafbfc",
+        minHeight: "100vh",
+        transition: "margin 0.3s ease, width 0.3s ease",
+      }}
+    >
+      {/* your page content grows here */}
+      <Box sx={{ flexGrow: 1 }}>
         {children}
       </Box>
+
+      {/* footer will now sit at the bottom */}
     </Box>
+
+
+    </Box>
+    </>
+   
+    
   );
 };
 

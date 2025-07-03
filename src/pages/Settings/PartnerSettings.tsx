@@ -110,7 +110,7 @@ const PartnerSettings: React.FC = () => {
           <Tab icon={<AccountBalance />} label="Bank Details" iconPosition="start" {...a11yProps(2)} sx={{ px: 3 }} />
           <Tab icon={<UploadFile />} label="Documents" iconPosition="start" {...a11yProps(3)} sx={{ px: 3 }} />
           <Tab icon={<History />} label="Request History" iconPosition="start" {...a11yProps(4)} sx={{ px: 3 }} />
-          <Tab icon={<Security />} label="Security" iconPosition="start" {...a11yProps(5)} sx={{ px: 3 }} />
+          <Tab icon={<Security />} label="Reset Password" iconPosition="start" {...a11yProps(5)} sx={{ px: 3 }} />
         </Tabs>
       </Box>
 

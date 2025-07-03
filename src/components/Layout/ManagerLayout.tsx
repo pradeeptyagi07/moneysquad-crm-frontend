@@ -29,7 +29,6 @@ const ManagerLayout = () => {
           <Outlet />
         </Box>
       </DashboardLayout>
-      <Footer />
     </Box>
   )
 }

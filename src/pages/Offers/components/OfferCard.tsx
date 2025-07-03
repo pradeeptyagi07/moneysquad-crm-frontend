@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Card,
   CardContent,
@@ -39,11 +39,19 @@ const OfferCard: React.FC<OfferCardProps> = ({
   const openMenu = Boolean(anchorEl);
   const [timeLeft, setTimeLeft] = useState("");
 
-  // Calculate time remaining
+  // Compute the "end of day" expiration moment
+  const expirationDate = useMemo(() => {
+    if (!offer.offerValidity) return null;
+    const d = new Date(offer.offerValidity);
+    d.setHours(23, 59, 59, 999);
+    return d;
+  }, [offer.offerValidity]);
+
+  // Calculate time remaining until end of validity date
   useEffect(() => {
-    if (!offer.offerValidity) return;
+    if (!expirationDate) return;
     const update = () => {
-      const diff = new Date(offer.offerValidity).getTime() - Date.now();
+      const diff = expirationDate.getTime() - Date.now();
       if (diff <= 0) {
         setTimeLeft("Expired");
         return;
@@ -54,12 +62,22 @@ const OfferCard: React.FC<OfferCardProps> = ({
       setTimeLeft(`${days}d ${hours}h ${mins}m`);
     };
     update();
-    const timer = setInterval(update, 60000);
+    const timer = setInterval(update, 60_000);
     return () => clearInterval(timer);
-  }, [offer.offerValidity]);
+  }, [expirationDate]);
 
+  // Now expired only after the end of that date
   const isExpired =
-    !!offer.offerValidity && new Date(offer.offerValidity) < new Date();
+    expirationDate !== null && expirationDate.getTime() < Date.now();
+
+  const formatDate = (dateString: string) => {
+    const d = new Date(dateString);
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
   const { gradient, textColor } =
     loanTypeColors[offer.loanType] || loanTypeColors.Other;
 
@@ -109,7 +127,6 @@ const OfferCard: React.FC<OfferCardProps> = ({
               alt={offer.bankName}
               sx={{ width: "100%", height: "100%", objectFit: "cover" }}
             />
-            {/* Featured Pulse */}
             {offer.isFeatured && (
               <Box
                 sx={{
@@ -159,14 +176,11 @@ const OfferCard: React.FC<OfferCardProps> = ({
               borderBottom: "1px solid rgba(0,0,0,0.08)",
             }}
           >
-            <Typography
-              variant="body2"
-              sx={{ fontWeight: 600, color: "text.primary" }}
-            >
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>
               {timeLeft}
             </Typography>
             <Typography variant="caption" sx={{ color: "text.secondary" }}>
-              Valid until {new Date(offer.offerValidity).toLocaleDateString()}
+              Valid until {formatDate(offer.offerValidity)}
             </Typography>
           </Box>
         )}
@@ -213,7 +227,7 @@ const OfferCard: React.FC<OfferCardProps> = ({
                 Processing Fee
               </Typography>
               <Typography variant="body1" sx={{ fontWeight: 700 }}>
-                {offer?.processingFeeType === "percentage"
+                {offer.processingFeeType === "percentage"
                   ? `${offer.processingFee}%`
                   : `₹${offer.processingFee}`}
               </Typography>

@@ -1,9 +1,9 @@
 // src/pages/Leads/components/Login.tsx
-"use client"
+"use client";
 
-import type React from "react"
-import { useState, useEffect } from "react"
-import { useNavigate, Link as RouterLink } from "react-router-dom"
+import type React from "react";
+import { useState, useEffect } from "react";
+import { useNavigate, Link as RouterLink } from "react-router-dom";
 import {
   Box,
   Typography,
@@ -18,109 +18,120 @@ import {
   Link,
   Snackbar,
   Alert,
-} from "@mui/material"
-import { Visibility, VisibilityOff, Login as LoginIcon } from "@mui/icons-material"
-import { useDispatch, useSelector } from "react-redux"
-import { loginUser, clearAuthError } from "../../store/slices/authSlice"
-import type { RootState, AppDispatch } from "../../store"
+} from "@mui/material";
+import {
+  Visibility,
+  VisibilityOff,
+  Login as LoginIcon,
+} from "@mui/icons-material";
+import { useDispatch, useSelector } from "react-redux";
+import { loginUser, clearAuthError } from "../../store/slices/authSlice";
+import type { RootState, AppDispatch } from "../../store";
 
 const Login: React.FC = () => {
-  const navigate = useNavigate()
-  const dispatch = useDispatch<AppDispatch>()
+  const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
 
   // Pull auth state from Redux
-  const { isAuthenticated, userRole, loading, error } = useSelector((state: RootState) => state.auth)
+  const { isAuthenticated, userRole, loading, error } = useSelector(
+    (state: RootState) => state.auth
+  );
 
   // Local form/snackbar state
-  const [showPassword, setShowPassword] = useState(false)
-  const [snackbarOpen, setSnackbarOpen] = useState(false)
-  const [snackbarMessage, setSnackbarMessage] = useState("")
-  const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">("success")
-  const [formData, setFormData] = useState({ emailOrMobile: "", password: "" })
-  const [formErrors, setFormErrors] = useState({ emailOrMobile: "", password: "" })
-  const [hasRedirected, setHasRedirected] = useState(false)
+  const [showPassword, setShowPassword] = useState(false);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">(
+    "success"
+  );
+  const [formData, setFormData] = useState({ emailOrMobile: "", password: "" });
+  const [formErrors, setFormErrors] = useState({
+    emailOrMobile: "",
+    password: "",
+  });
+  const [hasRedirected, setHasRedirected] = useState(false);
 
   // Show any Redux error in a snackbar
   useEffect(() => {
     if (error) {
-      setSnackbarMessage(error)
-      setSnackbarSeverity("error")
-      setSnackbarOpen(true)
+      setSnackbarMessage(error);
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
     }
-  }, [error])
+  }, [error]);
 
   // Once auth flips true, redirect based on role
   useEffect(() => {
     if (isAuthenticated && !hasRedirected) {
-      setSnackbarMessage("Login successful! Redirecting...")
-      setSnackbarSeverity("success")
-      setSnackbarOpen(true)
+      setSnackbarMessage("Login successful! Redirecting...");
+      setSnackbarSeverity("success");
+      setSnackbarOpen(true);
 
-      setHasRedirected(true)
+      setHasRedirected(true);
       const timer = setTimeout(() => {
-        if (userRole === "admin") navigate("/admin")
-        else if (userRole === "manager") navigate("/manager")
-        else if (userRole === "partner") navigate("/partner")
-        else if (userRole === "associate") navigate("/associate")
-      }, 2000)
+        if (userRole === "admin") navigate("/admin");
+        else if (userRole === "manager") navigate("/manager");
+        else if (userRole === "partner") navigate("/partner");
+        else if (userRole === "associate") navigate("/associate");
+      }, 2000);
 
-      return () => clearTimeout(timer)
+      return () => clearTimeout(timer);
     }
-  }, [isAuthenticated, userRole, navigate, hasRedirected])
+  }, [isAuthenticated, userRole, navigate, hasRedirected]);
 
   // Update form fields
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
 
     // Clear field error if present
     if (formErrors[name as keyof typeof formErrors]) {
-      setFormErrors((prev) => ({ ...prev, [name]: "" }))
+      setFormErrors((prev) => ({ ...prev, [name]: "" }));
     }
 
     // Clear Redux error if it exists
-    if (error) dispatch(clearAuthError())
-  }
+    if (error) dispatch(clearAuthError());
+  };
 
   // Simple form validation
   const validateForm = () => {
-    const newErrors = { emailOrMobile: "", password: "" }
-    let isValid = true
+    const newErrors = { emailOrMobile: "", password: "" };
+    let isValid = true;
     if (!formData.emailOrMobile) {
-      newErrors.emailOrMobile = "Email or mobile number is required"
-      isValid = false
+      newErrors.emailOrMobile = "Email or mobile number is required";
+      isValid = false;
     }
     if (!formData.password) {
-      newErrors.password = "Password is required"
-      isValid = false
+      newErrors.password = "Password is required";
+      isValid = false;
     }
-    setFormErrors(newErrors)
-    return isValid
-  }
+    setFormErrors(newErrors);
+    return isValid;
+  };
 
   // Called on button click or pressing Enter
   const handleLogin = (e: React.MouseEvent | React.KeyboardEvent) => {
-    e.preventDefault()
-    if (!validateForm()) return
+    e.preventDefault();
+    if (!validateForm()) return;
 
     // Reset redirect flag for the useEffect above to fire
-    setHasRedirected(false)
+    setHasRedirected(false);
 
     dispatch(
       loginUser({
-        email: formData.emailOrMobile,
+        email: formData.emailOrMobile.toLowerCase().trim(),
         password: formData.password,
-      }),
-    )
-  }
+      })
+    );
+  };
 
   // If user presses Enter key
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
-      e.preventDefault()
-      handleLogin(e)
+      e.preventDefault();
+      handleLogin(e);
     }
-  }
+  };
 
   return (
     <Box
@@ -145,7 +156,8 @@ const Login: React.FC = () => {
           width: { xs: 150, sm: 200, md: 400 },
           height: { xs: 150, sm: 200, md: 400 },
           borderRadius: "50%",
-          background: "linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(37, 99, 235, 0.05) 100%)",
+          background:
+            "linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(37, 99, 235, 0.05) 100%)",
           zIndex: 0,
         }}
       />
@@ -157,7 +169,8 @@ const Login: React.FC = () => {
           width: { xs: 150, sm: 200, md: 400 },
           height: { xs: 150, sm: 200, md: 400 },
           borderRadius: "50%",
-          background: "linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(37, 99, 235, 0.1) 100%)",
+          background:
+            "linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(37, 99, 235, 0.1) 100%)",
           zIndex: 0,
         }}
       />
@@ -279,7 +292,7 @@ const Login: React.FC = () => {
           <Box component="form" onKeyDown={handleKeyDown}>
             <TextField
               fullWidth
-              label="Email or Mobile Number"
+              label="Enter Your Email"
               name="emailOrMobile"
               value={formData.emailOrMobile}
               onChange={handleChange}
@@ -307,7 +320,10 @@ const Login: React.FC = () => {
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
-                    <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
+                    <IconButton
+                      onClick={() => setShowPassword(!showPassword)}
+                      edge="end"
+                    >
                       {showPassword ? <VisibilityOff /> : <Visibility />}
                     </IconButton>
                   </InputAdornment>
@@ -351,7 +367,11 @@ const Login: React.FC = () => {
                 },
               }}
             >
-              {loading ? <CircularProgress size={24} color="inherit" /> : "Login"}
+              {loading ? (
+                <CircularProgress size={24} color="inherit" />
+              ) : (
+                "Login"
+              )}
             </Button>
           </Box>
 
@@ -403,7 +423,7 @@ const Login: React.FC = () => {
         </CardContent>
       </Card>
     </Box>
-  )
-}
+  );
+};
 
-export default Login
+export default Login;

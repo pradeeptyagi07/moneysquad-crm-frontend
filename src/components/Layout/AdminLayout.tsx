@@ -38,7 +38,7 @@ const AdminLayout = () => {
           <Outlet />
         </Box>
       </DashboardLayout>
-      <Footer />
+      {/* <Footer /> */}
     </Box>
   )
 }
