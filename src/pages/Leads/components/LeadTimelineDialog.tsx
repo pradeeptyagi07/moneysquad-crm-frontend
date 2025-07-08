@@ -18,9 +18,9 @@ import { Close } from "@mui/icons-material"
 import { useTheme } from "@mui/material/styles"
 import { useAppDispatch } from "../../../hooks/useAppDispatch"
 import { useAppSelector } from "../../../hooks/useAppSelector"
-import { clearTimeline, fetchLeadTimeline } from "../../../store/slices/leadSlice"
 import { getStatusColor, getStatusIcon } from "../utils/leadUtils"
 import { motion, AnimatePresence } from "framer-motion"
+import { clearTimeline, fetchLeadTimeline } from "../../../store/slices/leadSLice"
 
 interface LeadTimelineDialogProps {
   open: boolean
