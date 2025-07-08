@@ -36,6 +36,8 @@ import {
   Logout as LogoutIcon,
   ExpandLess,
   ExpandMore,
+  ChevronLeft,
+  ChevronRight,
 } from "@mui/icons-material";
 import { useAuth } from "../../hooks/useAuth";
 import { useAppDispatch } from "../../hooks/useAppDispatch";
@@ -47,16 +49,17 @@ import {
   isAssociateUser,
 } from "../../store/slices/userDataSlice";
 import { useAppSelector } from "../../hooks/useAppSelector";
-import Footer from "./Footer";
 
-// Responsive drawer widths - optimized for better space utilization
+// Increased responsive drawer widths for better text visibility
 const drawerWidths = {
   xs: 240,
   sm: 240,
-  md: 240,
-  lg: 260,
-  xl: 260,
+  md: 250,
+  lg: 285,
+  xl: 270,
 };
+
+const miniWidth = 64;
 
 export interface DashboardMenuItem {
   text: string;
@@ -83,6 +86,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const isLgUp = useMediaQuery(theme.breakpoints.up("lg"));
   const isXlUp = useMediaQuery(theme.breakpoints.up("xl"));
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const navigate = useNavigate();
   const location = useLocation();
@@ -97,7 +101,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     return drawerWidths.sm;
   };
 
-  const drawerWidth = getCurrentDrawerWidth();
+  const fullWidth = getCurrentDrawerWidth();
+  const drawerWidth = isMdUp ? (collapsed ? miniWidth : fullWidth) : fullWidth;
 
   // fetch full user data
   const userData = useAppSelector(selectUserData);
@@ -124,6 +129,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const resolvedRole = propUserRole || (auth as any).userRole || "";
 
   const handleDrawerToggle = () => setMobileOpen((open) => !open);
+  const handleCollapseToggle = () => setCollapsed((c) => !c);
   const handleLogout = () => {
     logout();
     navigate("/");
@@ -169,27 +175,13 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     ? resolvedName.charAt(0).toUpperCase()
     : "U";
 
-  // Truncate text with ellipsis for responsive display
-  const truncateText = (text: string, maxLength: number) => {
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength) + "...";
-  };
-
-  // Responsive text lengths - optimized for smaller drawer
-  const getMaxTextLength = () => {
-    if (isXlUp) return 22;
-    if (isLgUp) return 20;
-    if (isMdUp) return 18;
-    return 22; // Mobile has more space when drawer is full width
-  };
-
   const renderMenuItem = (item: DashboardMenuItem, level: number = 0) => {
     const active = isActive(item.path);
     const hasChildren = item.children && item.children.length > 0;
     const isExpanded = expandedItems.includes(item.text);
-    const maxTextLength = getMaxTextLength();
-    const displayText = truncateText(item.text, maxTextLength);
-    const shouldShowTooltip = item.text.length > maxTextLength;
+    // On mobile, always show full text; on desktop, show full text when expanded or use tooltip when collapsed
+    const shouldShowTooltip = collapsed && isMdUp;
+    const showText = !collapsed || !isMdUp; // Always show text on mobile
 
     return (
       <React.Fragment key={item.text}>
@@ -209,10 +201,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 }
               }}
               sx={{
+                justifyContent: (collapsed && isMdUp) ? "center" : "initial",
                 borderRadius: 2,
                 mb: 0.5,
                 mx: 0,
                 ml: level * 2,
+                px: (collapsed && isMdUp) ? 1 : 2,
                 transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                 position: "relative",
                 backgroundColor: active
@@ -223,19 +217,21 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                   backgroundColor: active
                     ? "rgba(15,118,110,0.12)"
                     : "rgba(15,118,110,0.04)",
-                  transform: "translateX(4px)",
+                  transform: (collapsed && isMdUp) ? "none" : "translateX(4px)",
                   boxShadow: active
                     ? "0 4px 20px rgba(15,118,110,0.15)"
                     : "0 2px 10px rgba(0,0,0,0.08)",
                 },
                 "&:active": {
-                  transform: "translateX(2px)",
+                  transform: (collapsed && isMdUp) ? "none" : "translateX(2px)",
                 },
               }}
             >
               <ListItemIcon
                 sx={{
-                  minWidth: { xs: 36, sm: 40 },
+                  minWidth: (collapsed && isMdUp) ? 0 : { xs: 36, sm: 30 },
+                  mr: (collapsed && isMdUp) ? 0 : 2,
+                  justifyContent: "center",
                   color: active ? "#0f766e" : "rgba(0,0,0,0.7)",
                   transition: "all 0.2s",
                 }}
@@ -253,12 +249,13 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 </Box>
               </ListItemIcon>
               <ListItemText
-                primary={displayText}
+                primary={item.text}
                 sx={{
+                  display: showText ? "block" : "none",
                   "& .MuiListItemText-primary": {
                     fontWeight: active ? 600 : 500,
                     color: active ? "#0f766e" : "rgba(0,0,0,0.87)",
-                    fontSize: { xs: "0.85rem", sm: "0.875rem" },
+                    fontSize: { xs: "0.875rem", sm: "0.9rem" },
                     lineHeight: 1.2,
                     whiteSpace: "nowrap",
                     overflow: "hidden",
@@ -266,7 +263,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                   },
                 }}
               />
-              {hasChildren && (
+              {hasChildren && showText && (
                 <IconButton
                   size="small"
                   sx={{ 
@@ -285,7 +282,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                     height: { xs: 4, sm: 5, lg: 6 },
                     borderRadius: "50%",
                     backgroundColor: "#0f766e",
-                    ml: 1,
+                    position: "absolute",
+                    right: (collapsed && isMdUp) ? 12 : 16,
                     animation: "pulse 2s infinite",
                     "@keyframes pulse": {
                       "0%": { opacity: 1 },
@@ -298,7 +296,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             </ListItemButton>
           </Tooltip>
         </ListItem>
-        {hasChildren && (
+        {hasChildren && showText && (
           <Collapse in={isExpanded} timeout="auto" unmountOnExit>
             <List component="div" disablePadding>
               {item.children!.map((child) => renderMenuItem(child, level + 1))}
@@ -329,51 +327,78 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         },
       }}
     >
-      {/* Compact Logo */}
-      <Box
+  <Box
+  sx={{
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between", // or "flex-start"
+    py: { xs: 1.5, sm: 2 },
+    px: (collapsed && isMdUp) ? 1 : 2,
+    minHeight: { xs: 56, sm: 60 },
+    position: "relative",
+    "&::after": {
+      content: '""',
+      position: "absolute",
+      bottom: 0,
+      left: "50%",
+      transform: "translateX(-50%)",
+      width: (collapsed && isMdUp) ? "80%" : "60%",
+      height: "1px",
+      background: "rgba(0,0,0,0.08)",
+    },
+  }}
+>
+  {/* Collapse Button on the left */}
+  {isMdUp && (
+    <Tooltip title={collapsed ? "Expand" : "Collapse"} placement="right" arrow>
+      <IconButton
+        onClick={handleCollapseToggle}
+        size="small"
         sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          py: { xs: 1.5, sm: 2 },
-          px: 2,
-          minHeight: { xs: 56, sm: 60 },
-          position: "relative",
-          "&::after": {
-            content: '""',
-            position: "absolute",
-            bottom: 0,
-            left: "50%",
-            transform: "translateX(-50%)",
-            width: "60%",
-            height: "1px",
-            background: "rgba(0,0,0,0.08)",
+          color: "#0f766e",
+          backgroundColor: "rgba(15,118,110,0.08)",
+          transition: "all 0.2s",
+          width: 32,
+          height: 32,
+          mr: 1,
+          "&:hover": {
+            backgroundColor: "rgba(15,118,110,0.12)",
+            transform: "scale(1.1)",
           },
         }}
       >
-        <Box
-          component="img"
-          src="/images/MoneySquad-logo.png"
-          alt="MoneySquad Logo"
-          sx={{
-            height: { xs: 28, sm: 32, md: 36 },
-            width: "auto",
-            maxWidth: "85%",
-            objectFit: "contain",
-            filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.1))",
-            transition: "all 0.2s ease",
-            "&:hover": {
-              transform: "scale(1.02)",
-            },
-          }}
-        />
-      </Box>
+        {collapsed ? <ChevronRight /> : <ChevronLeft />}
+      </IconButton>
+    </Tooltip>
+  )}
+
+  {/* Logo */}
+  <Box
+    component="img"
+    src="/images/MoneySquad-logo.png"
+    alt="MoneySquad Logo"
+    sx={{
+      height: { xs: 28, sm: 32, md: 36 },
+      width: "auto",
+      maxWidth: "85%",
+      objectFit: "contain",
+      filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.1))",
+      transition: "all 0.3s ease",
+      opacity: (collapsed && isMdUp) ? 0 : 1,
+      transform: (collapsed && isMdUp) ? "scale(0.8)" : "scale(1)",
+      "&:hover": {
+        transform: (collapsed && isMdUp) ? "scale(0.8)" : "scale(1.02)",
+      },
+    }}
+  />
+</Box>
+
 
       {/* Navigation List */}
       <List
         sx={{
           flexGrow: 1,
-          px: { xs: 1.5, sm: 2 },
+          px: (collapsed && isMdUp) ? 1 : { xs: 1.5, sm: 2 },
           py: 1,
           overflowY: "auto",
           overflowX: "hidden",
@@ -406,207 +431,238 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         {menuItems.map((item) => renderMenuItem(item))}
       </List>
 
-      {/* Compact Professional Profile Section */}
-      <Box
-        sx={{
-          p: { xs: 1.2, sm: 1.5 },
-          m: { xs: 0.8, sm: 1 },
-          borderRadius: 2,
-          background: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
-          border: "1px solid rgba(0,0,0,0.08)",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-          position: "relative",
-        }}
-      >
-        <Box sx={{ 
-          display: "flex", 
-          alignItems: "center", 
-          mb: { xs: 1, sm: 1.2 },
-        }}>
-          <Avatar
-            sx={{
-              bgcolor: "#0f766e",
-              color: "white",
-              width: { xs: 32, sm: 36 },
-              height: { xs: 32, sm: 36 },
-              fontSize: { xs: "0.875rem", sm: "1rem" },
-              fontWeight: 600,
-              boxShadow: "0 2px 8px rgba(15,118,110,0.2)",
-              border: "2px solid white",
-            }}
-          >
-            {avatarText}
-          </Avatar>
-          <Box sx={{ ml: 1.5, minWidth: 0, flex: 1 }}>
-            <Tooltip title={resolvedName || "User"} placement="top">
-              <Typography
-                variant="subtitle2"
-                sx={{
-                  fontWeight: 600,
-                  fontSize: { xs: "0.825rem", sm: "0.875rem" },
-                  color: "#1e293b",
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  lineHeight: 1.2,
-                }}
-              >
-                {truncateText(resolvedName || "User", 16)}
-              </Typography>
-            </Tooltip>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.25 }}>
-              <Typography
-                variant="caption"
-                sx={{ 
-                  fontSize: { xs: "0.7rem", sm: "0.75rem" }, 
-                  color: "#64748b",
-                  fontWeight: 500,
-                }}
-              >
-                {truncateText(resolvedRole || "Role", 10)}
-              </Typography>
-              {displayId && (
-                <>
-                  <Box 
-                    sx={{ 
-                      width: 2, 
-                      height: 2, 
-                      borderRadius: "50%", 
-                      backgroundColor: "#cbd5e1" 
-                    }} 
-                  />
-                  <Typography
-                    variant="caption"
-                    sx={{ 
-                      fontSize: { xs: "0.7rem", sm: "0.75rem" }, 
-                      color: "#475569",
-                      fontFamily: "monospace",
-                      fontWeight: 500,
-                    }}
-                  >
-                    {displayId}
-                  </Typography>
-                </>
-              )}
-            </Box>
-          </Box>
-        </Box>
-        <Button
-          variant="outlined"
-          startIcon={<LogoutIcon sx={{ fontSize: "16px !important" }} />}
-          onClick={handleLogout}
-          fullWidth
-          size="small"
+      {/* Professional Profile Section */}
+<Box
+  sx={{
+    p: (collapsed && isMdUp) ? 1 : { xs: 1.2, sm: 1.5 },
+    m: (collapsed && isMdUp) ? 0.5 : { xs: 0.8, sm: 1 },
+    borderRadius: 2,
+    background: "#ffffff",
+    border: "1px solid #e2e8f0",
+    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
+    position: "relative",
+    transition: "all 0.2s ease",
+    "&:hover": {
+      boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+      borderColor: "#cbd5e1",
+    },
+  }}
+>
+  <Box
+    sx={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: (collapsed && isMdUp) ? "center" : "flex-start",
+      mb: (collapsed && isMdUp) ? 0 : { xs: 1, sm: 1.2 },
+    }}
+  >
+    <Tooltip title={(collapsed && isMdUp) ? resolvedName || "User" : ""} placement="right" arrow>
+      <Box sx={{ position: "relative" }}>
+        <Avatar
           sx={{
-            borderColor: "#cbd5e1",
-            color: "#475569",
-            textTransform: "none",
-            fontSize: { xs: "0.75rem", sm: "0.8rem" },
-            py: 0.6,
-            fontWeight: 500,
-            minHeight: { xs: 32, sm: 36 },
-            "&:hover": {
-              borderColor: "#94a3b8",
-              backgroundColor: "rgba(71, 85, 105, 0.04)",
-              color: "#334155",
-            },
-            "&:active": {
-              transform: "translateY(0)",
-            },
+            bgcolor: "#0f766e",
+            color: "white",
+            width: { xs: 32, sm: 36 },
+            height: { xs: 32, sm: 36 },
+            fontSize: { xs: "0.875rem", sm: "1rem" },
+            fontWeight: 600,
+            mx: (collapsed && isMdUp) ? "auto" : 0,
+            transition: "all 0.2s ease",
           }}
         >
-          Sign Out
-        </Button>
+          {avatarText}
+        </Avatar>
+        <Box
+          sx={{
+            position: "absolute",
+            bottom: -1,
+            right: -1,
+            width: 8,
+            height: 8,
+            borderRadius: "50%",
+            backgroundColor: "#22c55e",
+            border: "2px solid white",
+            display: (collapsed && isMdUp) ? "none" : "block",
+          }}
+        />
       </Box>
+    </Tooltip>
+
+    {!(collapsed && isMdUp) && (
+      <Box sx={{ ml: 1.5, flex: 1, minWidth: 0 }}>
+        <Typography
+          variant="subtitle2"
+          sx={{
+            fontWeight: 600,
+            fontSize: { xs: "0.875rem", sm: "0.9rem" },
+            color: "#1e293b",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+        >
+          {resolvedName || "User"}
+        </Typography>
+
+<Box
+  sx={{
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "flex-start",
+    gap: 0.1,
+    mt: 0.2,
+  }}
+>
+  <Typography
+    variant="caption"
+    sx={{
+      fontSize: { xs: "0.75rem", sm: "0.8rem" },
+      color: "#64748b",
+      fontWeight: 500,
+      textTransform: "uppercase",
+      letterSpacing: "0.025em",
+    }}
+  >
+    {resolvedRole || "Role"}
+  </Typography>
+
+  {displayId && (
+    <Typography
+      variant="caption"
+      sx={{
+        fontSize: { xs: "0.75rem", sm: "0.8rem" },
+        color: "#64748b",
+        fontFamily: "ui-monospace, Monaco, 'Cascadia Code', monospace",
+        fontWeight: 500,
+      }}
+    >
+      {displayId}
+    </Typography>
+  )}
+</Box>
+
+      </Box>
+    )}
+  </Box>
+
+  {!(collapsed && isMdUp) && (
+    <Button
+      variant="outlined"
+      startIcon={<LogoutIcon sx={{ fontSize: "16px !important" }} />}
+      onClick={handleLogout}
+      fullWidth
+      size="small"
+      sx={{
+        borderColor: "#e2e8f0",
+        color: "#0f766e",
+        backgroundColor: "#ffffff",
+        textTransform: "none",
+        fontSize: { xs: "0.8rem", sm: "0.85rem" },
+        py: 0.6,
+        fontWeight: 500,
+        minHeight: { xs: 32, sm: 36 },
+        borderRadius: 1.5,
+        transition: "all 0.2s ease",
+        "&:hover": {
+          borderColor: "#0f766e",
+          backgroundColor: "#ffffff",
+          color: "#0d5a54",
+          boxShadow: "0 2px 8px rgba(15, 118, 110, 0.15)",
+          transform: "translateY(-1px)",
+        },
+        "&:active": {
+          transform: "translateY(0)",
+          boxShadow: "0 1px 3px rgba(15, 118, 110, 0.2)",
+        },
+      }}
+    >
+      Sign Out
+    </Button>
+  )}
+</Box>
+
     </Box>
   );
 
   return (
     <>
- <Box sx={{ display: "flex" }}>
-      <CssBaseline />
+      <Box sx={{ display: "flex" }}>
+        <CssBaseline />
 
-      {/* Mobile Menu Button */}
-      {!isMdUp && (
-        <IconButton
-          color="inherit"
-          aria-label="open drawer"
-          edge="start"
-          onClick={handleDrawerToggle}
+        {/* Mobile Menu Button */}
+        {!isMdUp && (
+          <IconButton
+            color="inherit"
+            aria-label="open drawer"
+            edge="start"
+            onClick={handleDrawerToggle}
+            sx={{
+              position: "fixed",
+              top: { xs: 12, sm: 16 },
+              left: { xs: 12, sm: 16 },
+              zIndex: theme.zIndex.drawer + 1,
+              backgroundColor: "white",
+              color: "#0f766e",
+              boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+              width: { xs: 48, sm: 52 },
+              height: { xs: 48, sm: 52 },
+              "&:hover": { 
+                transform: "scale(1.05)",
+                backgroundColor: "#f8fafc",
+              },
+              "&:active": {
+                transform: "scale(0.95)",
+              },
+            }}
+          >
+            <MenuIcon />
+          </IconButton>
+        )}
+
+        {/* Responsive Drawer */}
+        <Drawer
+          variant={isMdUp ? "permanent" : "temporary"}
+          open={isMdUp || mobileOpen}
+          onClose={handleDrawerToggle}
+          ModalProps={{ keepMounted: true }}
           sx={{
-            position: "fixed",
-            top: { xs: 12, sm: 16 },
-            left: { xs: 12, sm: 16 },
-            zIndex: theme.zIndex.drawer + 1,
-            backgroundColor: "white",
-            color: "#0f766e",
-            boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
-            width: { xs: 48, sm: 52 },
-            height: { xs: 48, sm: 52 },
-            "&:hover": { 
-              transform: "scale(1.05)",
-              backgroundColor: "#f8fafc",
-            },
-            "&:active": {
-              transform: "scale(0.95)",
+            "& .MuiDrawer-paper": {
+              width: isMdUp ? drawerWidth : "min(85vw, 300px)",
+              border: "none",
+              boxShadow: isMdUp
+                ? "0 0 20px rgba(0,0,0,0.06)"
+                : "0 10px 40px rgba(0,0,0,0.12)",
+              transition: "width 0.3s ease",
+              overflowX: "hidden",
             },
           }}
         >
-          <MenuIcon />
-        </IconButton>
-      )}
-
-      {/* Responsive Drawer */}
-      <Drawer
-        variant={isMdUp ? "permanent" : "temporary"}
-        open={isMdUp || mobileOpen}
-        onClose={handleDrawerToggle}
-        ModalProps={{ keepMounted: true }}
-        sx={{
-          "& .MuiDrawer-paper": {
-            width: isMdUp ? drawerWidth : "min(80vw, 280px)",
-            border: "none",
-            boxShadow: isMdUp
-              ? "0 0 20px rgba(0,0,0,0.06)"
-              : "0 10px 40px rgba(0,0,0,0.12)",
-            transition: "width 0.2s ease",
-          },
-        }}
-      >
-        {drawer}
-      </Drawer>
-      
-
-      {/* Main Content Area */}
-        {/* Main Content Area with sticky footer */}
-    <Box
-      component="main"
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        flexGrow: 1,
-        p: { xs: 2, sm: 3, lg: 4 },
-        pt: { xs: 8, sm: 3, lg: 4 },
-        width: { xs: "100%", md: `calc(100% - ${drawerWidth}px)` },
-        ml: { md: `${drawerWidth}px` },
-        backgroundColor: "#fafbfc",
-        minHeight: "100vh",
-        transition: "margin 0.3s ease, width 0.3s ease",
-      }}
-    >
-      {/* your page content grows here */}
-      <Box sx={{ flexGrow: 1 }}>
-        {children}
+          {drawer}
+        </Drawer>
+        
+        {/* Main Content Area */}
+        <Box
+          component="main"
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            flexGrow: 1,
+            p: { xs: 1, sm: 1.5, lg: 1 },
+            pt: { xs: 4, sm: 1.5, lg: 2 },
+            width: { xs: "100%", md: `calc(100% - ${drawerWidth}px)` },
+            ml: { md: `${drawerWidth}px` },
+            backgroundColor: "#fafbfc",
+            minHeight: "100vh",
+            transition: "margin 0.3s ease, width 0.3s ease",
+          }}
+        >
+          {/* your page content grows here */}
+          <Box sx={{ flexGrow: 1 }}>
+            {children}
+          </Box>
+        </Box>
       </Box>
-
-      {/* footer will now sit at the bottom */}
-    </Box>
-
-
-    </Box>
     </>
-   
-    
   );
 };
 

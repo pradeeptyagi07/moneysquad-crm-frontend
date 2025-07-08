@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from "react"
-import { Box, Grid, Typography, Button, Card, CardContent, IconButton, Tooltip, Divider } from "@mui/material"
+import { Box, Grid, Typography, Button, Card, CardContent, IconButton, Tooltip, Divider, Alert } from "@mui/material"
 import { CloudUpload, InsertDriveFile, Delete, Visibility, Info, AddCircleOutline } from "@mui/icons-material"
 import type { PartnerFormData } from "../index"
 
@@ -20,6 +20,39 @@ interface DocumentCardProps {
   required?: boolean
 }
 
+// File validation constants
+const MAX_FILE_SIZE = 4 * 1024 * 1024 // 4MB in bytes
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png']
+const ALLOWED_PDF_TYPE = 'application/pdf'
+const ALLOWED_FILE_TYPES = [...ALLOWED_IMAGE_TYPES, ALLOWED_PDF_TYPE]
+
+// File validation functions
+const validateFileSize = (file: File): boolean => {
+  return file.size <= MAX_FILE_SIZE
+}
+
+const validateFileType = (file: File): boolean => {
+  return ALLOWED_FILE_TYPES.includes(file.type)
+}
+
+const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return '0 Bytes'
+  const k = 1024
+  const sizes = ['Bytes', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+}
+
+const getFileTypeError = (file: File): string => {
+  const isImage = ALLOWED_IMAGE_TYPES.includes(file.type)
+  const isPdf = file.type === ALLOWED_PDF_TYPE
+  
+  if (!isImage && !isPdf) {
+    return 'Please upload only image files (JPEG, JPG, PNG) or PDF files'
+  }
+  return ''
+}
+
 const DocumentCard: React.FC<DocumentCardProps> = ({
   title,
   description,
@@ -30,10 +63,28 @@ const DocumentCard: React.FC<DocumentCardProps> = ({
   required = false,
 }) => {
   const fileInputRef = React.useRef<HTMLInputElement>(null)
+  const [error, setError] = useState<string>("")
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      onUpload(e.target.files[0])
+      const selectedFile = e.target.files[0]
+      
+      // Clear previous error
+      setError("")
+      
+      // Validate file type
+      if (!validateFileType(selectedFile)) {
+        setError(getFileTypeError(selectedFile))
+        return
+      }
+      
+      // Validate file size
+      if (!validateFileSize(selectedFile)) {
+        setError(`File size must be less than 4MB. Current size: ${formatFileSize(selectedFile.size)}`)
+        return
+      }
+      
+      onUpload(selectedFile)
     }
   }
 
@@ -70,9 +121,24 @@ const DocumentCard: React.FC<DocumentCardProps> = ({
           )}
         </Box>
 
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
           {description}
         </Typography>
+
+        <Box sx={{ mb: 2, p: 1.5, bgcolor: "grey.50", borderRadius: 1, border: "1px solid", borderColor: "grey.200" }}>
+          <Typography variant="caption" color="text.primary" sx={{ fontWeight: 600, display: "block", mb: 0.5 }}>
+            📁 File Requirements:
+          </Typography>
+          <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+            • Formats: {accept === "image/*" ? "Images only (JPEG, JPG, PNG)" : "Images (JPEG, JPG, PNG) or PDF"}
+          </Typography>
+          <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+            • Maximum size: 4MB per file
+          </Typography>
+          <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+            • Ensure document is clear and readable
+          </Typography>
+        </Box>
 
         <input
           type="file"
@@ -81,6 +147,12 @@ const DocumentCard: React.FC<DocumentCardProps> = ({
           onChange={handleFileChange}
           accept={accept}
         />
+
+        {error && (
+          <Alert severity="error" sx={{ mb: 2, fontSize: "0.875rem" }}>
+            {error}
+          </Alert>
+        )}
 
         {!file ? (
           <Button
@@ -114,7 +186,7 @@ const DocumentCard: React.FC<DocumentCardProps> = ({
                   {file.name}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  {(file.size / 1024).toFixed(1)} KB
+                  {formatFileSize(file.size)}
                 </Typography>
               </Box>
               <Box>
@@ -139,6 +211,7 @@ const DocumentCard: React.FC<DocumentCardProps> = ({
 
 const UploadDocuments: React.FC<UploadDocumentsProps> = ({ formData, updateFormData }) => {
   const [otherDocuments, setOtherDocuments] = useState<File[]>(formData.otherDocuments || [])
+  const [otherDocError, setOtherDocError] = useState<string>("")
 
   const handleFileUpload = (fieldName: keyof PartnerFormData, file: File) => {
     updateFormData({ [fieldName]: file })
@@ -149,6 +222,21 @@ const UploadDocuments: React.FC<UploadDocumentsProps> = ({ formData, updateFormD
   }
 
   const handleAddOtherDocument = (file: File) => {
+    // Clear previous error
+    setOtherDocError("")
+    
+    // Validate file type
+    if (!validateFileType(file)) {
+      setOtherDocError(getFileTypeError(file))
+      return
+    }
+    
+    // Validate file size
+    if (!validateFileSize(file)) {
+      setOtherDocError(`File size must be less than 4MB. Current size: ${formatFileSize(file.size)}`)
+      return
+    }
+
     const newDocs = [...otherDocuments, file]
     setOtherDocuments(newDocs)
     updateFormData({ otherDocuments: newDocs })
@@ -158,25 +246,15 @@ const UploadDocuments: React.FC<UploadDocumentsProps> = ({ formData, updateFormD
     const newDocs = otherDocuments.filter((_, i) => i !== index)
     setOtherDocuments(newDocs)
     updateFormData({ otherDocuments: newDocs })
+    setOtherDocError("") // Clear error when deleting
   }
 
   return (
     <Box>
-      {/* Header with new mandatory-note */}
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
+      {/* Header */}
+      <Box sx={{ mb: 3 }}>
         <Typography variant="h6" fontWeight={700}>
           Upload Required Documents
-        </Typography>
-        <Typography
-          variant="body2"
-          sx={{
-            color: "error.main",
-            fontWeight: 600,
-            textAlign: "right",
-            maxWidth: 600,
-          }}
-        >
-          ⚠️ This step is <strong>mandatory</strong>. Please upload your <em>PAN Card</em> and both sides of your <em>Aadhar Card</em> to become eligible for partner commissions.
         </Typography>
       </Box>
 
@@ -184,7 +262,7 @@ const UploadDocuments: React.FC<UploadDocumentsProps> = ({ formData, updateFormD
         <Grid item xs={12} md={6}>
           <DocumentCard
             title="Profile Photo"
-            description="Upload a clear, recent photo of yourself"
+            description="Upload a clear, recent photo of yourself for identification purposes"
             file={formData.profilePhoto}
             onUpload={(file) => handleFileUpload("profilePhoto", file)}
             onDelete={() => handleFileDelete("profilePhoto")}
@@ -195,10 +273,11 @@ const UploadDocuments: React.FC<UploadDocumentsProps> = ({ formData, updateFormD
         <Grid item xs={12} md={6}>
           <DocumentCard
             title="PAN Card"
-            description="Upload a clear scan or photo of your PAN card"
+            description="Upload a clear scan or photo of your PAN card (mandatory for tax purposes)"
             file={formData.panCard}
             onUpload={(file) => handleFileUpload("panCard", file)}
             onDelete={() => handleFileDelete("panCard")}
+            accept="image/*,.pdf"
             required
           />
         </Grid>
@@ -206,10 +285,11 @@ const UploadDocuments: React.FC<UploadDocumentsProps> = ({ formData, updateFormD
         <Grid item xs={12} md={6}>
           <DocumentCard
             title="Aadhar Card (Front)"
-            description="Upload a clear scan or photo of the front side of your Aadhar card"
+            description="Upload the front side of your Aadhar card showing your photo and details"
             file={formData.aadharFront}
             onUpload={(file) => handleFileUpload("aadharFront", file)}
             onDelete={() => handleFileDelete("aadharFront")}
+            accept="image/*,.pdf"
             required
           />
         </Grid>
@@ -217,10 +297,11 @@ const UploadDocuments: React.FC<UploadDocumentsProps> = ({ formData, updateFormD
         <Grid item xs={12} md={6}>
           <DocumentCard
             title="Aadhar Card (Back)"
-            description="Upload a clear scan or photo of the back side of your Aadhar card"
+            description="Upload the back side of your Aadhar card showing the address details"
             file={formData.aadharBack}
             onUpload={(file) => handleFileUpload("aadharBack", file)}
             onDelete={() => handleFileDelete("aadharBack")}
+            accept="image/*,.pdf"
             required
           />
         </Grid>
@@ -228,20 +309,22 @@ const UploadDocuments: React.FC<UploadDocumentsProps> = ({ formData, updateFormD
         <Grid item xs={12} md={6}>
           <DocumentCard
             title="Cancelled Cheque"
-            description="Upload a scan or photo of a cancelled cheque for bank verification"
+            description="Upload a cancelled cheque or bank passbook front page for account verification"
             file={formData.cancelledCheque}
             onUpload={(file) => handleFileUpload("cancelledCheque", file)}
             onDelete={() => handleFileDelete("cancelledCheque")}
+            accept="image/*,.pdf"
           />
         </Grid>
 
         <Grid item xs={12} md={6}>
           <DocumentCard
             title="GST Certificate"
-            description="Upload your GST certificate if applicable"
+            description="Upload your GST registration certificate (required only if you have GST registration)"
             file={formData.gstCertificate}
             onUpload={(file) => handleFileUpload("gstCertificate", file)}
             onDelete={() => handleFileDelete("gstCertificate")}
+            accept="image/*,.pdf"
           />
         </Grid>
       </Grid>
@@ -251,11 +334,25 @@ const UploadDocuments: React.FC<UploadDocumentsProps> = ({ formData, updateFormD
       {/* Additional Documents */}
       <Box sx={{ mb: 3 }}>
         <Typography variant="subtitle1" sx={{ mb: 1 }}>
-          Additional Documents
+          Additional Documents (Optional)
         </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Upload any other relevant documents if required
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+          Upload any other relevant supporting documents if required
         </Typography>
+        <Box sx={{ p: 1.5, bgcolor: "grey.50", borderRadius: 1, border: "1px solid", borderColor: "grey.200" }}>
+          <Typography variant="caption" color="text.primary" sx={{ fontWeight: 600, display: "block", mb: 0.5 }}>
+            📁 File Requirements:
+          </Typography>
+          <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+            • Formats: Images (JPEG, PNG, GIF, WebP) or PDF files
+          </Typography>
+          <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+            • Maximum size: 4MB per file
+          </Typography>
+          <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+            • Examples: Business license, partnership deed, certificates, etc.
+          </Typography>
+        </Box>
       </Box>
 
       <Grid container spacing={2}>
@@ -278,7 +375,7 @@ const UploadDocuments: React.FC<UploadDocumentsProps> = ({ formData, updateFormD
                   {doc.name}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  {(doc.size / 1024).toFixed(1)} KB
+                  {formatFileSize(doc.size)}
                 </Typography>
               </Box>
               <Box>
@@ -298,6 +395,11 @@ const UploadDocuments: React.FC<UploadDocumentsProps> = ({ formData, updateFormD
         ))}
 
         <Grid item xs={12}>
+          {otherDocError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {otherDocError}
+            </Alert>
+          )}
           <Box
             sx={{
               display: "flex",
@@ -312,6 +414,7 @@ const UploadDocuments: React.FC<UploadDocumentsProps> = ({ formData, updateFormD
               type="file"
               id="other-document-upload"
               style={{ display: "none" }}
+              accept="image/*,.pdf"
               onChange={(e) => {
                 if (e.target.files && e.target.files[0]) {
                   handleAddOtherDocument(e.target.files[0])

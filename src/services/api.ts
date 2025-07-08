@@ -2,10 +2,12 @@ import axios from "axios";
 
 const axiosInstance = axios.create({
   // baseURL: "http://178.236.185.187:5002/api",
-  baseURL: "https://api.moneysquad.in/api/",
-  // baseURL: "https://hills-transportation-robin-variation.trycloudflare.com/api",
+  // baseURL: "https://api.moneysquad.in/api/",
+  // baseURL: "https://skilled-linux-demanding-diabetes.trycloudflare.com/api",
+baseURL:"http://178.236.185.178:5003/api",
 
-  timeout: 30000,
+
+  timeout: 60000,
 });
 
 axiosInstance.interceptors.request.use(

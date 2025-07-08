@@ -1,6 +1,6 @@
 import type { Theme } from "@mui/material"
 import type { LeadStatus } from "../../../data/leadTypes"
-import { AccessTime, CheckCircle, Close, Pending, MonetizationOn, Archive, HourglassEmpty } from "@mui/icons-material"
+import { AccessTime, CheckCircle, Close, Pending, MonetizationOn, Archive, HourglassEmpty, PersonAdd } from "@mui/icons-material"
 
 // Format currency values
 export const formatCurrency = (amount: number): string => {
@@ -17,9 +17,9 @@ export const getStatusColor = (status: LeadStatus, theme: Theme): string => {
     case "pending":
       return theme.palette.warning.main
     case "login":
-      return theme.palette.info.main
+      return theme.palette.error.main
     case "approved":
-      return theme.palette.success.main
+      return theme.palette.info.main
     case "rejected":
       return theme.palette.error.main
     case "disbursed":
@@ -29,28 +29,30 @@ export const getStatusColor = (status: LeadStatus, theme: Theme): string => {
     case "expired":
       return theme.palette.text.disabled
     default:
-      return theme.palette.text.primary
+      return theme.palette.text.secondary
   }
 }
 
 // Get icon for lead status
-export const getStatusIcon = (status: LeadStatus) => {
-  switch (status) {
+export function getStatusIcon(status: string) {
+  switch (status.toLowerCase()) {
     case "pending":
-      return <Pending fontSize="small" />
+      return Pending
     case "login":
-      return <AccessTime fontSize="small" />
+      return AccessTime
     case "approved":
-      return <CheckCircle fontSize="small" />
+      return CheckCircle
     case "rejected":
-      return <Close fontSize="small" />
+      return Close
     case "disbursed":
-      return <MonetizationOn fontSize="small" />
+      return MonetizationOn
     case "closed":
-      return <Archive fontSize="small" />
+      return Archive
     case "expired":
-      return <HourglassEmpty fontSize="small" />
+      return HourglassEmpty
+    case "new lead":
+      return PersonAdd
     default:
-      return <Pending fontSize="small" />
+      return Pending
   }
 }

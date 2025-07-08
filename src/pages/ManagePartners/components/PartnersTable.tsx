@@ -188,7 +188,7 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners }) => {
       </Box>
 
       <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: "none" }}>
-        <Table sx={{ minWidth: 650 }}>
+        <Table sx={{ minWidth: 1350 }}>
           <TableHead sx={{ bgcolor: "grey.50" }}>
             <TableRow>
               <TableCell sx={{ fontWeight: 600 }}>Partner</TableCell>

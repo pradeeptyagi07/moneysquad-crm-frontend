@@ -37,6 +37,7 @@ import UniversalFilterBar from "./UniversalFilterBar"
 import { useAppDispatch } from "../../../hooks/useAppDispatch"
 import { fetchPartnerSummary, updatePartnerPayoutInfo } from "../../../store/slices/commissionSlice"
 import { useAppSelector } from "../../../hooks/useAppSelector"
+import { LabelSuccess, LabelWarning } from "./DisbursedLeadsTable"
 
 const PartnerPayoutTable: React.FC = () => {
   const dispatch = useAppDispatch()
@@ -288,13 +289,13 @@ const PartnerPayoutTable: React.FC = () => {
                     <TableCell>₹{row.netPayout.toLocaleString()}</TableCell>
                     <TableCell>₹{row.amountPaid.toLocaleString()}</TableCell>
                     <TableCell>₹{row.amountPending.toLocaleString()}</TableCell>
-                    <TableCell>
-                      <Chip
-                        label={row.paymentStatus}
-                        color={row.paymentStatus === "Paid" ? "success" : "warning"}
-                        size="small"
-                      />
-                    </TableCell>
+                  <TableCell>
+  {row.paymentStatus === 'Paid' ? (
+    <LabelSuccess>{row.paymentStatus}</LabelSuccess>
+  ) : (
+    <LabelWarning>{row.paymentStatus}</LabelWarning>
+  )}
+</TableCell>
                     <TableCell>
                       <Chip
                         label={row.gstApplicable}

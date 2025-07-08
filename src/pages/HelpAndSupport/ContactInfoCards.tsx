@@ -1,18 +1,40 @@
+// ContactInfoCards.tsx
+"use client";
+
 import React, { useState } from "react";
 import {
   Box,
+  Grid,
   Paper,
   Typography,
-  Grid,
   Stack,
   IconButton,
   Tooltip,
   Snackbar,
   Alert,
+  Divider,
+  useTheme,
+  alpha,
 } from "@mui/material";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 
-const ContactInfoCards = ({ data }: { data: Record<string, any> }) => {
+interface ContactInfo {
+  name: string;
+  phone: string;
+  email: string;
+}
+
+interface ContactInfoCardsProps {
+  data: Record<"grievance" | "payout", ContactInfo>;
+}
+
+const labelMap: Record<keyof ContactInfoCardsProps["data"], string> = {
+  grievance: "Grievance Officer",
+  payout: "Payout Concern",
+};
+
+export const ContactInfoCards: React.FC<ContactInfoCardsProps> = ({ data }) => {
+  const theme = useTheme();
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [copiedLabel, setCopiedLabel] = useState("");
 
@@ -22,141 +44,158 @@ const ContactInfoCards = ({ data }: { data: Record<string, any> }) => {
       setSnackbarOpen(true);
     });
   };
-
-  const handleCloseSnackbar = () => {
-    setSnackbarOpen(false);
-  };
-
-  const labelMap = {
-    grievance: "Grievance Officer",
-    payout: "Payout Concern",
-  };
+  const handleClose = () => setSnackbarOpen(false);
 
   return (
-    <Box sx={{ p: 4, backgroundColor: '#f8fafc' }}>
-      <Typography 
-        variant="h4" 
-        gutterBottom 
-        sx={{ 
-          textAlign: "center", 
-          mb: 4,
+    <Box sx={{ p: { xs: 2, md: 4 }, backgroundColor: "#F5F7FA" }}>
+      {/* Section Title */}
+      <Typography
+        variant="h4"
+        align="center"
+        gutterBottom
+        sx={{
           fontWeight: 700,
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          backgroundClip: 'text',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          fontSize: { xs: '1.8rem', md: '2.5rem' }
+          background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+          backgroundClip: "text",
+          WebkitBackgroundClip: "text",
+          color: "transparent",
+          mb: { xs: 3, md: 5 },
         }}
       >
         Contact Details
       </Typography>
-      
-      <Grid container spacing={3} justifyContent="center">
-        {Object.entries(data).map(([key, value]) => (
-          <Grid item xs={12} md={6} key={key}>
-            <Paper 
-              elevation={0}
-              sx={{ 
-                p: 3, 
-                borderRadius: 3,
-                background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-                border: '1px solid rgba(99, 102, 241, 0.1)',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                position: 'relative',
-                overflow: 'hidden',
-                '&::before': {
-                  content: '""',
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: '4px',
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                },
-                '&:hover': {
-                  transform: 'translateY(-4px)',
-                  boxShadow: '0 20px 40px rgba(99, 102, 241, 0.15)',
-                  border: '1px solid rgba(99, 102, 241, 0.2)',
-                }
-              }}
-            >
-              <Typography 
-                variant="h6" 
-                gutterBottom 
-                sx={{ 
-                  fontWeight: 600,
-                  color: '#1e293b',
-                  mb: 2.5,
-                  fontSize: '1.1rem'
+
+      {/* Cards Grid */}
+      <Grid container spacing={4} justifyContent="center">
+        {(["grievance", "payout"] as (keyof typeof data)[]).map((key) => {
+          const info = data[key];
+          return (
+            <Grid key={key} item xs={12} md={6} lg={5}>
+              <Paper
+                elevation={2}
+                sx={{
+                  position: "relative",
+                  borderRadius: 3,
+                  backgroundColor: "#fff",
+                  overflow: "hidden",
+                  transition: "transform 0.3s, box-shadow 0.3s",
+                  "&:hover": {
+                    transform: "translateY(-4px)",
+                    boxShadow: "0 12px 32px rgba(0,0,0,0.1)",
+                  },
+                  "&::before": {
+                    content: '""',
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    height: 4,
+                    background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+                  },
+                  p: { xs: 2.5, md: 4 },
                 }}
               >
-                {labelMap[key as keyof typeof labelMap]}
-              </Typography>
-              
-              <Stack spacing={2}>
-                {["name", "phone", "email"].map((field) => (
-                  <Box key={field} sx={{ position: 'relative' }}>
-                    <Stack direction="row" alignItems="center" spacing={1}>
-                      <Typography 
-                        variant="body1" 
-                        sx={{ 
-                          flex: 1,
-                          color: field === 'name' ? '#1e293b' : '#475569',
-                          fontWeight: field === 'name' ? 600 : 500,
-                          fontSize: field === 'name' ? '1rem' : '0.95rem',
-                          fontFamily: field === 'name' ? 'inherit' : 'monospace',
-                          letterSpacing: field === 'name' ? 'normal' : '0.02em'
+                {/* Card Header */}
+                <Typography
+                  variant="h6"
+                  fontWeight={700}
+                  color="text.primary"
+                  mb={2}
+                >
+                  {labelMap[key]}
+                </Typography>
+
+                <Stack spacing={2}>
+                  {[
+                    { label: "Name", field: "name" as const },
+                    { label: "Phone", field: "phone" as const },
+                    { label: "Email", field: "email" as const },
+                  ].map(({ label, field }, idx) => (
+                    <Box key={field}>
+                      <Divider sx={{ mb: 1 }} />
+                      <Typography
+                        variant="subtitle2"
+                        color="text.secondary"
+                        gutterBottom
+                      >
+                        {label}
+                      </Typography>
+                      <Stack
+                        direction="row"
+                        alignItems="center"
+                        spacing={1}
+                        sx={{
+                          backgroundColor: alpha(theme.palette.divider, 0.04),
+                          borderRadius: 1.5,
+                          px: 2,
+                          py: 1,
                         }}
                       >
-                        {value[field]}
-                      </Typography>
-                      
-                      {field !== 'name' && (
-                        <Tooltip title={`Copy ${field}`} placement="top">
-                          <IconButton
-                            onClick={() => handleCopy(value[field], `${labelMap[key as keyof typeof labelMap]} ${field}`)}
-                            size="small"
-                            sx={{
-                              color: '#6366f1',
-                              backgroundColor: 'rgba(99, 102, 241, 0.08)',
-                              '&:hover': {
-                                backgroundColor: 'rgba(99, 102, 241, 0.15)',
-                                transform: 'scale(1.05)',
-                              },
-                              transition: 'all 0.2s ease',
-                              width: 32,
-                              height: 32,
-                            }}
-                          >
-                            <ContentCopyIcon sx={{ fontSize: 16 }} />
-                          </IconButton>
-                        </Tooltip>
-                      )}
-                    </Stack>
-                  </Box>
-                ))}
-              </Stack>
-            </Paper>
-          </Grid>
-        ))}
+                        <Typography
+                          variant="body1"
+                          sx={{
+                            flexGrow: 1,
+                            color: theme.palette.text.primary,
+                            fontFamily: field === "name" ? "inherit" : "monospace",
+                            fontWeight: field === "name" ? 600 : 500,
+                          }}
+                        >
+                          {info[field]}
+                        </Typography>
+                        {field !== "name" && (
+                          <Tooltip title={`Copy ${label}`}>
+                            <IconButton
+                              size="small"
+                              onClick={() =>
+                                handleCopy(
+                                  info[field],
+                                  `${labelMap[key]} ${label}`
+                                )
+                              }
+                              sx={{
+                                color: theme.palette.primary.main,
+                                backgroundColor: alpha(
+                                  theme.palette.primary.main,
+                                  0.1
+                                ),
+                                "&:hover": {
+                                  backgroundColor: alpha(
+                                    theme.palette.primary.main,
+                                    0.2
+                                  ),
+                                  transform: "scale(1.1)",
+                                },
+                                transition: "all 0.2s ease",
+                                width: 32,
+                                height: 32,
+                              }}
+                            >
+                              <ContentCopyIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </Stack>
+                    </Box>
+                  ))}
+                </Stack>
+              </Paper>
+            </Grid>
+          );
+        })}
       </Grid>
 
-      {/* Snackbar for copy confirmation */}
+      {/* Copy Confirmation Snackbar */}
       <Snackbar
         open={snackbarOpen}
         autoHideDuration={2000}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        onClose={handleClose}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
         <Alert
-          onClose={handleCloseSnackbar}
+          onClose={handleClose}
           severity="success"
-          variant="outlined"
-          sx={{ 
-            width: '100%',
-            backgroundColor: 'white',
-            border: '1px solid #4CAF50',
-          }}
+          variant="filled"
+          sx={{ width: "100%" }}
         >
           {copiedLabel} copied to clipboard!
         </Alert>

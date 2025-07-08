@@ -362,7 +362,7 @@ ${selectedOffer.keyFeatures.map((feature) => `• ${feature}`).join("\n")}`;
                   component="img"
                   src={selectedOffer.bankImage}
                   alt={selectedOffer.bankName}
-                  sx={{ width: "100%", height: 240, objectFit: "cover" }}
+                  sx={{ width: "100%", height: 240, objectFit: "contain" }}
                 />
                 {selectedOffer.isFeatured && (
                   <Chip

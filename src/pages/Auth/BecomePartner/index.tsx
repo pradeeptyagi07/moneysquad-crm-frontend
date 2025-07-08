@@ -152,34 +152,32 @@ const BecomePartner: React.FC = () => {
     window.scrollTo(0, 0)
   }
 
-  const handleSubmit = async () => {
-    setIsSubmitting(true)
-    try {
-      const result = await dispatch(createPartner(formData)).unwrap()
-      setPartnerId(result?.data?.partnerId)
-      setSnackbarSeverity("success")
-      setSnackbarMessage("Partner registered successfully!")
-      setSnackbarOpen(true)
-      setShowSuccessDialog(true)
-    } catch (error: any) {
-      // show error in snackbar
-      setSnackbarSeverity("error")
+const handleSubmit = async () => {
+  setIsSubmitting(true)
+  try {
+    const result = await dispatch(createPartner(formData)).unwrap()
+    setPartnerId(result?.data?.partnerId)
+    setSnackbarSeverity("success")
+    setSnackbarMessage("Partner registered successfully!")
+    setSnackbarOpen(true)
+    setShowSuccessDialog(true)
+  } catch (error: any) {
+    const errorMsg =
+      typeof error === "string"
+        ? error
+        : error?.message ||
+          error?.response?.data?.message ||
+          "Something went wrong while submitting. Please try again."
 
-      // Check if it's the specific "Partner already exists" error
-      if (error.message && error.message.includes("Partner already exists")) {
-        setSnackbarMessage(
-          "This email or phone number is already registered to an account. Try Login instead or use a different Email ID to create a new account.",
-        )
-      } else {
-        setSnackbarMessage(error.message ||"This email or phone number is already registered to an account. Try Login instead or use a different Email ID to create a new account.")
-      }
-
-      setSnackbarOpen(true)
-      console.error("Submission failed:", error)
-    } finally {
-      setIsSubmitting(false)
-    }
+    setSnackbarSeverity("error")
+    setSnackbarMessage(errorMsg)
+    setSnackbarOpen(true)
+  } finally {
+    // ✅ Ensure it resets regardless of success/failure
+    setIsSubmitting(false)
   }
+}
+
 
   const handleExit = () => setShowExitDialog(true)
   const confirmExit = () => navigate("/")

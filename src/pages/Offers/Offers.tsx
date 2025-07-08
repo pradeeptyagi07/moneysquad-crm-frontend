@@ -1,7 +1,7 @@
+// Offers.tsx
 "use client"
 
-import React from "react"
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import {
   Box,
   Typography,
@@ -18,7 +18,9 @@ import {
   Snackbar,
   Alert,
   TablePagination,
-  CircularProgress,
+  Skeleton,
+  Card,
+  CardContent,
 } from "@mui/material"
 import type { TransitionProps } from "@mui/material/transitions"
 import { Add, Search, FilterList } from "@mui/icons-material"
@@ -36,19 +38,26 @@ import {
   type BankOffer,
 } from "../../store/slices/offersSlice"
 
-// Transition component for dialog
+// Transition component for dialogs
 const Transition = React.forwardRef(function Transition(
-  props: TransitionProps & {
-    children: React.ReactElement
-  },
-  ref: React.Ref<unknown>,
+  props: TransitionProps & { children: React.ReactElement },
+  ref: React.Ref<unknown>
 ) {
-  return <Slide direction="up" ref={ref} {...props} />
+  return <Slide direction="" ref={ref} {...props} />
 })
 
 const Offers: React.FC = () => {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("md"))
+
+  // 1s delay to show skeleton before real data
+  const [showSkeleton, setShowSkeleton] = useState(true)
+  useEffect(() => {
+    const timer = setTimeout(() => setShowSkeleton(false), 1000)
+    return () => clearTimeout(timer)
+  }, [])
+
+  // Dialog & filter/search state
   const [openDialog, setOpenDialog] = useState(false)
   const [openCreateDialog, setOpenCreateDialog] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
@@ -56,144 +65,107 @@ const Offers: React.FC = () => {
   const [selectedOfferId, setSelectedOfferId] = useState<string | null>(null)
   const { userRole } = useAuth()
 
-  // Redux state
+  // Redux state & dispatch
   const dispatch = useAppDispatch()
-  const { offers, loading, error, success } = useAppSelector((state) => state.offers)
-  const selectedOffer = useAppSelector((state) => state.offers.selectedOffer)
+  const { offers, loading, error, success } = useAppSelector(
+    state => state.offers
+  )
+  const selectedOffer = useAppSelector(state => state.offers.selectedOffer)
 
   // Pagination state
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(8)
 
-  // Snackbar state
+  // Snackbar notifications
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
     severity: "success" as "success" | "error",
   })
 
-  // Fetch offers on component mount
+  // Initial fetch
   useEffect(() => {
     dispatch(fetchAllOffers())
   }, [dispatch])
 
-  // Handle success and error messages
+  // Show success / error messages
   useEffect(() => {
     if (success) {
-      setSnackbar({
-        open: true,
-        message: success,
-        severity: "success",
-      })
-      // Clear success message after showing snackbar
-      setTimeout(() => {
-        dispatch(clearOffersState())
-      }, 5000)
+      setSnackbar({ open: true, message: success, severity: "success" })
+      setTimeout(() => dispatch(clearOffersState()), 5000)
     }
     if (error) {
-      setSnackbar({
-        open: true,
-        message: error,
-        severity: "error",
-      })
-      // Clear error message after showing snackbar
-      setTimeout(() => {
-        dispatch(clearOffersState())
-      }, 5000)
+      setSnackbar({ open: true, message: error, severity: "error" })
+      setTimeout(() => dispatch(clearOffersState()), 5000)
     }
   }, [success, error, dispatch])
 
+  // Handlers
   const handleOpenDialog = (offer: BankOffer) => {
     setSelectedOfferId(offer._id)
     setOpenDialog(true)
   }
-
   const handleCloseDialog = () => {
     setOpenDialog(false)
     setTimeout(() => {
       setSelectedOfferId(null)
       dispatch(setSelectedOffer(null))
-    }, 300) // Wait for dialog close animation
+    }, 300)
   }
-
-  const handleOpenCreateDialog = () => {
-    setOpenCreateDialog(true)
-  }
-
+  const handleOpenCreateDialog = () => setOpenCreateDialog(true)
   const handleCloseCreateDialog = () => {
     setOpenCreateDialog(false)
     dispatch(setSelectedOffer(null))
   }
-
-  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(event.target.value)
-  }
-
-  const handleFilterChange = (event: React.SyntheticEvent, newValue: number) => {
-    setFilterTab(newValue)
-  }
-
-  // Handle pagination
-  const handleChangePage = (event: unknown, newPage: number) => {
-    setPage(newPage)
-  }
-
-  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setRowsPerPage(Number.parseInt(event.target.value, 10))
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) =>
+    setSearchTerm(e.target.value)
+  const handleFilterChange = (_: React.SyntheticEvent, newVal: number) =>
+    setFilterTab(newVal)
+  const handleChangePage = (_: unknown, newPage: number) => setPage(newPage)
+  const handleChangeRowsPerPage = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(e.target.value, 10))
     setPage(0)
   }
-
-  const handleCloseSnackbar = () => {
-    setSnackbar({
-      ...snackbar,
-      open: false,
-    })
-  }
-
-  const handleDeleteOffer = (id: string) => {
-    dispatch(deleteOffer(id))
-  }
-
+  const handleCloseSnackbar = () =>
+    setSnackbar(prev => ({ ...prev, open: false }))
+  const handleDeleteOffer = (id: string) => dispatch(deleteOffer(id))
   const handleEditOffer = (offer: BankOffer) => {
     dispatch(setSelectedOffer(offer))
     setOpenCreateDialog(true)
   }
 
-  // Filter offers based on search term and tab
+  // Filter & paginate logic
   const filteredOffers = Array.isArray(offers)
-    ? offers.filter((offer) => {
-        const matchesSearch =
-          offer.bankName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          offer.loanType.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (offer.offerHeadline && offer.offerHeadline.toLowerCase().includes(searchTerm.toLowerCase()))
-
-        if (filterTab === 0) return matchesSearch // All
-        if (filterTab === 1) return matchesSearch && offer.isFeatured // Featured
-        if (filterTab === 2) return matchesSearch && offer.loanType.startsWith("PL") // Personal Loans (PL-)
-        if (filterTab === 3) return matchesSearch && offer.loanType.startsWith("BL") // Business Loans (BL-)
-        if (filterTab === 4) return matchesSearch && offer.loanType.startsWith("SEPL") // SEPL Loans (SEPL-)
-
-        return matchesSearch
+    ? offers.filter(o => {
+        const matches = [o.bankName, o.loanType, o.offerHeadline]
+          .filter(Boolean)
+          .some(t => t!.toLowerCase().includes(searchTerm.toLowerCase()))
+        if (!matches) return false
+        if (filterTab === 1) return o.isFeatured
+        if (filterTab === 2) return o.loanType.startsWith("PL")
+        if (filterTab === 3) return o.loanType.startsWith("BL")
+        if (filterTab === 4) return o.loanType.startsWith("SEPL")
+        return true
       })
     : []
-
-  // Get paginated offers
-  const paginatedOffers = filteredOffers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+  const paginatedOffers = filteredOffers.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  )
 
   return (
     <Box>
-      {/* Header with search and filter */}
-      <Box sx={{ mb: 4 }}>
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
+      {/* Header */}
+      <Box mb={4}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
           <Typography variant="h4">Bank Offers</Typography>
           {userRole === "admin" && (
             <Tooltip title="Create New Offer">
               <Fab
                 color="primary"
-                aria-label="add"
                 onClick={handleOpenCreateDialog}
                 sx={{
-                  boxShadow: "0 8px 16px rgba(37, 99, 235, 0.2)",
+                  boxShadow: "0 8px 16px rgba(37,99,235,0.2)",
                   background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
                   "&:hover": {
                     background: "linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%)",
@@ -205,7 +177,6 @@ const Offers: React.FC = () => {
             </Tooltip>
           )}
         </Box>
-
         <Grid container spacing={2} alignItems="center">
           <Grid item xs={12} md={6}>
             <TextField
@@ -224,19 +195,14 @@ const Offers: React.FC = () => {
             />
           </Grid>
           <Grid item xs={12} md={6}>
-            <Box sx={{ display: "flex", alignItems: "center" }}>
+            <Box display="flex" alignItems="center">
               <FilterList sx={{ mr: 1, color: "text.secondary" }} />
               <Tabs
                 value={filterTab}
                 onChange={handleFilterChange}
                 variant={isMobile ? "scrollable" : "standard"}
                 scrollButtons="auto"
-                sx={{
-                  "& .MuiTab-root": {
-                    minWidth: "auto",
-                    px: 2,
-                  },
-                }}
+                sx={{ "& .MuiTab-root": { minWidth: "auto", px: 2 } }}
               >
                 <Tab label="All" />
                 <Tab label="Featured" />
@@ -249,17 +215,36 @@ const Offers: React.FC = () => {
         </Grid>
       </Box>
 
-      {/* Loading state */}
-      {loading && (
-        <Box sx={{ display: "flex", justifyContent: "center", my: 4 }}>
-          <CircularProgress />
-        </Box>
+      {/* Skeleton loading matching card shape */}
+      {loading && offers.length === 0 && showSkeleton && (
+        <Grid container spacing={2}>
+          {Array.from({ length: rowsPerPage }).map((_, i) => (
+            <Grid item xs={12} sm={6} md={4} key={i}>
+              <Card sx={{ borderRadius: 3, boxShadow: "0 6px 18px rgba(0,0,0,0.1)" }}>
+                <Skeleton variant="rectangular" height={220} width="100%" />
+                <CardContent>
+                  <Skeleton width="60%" height={24} sx={{ mb: 1 }} />
+                  <Skeleton variant="rectangular" width="30%" height={30} sx={{ mb: 2, borderRadius: 1 }} />
+                  <Skeleton width="80%" height={24} sx={{ mb: 1 }} />
+                  <Skeleton width="70%" height={24} sx={{ mb: 2 }} />
+                  <Box display="flex" justifyContent="space-between">
+                    <Skeleton width="40%" height={20} />
+                    <Skeleton width="40%" height={20} />
+                  </Box>
+                  <Box mt={2}>
+                    <Skeleton variant="rectangular" width="100%" height={40} />
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
       )}
 
-      {/* Empty state */}
+      {/* No results */}
       {!loading && paginatedOffers.length === 0 && (
-        <Box sx={{ textAlign: "center", my: 8, p: 3, bgcolor: "background.paper", borderRadius: 2 }}>
-          <Typography variant="h6" color="text.secondary" gutterBottom>
+        <Box textAlign="center" my={8} p={3} bgcolor="background.paper" borderRadius={2}>
+          <Typography variant="h6" color="text.secondary">
             No offers found
           </Typography>
           <Typography variant="body2" color="text.secondary">
@@ -270,23 +255,24 @@ const Offers: React.FC = () => {
         </Box>
       )}
 
-      {/* Offer Cards */}
-      <Grid container spacing={2}>
-        {paginatedOffers.map((offer) => (
-          <Grid item xs={12} sm={6} md={3} key={offer._id}>
-            <OfferCard
-              offer={offer}
-              onViewDetails={handleOpenDialog}
-              onDeleteOffer={userRole === "admin" ? handleDeleteOffer : undefined}
-              onEditOffer={userRole === "admin" ? handleEditOffer : undefined}
-            />
-          </Grid>
-        ))}
+      {/* Offer cards */}
+      <Grid container spacing={4}>
+        {!loading &&
+          paginatedOffers.map(offer => (
+            <Grid item xs={12} sm={6} md={4} key={offer._id}>
+              <OfferCard
+                offer={offer}
+                onViewDetails={handleOpenDialog}
+                onDeleteOffer={userRole === "admin" ? handleDeleteOffer : undefined}
+                onEditOffer={userRole === "admin" ? handleEditOffer : undefined}
+              />
+            </Grid>
+          ))}
       </Grid>
 
       {/* Pagination */}
-      {filteredOffers.length > 0 && (
-        <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+      {!loading && filteredOffers.length > 0 && (
+        <Box display="flex" justifyContent="center" mt={4}>
           <TablePagination
             component="div"
             count={filteredOffers.length}
@@ -299,22 +285,19 @@ const Offers: React.FC = () => {
         </Box>
       )}
 
-      {/* Offer Details Dialog */}
+      {/* Dialogs & Snackbar */}
       {selectedOfferId && (
         <OfferDetailsDialog
           open={openDialog}
           onClose={handleCloseDialog}
           offerId={selectedOfferId}
           userRole={userRole}
+          TransitionComponent={Transition}
         />
       )}
-
-      {/* Create Offer Dialog - Only for Admin */}
       {userRole === "admin" && (
         <CreateOfferDialog open={openCreateDialog} onClose={handleCloseCreateDialog} editOffer={selectedOffer} />
       )}
-
-      {/* Snackbar for notifications */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={5000}

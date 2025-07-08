@@ -88,32 +88,32 @@ export const loanTypeColors: Record<
   { gradient: string; textColor: string }
 > = {
   "PL-Term Loan": {
-    gradient: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
+    gradient: "#33C2FF",
     textColor: "#ffffff",
   },
   "PL-Overdraft": {
-    gradient: "linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)",
+    gradient: "#5569FF",
     textColor: "#ffffff",
   },
   "BL-Term Loan": {
-    gradient: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+    gradient: "#57CA22",
     textColor: "#ffffff",
   },
   "BL-Overdraft": {
-    gradient: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+    gradient: "#FFA319",
     textColor: "#ffffff",
   },
   "SEPL-Term Loan": {
-    gradient: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+    gradient: "#0E1AFF",
     textColor: "#ffffff",
   },
   "SEPL-Overdraft": {
-    gradient: "linear-gradient(135deg, #d97706 0%, #b45309 100%)",
+    gradient: "#FF1943",
     textColor: "#ffffff",
   },
   // optional fallback
   Other: {
-    gradient: "linear-gradient(135deg, #64748b 0%, #475569 100%)",
+    gradient: "#E052A3",
     textColor: "#ffffff",
   },
 };
