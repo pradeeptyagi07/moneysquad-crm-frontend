@@ -13,6 +13,7 @@ import { useAppSelector } from "../hooks/useAppSelector";
 import type { JSX } from "react/jsx-runtime";
 import HelpSupportMain from "../pages/HelpAndSupport/HelpSupportMain";
 import TrainingResourcesTab from "../pages/TrainingResources/TrainingResources";
+import PartnerOverview from "../pages/Overview/PartnerOverview";
 
 // Protected route component specific to associate role
 const AssociateRoute = ({ children }: { children: JSX.Element }) => {
@@ -44,7 +45,7 @@ const associateRoutes: RouteObject[] = [
       },
       {
         path: "overview",
-        element: <AssociateOverview />,
+        element: <PartnerOverview />,
       },
       {
         path: "leads",

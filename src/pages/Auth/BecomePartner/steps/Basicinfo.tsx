@@ -14,10 +14,12 @@ import {
   InputAdornment,
   CircularProgress,
   Alert,
+  useTheme,
 } from "@mui/material"
 import { VerifiedUser } from "@mui/icons-material"
 import { sendPartnerOtp, verifyPartnerOtp } from "../../../../store/slices/signupPartnerSlice"
 import type { PartnerFormData } from "../index"
+import { color } from "framer-motion"
 
 interface BasicInfoProps {
   formData: PartnerFormData
@@ -29,6 +31,7 @@ const teamStrengthOptions = ["<5", "5-15", "15-30", "30-50", "50+"]
 
 const BasicInfo: React.FC<BasicInfoProps> = ({ formData, updateFormData }) => {
   const dispatch = useAppDispatch()
+  const theme = useTheme()
 
   const [errors, setErrors] = useState({
     fullName: "",
@@ -121,6 +124,15 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ formData, updateFormData }) => {
 
   const isNonIndividual = formData.registrationType && formData.registrationType !== "Individual"
 
+  // Label props for red asterisk on required fields
+  const labelProps = {
+    sx: {
+      "& .MuiInputLabel-asterisk": {
+        color: theme.palette.error.main,
+      },
+    },
+  }
+
   return (
     <Box>
       <Grid container spacing={3}>
@@ -136,7 +148,12 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ formData, updateFormData }) => {
             onBlur={handleBlur}
             error={!!errors.fullName}
             helperText={errors.fullName}
-            InputProps={{ sx: { borderRadius: 2 } }}
+            InputLabelProps={labelProps}
+            InputProps={{
+              sx: {
+                borderRadius: 2,
+              },
+            }}
           />
         </Grid>
 
@@ -152,6 +169,7 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ formData, updateFormData }) => {
             onBlur={handleBlur}
             error={!!errors.mobileNumber}
             helperText={errors.mobileNumber}
+            InputLabelProps={labelProps}
             InputProps={{
               startAdornment: <InputAdornment position="start">+91</InputAdornment>,
               sx: { borderRadius: 2 },
@@ -173,6 +191,7 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ formData, updateFormData }) => {
             error={!!errors.email}
             helperText={errors.email}
             disabled={formData.otpVerified}
+            InputLabelProps={labelProps}
             InputProps={{
               sx: { borderRadius: 2 },
               endAdornment: formData.otpVerified ? (
@@ -258,6 +277,7 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ formData, updateFormData }) => {
             onBlur={handleBlur}
             error={!!errors.registrationType}
             helperText={errors.registrationType}
+            InputLabelProps={labelProps}
             InputProps={{ sx: { borderRadius: 2 } }}
           >
             {registrationTypes.map((option) => (
@@ -282,6 +302,7 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ formData, updateFormData }) => {
               onBlur={handleBlur}
               error={!!errors.teamStrength}
               helperText={errors.teamStrength}
+              InputLabelProps={labelProps}
               InputProps={{ sx: { borderRadius: 2 } }}
             >
               {teamStrengthOptions.map((option) => (
@@ -293,12 +314,8 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ formData, updateFormData }) => {
           </Grid>
         )}
 
-        {/* Note */}
-        <Grid item xs={12}>
-          <Typography variant="body2" color="text.secondary">
-            All fields marked with * are mandatory. Your email will be verified via a verification code.
-          </Typography>
-        </Grid>
+
+
       </Grid>
     </Box>
   )

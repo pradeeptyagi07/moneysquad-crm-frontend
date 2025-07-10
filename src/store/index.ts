@@ -12,6 +12,7 @@ import commissionReducer from "./slices/commissionSlice" // ✅ Import your new 
 import userDataReducer from "./slices/userDataSlice" // ✅ Import userData slice
 import changeRequestReducer from "./slices/changeRequestSlice" // ✅ Import changeRequest slice
 import resourceAndSupportReducer from "./slices/resourceAndSupportSlice" // ✅ Import changeRequest slice
+import dashboardReducer from "./slices/dashboardSlice" // ✅ Import changeRequest slice
 
 export const store = configureStore({
   reducer: {
@@ -27,6 +28,7 @@ export const store = configureStore({
     userData: userDataReducer, // ✅ Add userData to the store
     changeRequest: changeRequestReducer, // ✅ Add changeRequest to the store
     resourceAndSupport: resourceAndSupportReducer,
+    dashboard:dashboardReducer,
 
   },
   middleware: (getDefaultMiddleware) =>

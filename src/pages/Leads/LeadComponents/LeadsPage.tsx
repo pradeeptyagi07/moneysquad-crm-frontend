@@ -5,38 +5,54 @@ import React, { useEffect, useState, useMemo } from "react";
 import { Box, Typography, Button, Paper, Snackbar, Alert } from "@mui/material";
 import { Add } from "@mui/icons-material";
 
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
+import { unparse } from "papaparse";
+
 import { useAppSelector } from "../../../hooks/useAppSelector";
 import { useAppDispatch } from "../../../hooks/useAppDispatch";
-import LeadsFilterBar from "./LeadsFilterBar";
+
 import LeadsDialogs from "./LeadsDialogs";
 import { LeadFormData } from "../leadManagement/formDialog/LeadFormDialog";
 import { fetchAllLeads, Lead } from "../../../store/slices/leadSLice";
 import LeadsDataTable from "./LeadsDataTabel";
+import { useAuth } from "../../../hooks/useAuth";
+import LeadsFilterBar from "./LeadsFilterBar";
+
+interface FilterOption {
+  value: string;
+  label: string;
+  id?: string;
+}
 
 const LeadsPage: React.FC = () => {
   const dispatch = useAppDispatch();
+  const { userRole } = useAuth();
   const { leads: apiLeads } = useAppSelector((s) => s.leads);
 
-  // Filters & pagination
+  // Basic filters & pagination
   const [statusFilter, setStatusFilter] = useState("all");
   const [loanTypeFilter, setLoanTypeFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
+  // Role-based filters
+  const [partnerFilter, setPartnerFilter] = useState("all");
+  const [lenderFilter, setLenderFilter] = useState("all");
+  const [managerFilter, setManagerFilter] = useState("all");
+  const [associateFilter, setAssociateFilter] = useState("all");
+
   // Dialog state
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<"create" | "edit" | "duplicate">("create");
   const [selectedLead, setSelectedLead] = useState<LeadFormData | null>(null);
-
   const [assignOpen, setAssignOpen] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
   const [timelineOpen, setTimelineOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [disbursementOpen, setDisbursementOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-
-  // full-backend Lead for disbursement dialog
   const [apiDisbursementLead, setApiDisbursementLead] = useState<Lead | null>(null);
 
   const [snackbar, setSnackbar] = useState<{
@@ -45,11 +61,62 @@ const LeadsPage: React.FC = () => {
     severity: "success" | "error";
   }>({ open: false, message: "", severity: "success" });
 
-  // Fetch leads on mount
+  // Fetch leads
   useEffect(() => {
     dispatch(fetchAllLeads());
   }, [dispatch]);
 
+  // Build filter options
+  const filterOptions = useMemo(() => {
+    const partnersSet = new Set<string>();
+    const lendersSet = new Set<string>();
+    const managersSet = new Set<string>();
+    const associatesSet = new Set<string>();
+    const partners: FilterOption[] = [];
+    const lenders: FilterOption[] = [];
+    const managers: FilterOption[] = [];
+    const associates: FilterOption[] = [];
+
+    apiLeads.forEach((lead) => {
+      if (lead.partnerId?.basicInfo?.fullName) {
+        const key = lead.partnerId._id;
+        if (!partnersSet.has(key)) {
+          partnersSet.add(key);
+          partners.push({ value: key, label: lead.partnerId.basicInfo.fullName, id: lead.partnerId.partnerId });
+        }
+      }
+      if (lead.lenderType?.trim()) {
+        const key = lead.lenderType;
+        if (!lendersSet.has(key)) {
+          lendersSet.add(key);
+          lenders.push({ value: key, label: key });
+        }
+      }
+      if (lead.manager?.firstName) {
+        const key = lead.manager._id;
+        if (!managersSet.has(key)) {
+          managersSet.add(key);
+          managers.push({ value: key, label: `${lead.manager.firstName} ${lead.manager.lastName}`.trim(), id: lead.manager.managerId });
+        }
+      }
+      if (lead.associate?.firstName) {
+        const key = lead.associate._id;
+        if (!associatesSet.has(key)) {
+          associatesSet.add(key);
+          associates.push({ value: key, label: `${lead.associate.firstName} ${lead.associate.lastName}`.trim(), id: lead.associate.associateDisplayId });
+        }
+      }
+    });
+
+    partners.sort((a, b) => a.label.localeCompare(b.label));
+    lenders.sort((a, b) => a.label.localeCompare(b.label));
+    managers.sort((a, b) => a.label.localeCompare(b.label));
+    associates.sort((a, b) => a.label.localeCompare(b.label));
+
+    return { partners, lenders, managers, associates };
+  }, [apiLeads]);
+
+  // Prepare form data
   const prepareFormData = (api: Lead): LeadFormData => ({
     id: api.id,
     leadId: api.leadId,
@@ -66,45 +133,37 @@ const LeadsPage: React.FC = () => {
     loanAmount: String(api.loan.amount),
     comments: api.comments || "",
     status: api.status,
-
     assignTo: api.manager?._id || "",
     associate: api.associate?._id || "",
     lenderName: api.lenderType || "",
   });
 
+  // Rows & filteredRows
   const rows = useMemo(
     () =>
       apiLeads.map((l) => ({
         dbId: l.id,
         leadId: l.leadId,
-        // safe‐check here; default to "Unknown Partner"
         partnerName: l.partnerId?.basicInfo?.fullName ?? "Unknown Partner",
         partnerId: l.partnerId?.partnerId ?? "",
-
         associateName: l.associate
-          ? `${l.associate.firstName ?? ""} ${l.associate.lastName ?? ""}`.trim()
+          ? `${l.associate.firstName} ${l.associate.lastName}`.trim()
           : "",
         associateDisplayId: l.associate?.associateDisplayId ?? "",
-
         applicantName: l.applicantName,
         applicantLocation: `${l.pincode?.city ?? ""}, ${l.pincode?.state ?? ""}`,
-
         applicantMobile: l.mobile,
         applicantEmail: l.email,
-
         lenderName: l.lenderType || "",
         loanType: l.loan.type,
         loanAmount: l.loan.amount,
-
         comments: l.comments || "",
         status: l.status,
         lastUpdate: l.statusUpdatedAt,
-
         managerName: l.manager
-          ? `${l.manager.firstName ?? ""} ${l.manager.lastName ?? ""}`.trim()
+          ? `${l.manager.firstName} ${l.manager.lastName}`.trim()
           : "",
         managerDisplayId: l.manager?.managerId || "",
-
         createdAt: l.createdAt,
         disbursedData: l.disbursedData || null,
       })),
@@ -118,26 +177,107 @@ const LeadsPage: React.FC = () => {
         if (loanTypeFilter !== "all" && r.loanType !== loanTypeFilter) return false;
         if (searchTerm) {
           const s = searchTerm.toLowerCase();
-          return (
-            r.leadId.toLowerCase().includes(s) ||
-            r.applicantName.toLowerCase().includes(s) ||
-            r.applicantEmail.toLowerCase().includes(s)
-          );
+          if (
+            !(
+              r.leadId.toLowerCase().includes(s) ||
+              r.applicantName.toLowerCase().includes(s) ||
+              r.applicantEmail.toLowerCase().includes(s)
+            )
+          )
+            return false;
+        }
+        if (partnerFilter !== "all") {
+          const lead = apiLeads.find((l) => l.id === r.dbId);
+          if (!lead?.partnerId || lead.partnerId._id !== partnerFilter) return false;
+        }
+        if (lenderFilter !== "all" && r.lenderName !== lenderFilter) return false;
+        if (managerFilter !== "all") {
+          const lead = apiLeads.find((l) => l.id === r.dbId);
+          if (!lead?.manager || lead.manager._id !== managerFilter) return false;
+        }
+        if (associateFilter !== "all") {
+          const lead = apiLeads.find((l) => l.id === r.dbId);
+          if (!lead?.associate || lead.associate._id !== associateFilter) return false;
         }
         return true;
       }),
-    [rows, statusFilter, loanTypeFilter, searchTerm]
+    [
+      rows,
+      statusFilter,
+      loanTypeFilter,
+      searchTerm,
+      partnerFilter,
+      lenderFilter,
+      managerFilter,
+      associateFilter,
+      apiLeads,
+    ]
   );
 
+  // Create / Refresh / Reset
   const openCreate = () => {
     setSelectedLead(null);
     setFormMode("create");
     setFormOpen(true);
   };
-
   const handleRefresh = () => {
     dispatch(fetchAllLeads());
     setSnackbar({ open: true, message: "Data refreshed", severity: "success" });
+  };
+  const handleReset = () => {
+    setStatusFilter("all");
+    setLoanTypeFilter("all");
+    setSearchTerm("");
+    setPartnerFilter("all");
+    setLenderFilter("all");
+    setManagerFilter("all");
+    setAssociateFilter("all");
+    setPage(0);
+  };
+
+  // EXPORT: only current page
+  const handleExportCsv = () => {
+    const visible = filteredRows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+    const data = visible.map((r) => ({
+      LeadID: r.leadId,
+      Partner: r.partnerName,
+      Associate: r.associateName,
+      Applicant: r.applicantName,
+      Contact: r.applicantMobile,
+      Email: r.applicantEmail,
+      Lender: r.lenderName,
+      LoanType: r.loanType,
+      LoanAmount: r.loanAmount,
+      Status: r.status,
+      Manager: r.managerName,
+      CreatedAt: r.createdAt,
+    }));
+    const csv = unparse(data);
+    saveAs(new Blob([csv], { type: "text/csv" }), `leads_${Date.now()}.csv`);
+  };
+
+  const handleExportExcel = () => {
+    const visible = filteredRows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+    const ws = XLSX.utils.json_to_sheet(
+      visible.map((r) => ({
+        LeadID: r.leadId,
+        Partner: r.partnerName,
+        Associate: r.associateName,
+        Applicant: r.applicantName,
+        Contact: r.applicantMobile,
+        Email: r.applicantEmail,
+        Lender: r.lenderName,
+        LoanType: r.loanType,
+        LoanAmount: r.loanAmount,
+        Status: r.status,
+        Manager: r.managerName,
+        CreatedAt: r.createdAt,
+      }))
+    );
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Leads");
+    const blob = new Blob([XLSX.write(wb, { bookType: "xlsx", type: "array" })]);
+    saveAs(blob, `leads_${Date.now()}.xlsx`);
   };
 
   return (
@@ -158,11 +298,22 @@ const LeadsPage: React.FC = () => {
         onStatusChange={setStatusFilter}
         onLoanTypeChange={setLoanTypeFilter}
         onSearchChange={setSearchTerm}
-        onReset={() => {
-          setStatusFilter("all");
-          setLoanTypeFilter("all");
-          setSearchTerm("");
-        }}
+        partnerFilter={partnerFilter}
+        lenderFilter={lenderFilter}
+        managerFilter={managerFilter}
+        associateFilter={associateFilter}
+        onPartnerChange={setPartnerFilter}
+        onLenderChange={setLenderFilter}
+        onManagerChange={setManagerFilter}
+        onAssociateChange={setAssociateFilter}
+        partners={filterOptions.partners}
+        lenders={filterOptions.lenders}
+        managers={filterOptions.managers}
+        associates={filterOptions.associates}
+        onReset={handleReset}
+        onRefresh={handleRefresh}
+        onExportCsv={handleExportCsv}
+        onExportExcel={handleExportExcel}
       />
 
       {/* Table */}
@@ -171,6 +322,7 @@ const LeadsPage: React.FC = () => {
           rows={filteredRows}
           page={page}
           rowsPerPage={rowsPerPage}
+          loading={false}
           onPageChange={setPage}
           onRowsPerPageChange={setRowsPerPage}
           onOpenEdit={(r) => {

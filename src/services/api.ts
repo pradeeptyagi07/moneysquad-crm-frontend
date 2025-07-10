@@ -3,7 +3,7 @@ import axios from "axios";
 const axiosInstance = axios.create({
   // baseURL: "http://178.236.185.187:5002/api",
   // baseURL: "https://api.moneysquad.in/api/",
-  // baseURL: "https://skilled-linux-demanding-diabetes.trycloudflare.com/api",
+  // baseURL: "https://articles-task-volume-headset.trycloudflare.com/api",
 baseURL:"http://178.236.185.178:5003/api",
 
 

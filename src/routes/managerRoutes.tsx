@@ -10,6 +10,7 @@ import type { JSX } from "react/jsx-runtime";
 import { useAppSelector } from "../hooks/useAppSelector";
 import TrainingResourcesTab from "../pages/TrainingResources/TrainingResources";
 import Offers from "../pages/Offers/Offers";
+import PartnerOverview from "../pages/Overview/PartnerOverview";
 
 // Protected route component specific to manager role
 const ManagerRoute = ({ children }: { children: JSX.Element }) => {
@@ -42,7 +43,7 @@ const managerRoutes: RouteObject[] = [
       },
       {
         path: "overview",
-        element: <ManagerOverview />,
+        element: <PartnerOverview />,
       },
       {
         path: "leads",

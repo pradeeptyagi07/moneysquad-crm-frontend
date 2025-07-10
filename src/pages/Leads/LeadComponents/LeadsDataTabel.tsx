@@ -174,21 +174,29 @@ const LeadsDataTable: React.FC<LeadsDataTableProps> = ({
               ))
             ) : rows.length === 0 ? (
               <TableRow>
-                <TableCell
-                  colSpan={
-                    showPartnerCol
-                      ? showAssociateCol
-                        ? 11
-                        : 10
-                      : showAssociateCol
-                      ? 10
-                      : 9
-                  }
-                  align="center"
-                >
-                  No leads available.
-                </TableCell>
-              </TableRow>
+  <TableCell
+    colSpan={
+      showPartnerCol
+        ? showAssociateCol
+          ? 11
+          : 10
+        : showAssociateCol
+        ? 10
+        : 9
+    }
+    align="left"
+    sx={{
+      color: "#64748b",
+      fontStyle: "italic",
+      paddingY: 2,
+      backgroundColor: "#f9fafb",
+      borderBottom: "none",
+    }}
+  >
+    🚫 No leads available at the moment.
+  </TableCell>
+</TableRow>
+
             ) : (
               rows
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)

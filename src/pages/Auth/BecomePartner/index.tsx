@@ -23,6 +23,7 @@ import {
   IconButton,
   Snackbar,
   Alert,
+  Grid,
 } from "@mui/material"
 import { ArrowBack, Close, CheckCircle } from "@mui/icons-material"
 
@@ -264,76 +265,102 @@ const handleSubmit = async () => {
         position: "relative",
       }}
     >
-      <Container maxWidth="lg">
+<Container maxWidth="lg">
+  <Box
+    sx={{
+      mb: 4,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      position: "relative",
+    }}
+  >
+    <Box sx={{ display: "flex", alignItems: "center" }}>
+      <IconButton onClick={handleExit} sx={{ mr: 2 }}>
+        <ArrowBack />
+      </IconButton>
+      <Typography
+        variant="h4"
+        sx={{
+          fontWeight: 700,
+          background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+          WebkitBackgroundClip: "text",
+          WebkitTextFillColor: "transparent",
+        }}
+      >
+        Become a Partner
+      </Typography>
+    </Box>
+    <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <Box
+        component="img"
+        src="/images/MoneySquad-logo.png"
+        alt="MoneySquad"
+        sx={{ height: { xs: 30, md: 40 }, mb: 0.5 }}
+      />
+      <Typography variant="subtitle1" sx={{ color: "primary.main", fontWeight: 700, letterSpacing: 0.5 }}>
+        Partner Portal
+      </Typography>
+    </Box>
+  </Box>
+
+  <Card sx={{ borderRadius: 3, background: "#fff" }}>
+    <CardContent sx={{ p: { xs: 2, md: 4 } }}>
+      <Stepper
+        activeStep={activeStep}
+        orientation={isMobile ? "vertical" : "horizontal"}
+        alternativeLabel={!isMobile}
+      >
+        {steps.map((label) => (
+          <Step key={label}>
+            <StepLabel>{label}</StepLabel>
+          </Step>
+        ))}
+      </Stepper>
+
+      <Grid item xs={12}>
         <Box
           sx={{
-            mb: 4,
             display: "flex",
             alignItems: "center",
-            justifyContent: "space-between",
-            position: "relative",
+            gap: 1,
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            backgroundColor: "#f8fafc",
+            border: "1px solid #e2e8f0",
+            borderRadius: 2,
+            px: 2,
+            py: 1.5,
+            mt: 2,
           }}
         >
-          <Box sx={{ display: "flex", alignItems: "center" }}>
-            <IconButton onClick={handleExit} sx={{ mr: 2 }}>
-              <ArrowBack />
-            </IconButton>
-            <Typography
-              variant="h4"
-              sx={{
-                fontWeight: 700,
-                background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-              }}
-            >
-              Become a Partner
-            </Typography>
+          <Box component="span" sx={{ color: "error.main", fontWeight: 700 }}>
+            *
           </Box>
-          <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <Box
-              component="img"
-              src="/images/MoneySquad-logo.png"
-              alt="MoneySquad"
-              sx={{ height: { xs: 30, md: 40 }, mb: 0.5 }}
-            />
-            <Typography variant="subtitle1" sx={{ color: "primary.main", fontWeight: 700, letterSpacing: 0.5 }}>
-              Partner Portal
-            </Typography>
-          </Box>
+          <Typography variant="body2" sx={{ color: "text.secondary" }} noWrap>
+            All fields marked with an asterisk are mandatory. Your email will be verified via a verification code.
+          </Typography>
         </Box>
+      </Grid>
 
-        <Card sx={{ borderRadius: 3, background: "#fff" }}>
-          <CardContent sx={{ p: { xs: 2, md: 4 } }}>
-            <Stepper
-              activeStep={activeStep}
-              orientation={isMobile ? "vertical" : "horizontal"}
-              alternativeLabel={!isMobile}
-            >
-              {steps.map((label) => (
-                <Step key={label}>
-                  <StepLabel>{label}</StepLabel>
-                </Step>
-              ))}
-            </Stepper>
+      <Box sx={{ mt: 4 }}>{renderStepContent()}</Box>
 
-            <Box sx={{ mt: 4 }}>{renderStepContent()}</Box>
+      <Box sx={{ display: "flex", justifyContent: "space-between", mt: 4 }}>
+        <Button variant="outlined" onClick={activeStep === 0 ? handleExit : handleBack}>
+          {activeStep === 0 ? "Cancel" : "Back"}
+        </Button>
+        <Button
+          variant="contained"
+          onClick={activeStep === steps.length - 1 ? handleSubmit : handleNext}
+          disabled={!isStepValid() || isSubmitting}
+        >
+          {activeStep === steps.length - 1 ? (isSubmitting ? "Submitting..." : "Submit") : "Continue"}
+        </Button>
+      </Box>
+    </CardContent>
+  </Card>
+</Container>
 
-            <Box sx={{ display: "flex", justifyContent: "space-between", mt: 4 }}>
-              <Button variant="outlined" onClick={activeStep === 0 ? handleExit : handleBack}>
-                {activeStep === 0 ? "Cancel" : "Back"}
-              </Button>
-              <Button
-                variant="contained"
-                onClick={activeStep === steps.length - 1 ? handleSubmit : handleNext}
-                disabled={!isStepValid() || isSubmitting}
-              >
-                {activeStep === steps.length - 1 ? (isSubmitting ? "Submitting..." : "Submit") : "Continue"}
-              </Button>
-            </Box>
-          </CardContent>
-        </Card>
-      </Container>
 
       {/* Success Dialog */}
       <Dialog open={showSuccessDialog} maxWidth="sm" fullWidth>

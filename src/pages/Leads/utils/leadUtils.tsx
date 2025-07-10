@@ -23,7 +23,7 @@ export const getStatusColor = (status: LeadStatus, theme: Theme): string => {
     case "rejected":
       return theme.palette.error.main
     case "disbursed":
-      return theme.palette.primary.main
+      return " #12AA9E"
     case "closed":
       return theme.palette.success.dark
     case "expired":

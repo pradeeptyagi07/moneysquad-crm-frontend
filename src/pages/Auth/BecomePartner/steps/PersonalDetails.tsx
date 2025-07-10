@@ -1,3 +1,4 @@
+// File: steps/PersonalDetails.tsx
 "use client"
 
 import type React from "react"
@@ -14,6 +15,7 @@ import {
   Radio,
   InputAdornment,
   Typography,
+  useTheme,
 } from "@mui/material"
 import { DatePicker } from "@mui/x-date-pickers/DatePicker"
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider"
@@ -40,7 +42,14 @@ const currentProfessionOptions = [
   "Other",
 ]
 
-const focusProducts = ["Credit Card", "Personal Loan", "Business Loan", "Home Loan", "Insurance", "Other"]
+const focusProducts = [
+  "Credit Card",
+  "Personal Loan",
+  "Business Loan",
+  "Home Loan",
+  "Insurance",
+  "Other",
+]
 
 const experienceOptions = [
   "Completely New",
@@ -51,6 +60,8 @@ const experienceOptions = [
 ]
 
 const PersonalDetails: React.FC<PersonalDetailsProps> = ({ formData, updateFormData }) => {
+  const theme = useTheme()
+
   const [errors, setErrors] = useState({
     dateOfBirth: "",
     employmentType: "",
@@ -62,7 +73,6 @@ const PersonalDetails: React.FC<PersonalDetailsProps> = ({ formData, updateFormD
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
 
-    // Clear errors when user types
     if (errors[name as keyof typeof errors]) {
       setErrors({
         ...errors,
@@ -113,6 +123,17 @@ const PersonalDetails: React.FC<PersonalDetailsProps> = ({ formData, updateFormD
     })
   }
 
+  // Label props for red asterisk on required fields
+  const labelProps = {
+    sx: {
+      "& .MuiInputLabel-asterisk": {
+        color: theme.palette.error.main,
+      },
+    },
+  }
+
+  const isNonIndividual = Boolean(formData.employmentType)
+
   return (
     <Box>
       <Grid container spacing={3}>
@@ -122,26 +143,26 @@ const PersonalDetails: React.FC<PersonalDetailsProps> = ({ formData, updateFormD
             label="Full Name"
             value={formData.fullName}
             disabled
-            InputProps={{
-              sx: { borderRadius: 2 },
-            }}
+            InputLabelProps={labelProps}
+            InputProps={{ sx: { borderRadius: 2 } }}
           />
         </Grid>
 
         <Grid item xs={12} md={6}>
           <LocalizationProvider dateAdapter={AdapterDateFns}>
             <DatePicker
-              label="Date of Birth *"
+              label="Date of Birth"
+              mask="__/__/____"
               value={formData.dateOfBirth ? new Date(formData.dateOfBirth) : null}
               onChange={handleDateChange}
               slotProps={{
                 textField: {
                   fullWidth: true,
+                  required: true,
                   error: !!errors.dateOfBirth,
                   helperText: errors.dateOfBirth,
-                  InputProps: {
-                    sx: { borderRadius: 2 },
-                  },
+                  InputLabelProps: labelProps,
+                  InputProps: { sx: { borderRadius: 2 } },
                 },
               }}
             />
@@ -160,9 +181,8 @@ const PersonalDetails: React.FC<PersonalDetailsProps> = ({ formData, updateFormD
             onBlur={handleBlur}
             error={!!errors.employmentType}
             helperText={errors.employmentType}
-            InputProps={{
-              sx: { borderRadius: 2 },
-            }}
+            InputLabelProps={labelProps}
+            InputProps={{ sx: { borderRadius: 2 } }}
           >
             {currentProfessionOptions.map((option) => (
               <MenuItem key={option} value={option}>
@@ -184,9 +204,8 @@ const PersonalDetails: React.FC<PersonalDetailsProps> = ({ formData, updateFormD
             onBlur={handleBlur}
             error={!!errors.experienceInSellingLoans}
             helperText={errors.experienceInSellingLoans}
-            InputProps={{
-              sx: { borderRadius: 2 },
-            }}
+            InputLabelProps={labelProps}
+            InputProps={{ sx: { borderRadius: 2 } }}
           >
             {experienceOptions.map((option) => (
               <MenuItem key={option} value={option}>
@@ -207,6 +226,7 @@ const PersonalDetails: React.FC<PersonalDetailsProps> = ({ formData, updateFormD
             onBlur={handleBlur}
             error={!!errors.emergencyContact}
             helperText={errors.emergencyContact}
+            InputLabelProps={labelProps}
             InputProps={{
               startAdornment: <InputAdornment position="start">+91</InputAdornment>,
               sx: { borderRadius: 2 },
@@ -226,9 +246,8 @@ const PersonalDetails: React.FC<PersonalDetailsProps> = ({ formData, updateFormD
             onBlur={handleBlur}
             error={!!errors.focusProduct}
             helperText={errors.focusProduct}
-            InputProps={{
-              sx: { borderRadius: 2 },
-            }}
+            InputLabelProps={labelProps}
+            InputProps={{ sx: { borderRadius: 2 } }}
           >
             {focusProducts.map((option) => (
               <MenuItem key={option} value={option}>

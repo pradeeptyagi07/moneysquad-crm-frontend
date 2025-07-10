@@ -1,8 +1,9 @@
+// File: steps/AddressDetails.tsx
 "use client"
 
 import type React from "react"
 import { useState } from "react"
-import { Box, Grid, TextField, MenuItem, Typography } from "@mui/material"
+import { Box, Grid, TextField, MenuItem, Typography, useTheme } from "@mui/material"
 import type { PartnerFormData } from "../index"
 
 interface AddressDetailsProps {
@@ -13,6 +14,7 @@ interface AddressDetailsProps {
 const addressTypes = ["Owned", "Rented", "Company Provided", "Parental", "Other"]
 
 const AddressDetails: React.FC<AddressDetailsProps> = ({ formData, updateFormData }) => {
+  const theme = useTheme()
   const [errors, setErrors] = useState({
     addressLine1: "",
     city: "",
@@ -22,15 +24,12 @@ const AddressDetails: React.FC<AddressDetailsProps> = ({ formData, updateFormDat
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-
-    // Clear errors when user types
     if (errors[name as keyof typeof errors]) {
       setErrors({
         ...errors,
         [name]: "",
       })
     }
-
     updateFormData({ [name]: value })
   }
 
@@ -41,7 +40,11 @@ const AddressDetails: React.FC<AddressDetailsProps> = ({ formData, updateFormDat
       case "city":
         return value ? "" : "City is required"
       case "addressPincode":
-        return value ? (/^\d{6}$/.test(value) ? "" : "Enter a valid 6-digit pincode") : "Pincode is required"
+        return value
+          ? /^\d{6}$/.test(value)
+            ? ""
+            : "Enter a valid 6-digit pincode"
+          : "Pincode is required"
       case "addressType":
         return value ? "" : "Please select address type"
       default:
@@ -52,14 +55,25 @@ const AddressDetails: React.FC<AddressDetailsProps> = ({ formData, updateFormDat
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     const errorMessage = validateField(name, value)
-
     setErrors({
       ...errors,
       [name]: errorMessage,
     })
   }
 
-  const addressTitle = formData.registrationType === "Individual" ? "Residence Address" : "Work Address"
+  // Red asterisk styling for required fields
+  const labelProps = {
+    sx: {
+      "& .MuiInputLabel-asterisk": {
+        color: theme.palette.error.main,
+      },
+    },
+  }
+
+  const addressTitle =
+    formData.registrationType === "Individual"
+      ? "Residence Address"
+      : "Work Address"
 
   return (
     <Box>
@@ -79,9 +93,8 @@ const AddressDetails: React.FC<AddressDetailsProps> = ({ formData, updateFormDat
             onBlur={handleBlur}
             error={!!errors.addressLine1}
             helperText={errors.addressLine1}
-            InputProps={{
-              sx: { borderRadius: 2 },
-            }}
+            InputLabelProps={labelProps}
+            InputProps={{ sx: { borderRadius: 2 } }}
           />
         </Grid>
 
@@ -92,9 +105,7 @@ const AddressDetails: React.FC<AddressDetailsProps> = ({ formData, updateFormDat
             name="addressLine2"
             value={formData.addressLine2}
             onChange={handleChange}
-            InputProps={{
-              sx: { borderRadius: 2 },
-            }}
+            InputProps={{ sx: { borderRadius: 2 } }}
           />
         </Grid>
 
@@ -105,9 +116,7 @@ const AddressDetails: React.FC<AddressDetailsProps> = ({ formData, updateFormDat
             name="landmark"
             value={formData.landmark}
             onChange={handleChange}
-            InputProps={{
-              sx: { borderRadius: 2 },
-            }}
+            InputProps={{ sx: { borderRadius: 2 } }}
           />
         </Grid>
 
@@ -122,9 +131,8 @@ const AddressDetails: React.FC<AddressDetailsProps> = ({ formData, updateFormDat
             onBlur={handleBlur}
             error={!!errors.city}
             helperText={errors.city}
-            InputProps={{
-              sx: { borderRadius: 2 },
-            }}
+            InputLabelProps={labelProps}
+            InputProps={{ sx: { borderRadius: 2 } }}
           />
         </Grid>
 
@@ -139,9 +147,8 @@ const AddressDetails: React.FC<AddressDetailsProps> = ({ formData, updateFormDat
             onBlur={handleBlur}
             error={!!errors.addressPincode}
             helperText={errors.addressPincode}
-            InputProps={{
-              sx: { borderRadius: 2 },
-            }}
+            InputLabelProps={labelProps}
+            InputProps={{ sx: { borderRadius: 2 } }}
           />
         </Grid>
 
@@ -157,9 +164,8 @@ const AddressDetails: React.FC<AddressDetailsProps> = ({ formData, updateFormDat
             onBlur={handleBlur}
             error={!!errors.addressType}
             helperText={errors.addressType}
-            InputProps={{
-              sx: { borderRadius: 2 },
-            }}
+            InputLabelProps={labelProps}
+            InputProps={{ sx: { borderRadius: 2 } }}
           >
             {addressTypes.map((option) => (
               <MenuItem key={option} value={option}>
