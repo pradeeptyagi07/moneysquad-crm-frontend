@@ -15,6 +15,7 @@ import {
   linearProgressClasses,
   CircularProgress,
   Alert,
+  Chip,
 } from '@mui/material';
 import Chart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
@@ -54,9 +55,17 @@ const defaultReasons = [
   'Hunter/Fraud Reject',
 ];
 
+const MAX_ITEMS = 6;
+
 const RejectionReasonsChart: React.FC = () => {
-  const { rejectionReasonCount = [], rejectionLoading, rejectionError } =
-    useSelector((state: RootState) => state.dashboard);
+  const {
+    rejectionReasonCount: rrObj,
+    rejectionLoading,
+    rejectionError,
+  } = useSelector((state: RootState) => state.dashboard);
+
+  const rawData: RejectionReasonCount[] = rrObj?.rejectionReasonCount ?? [];
+  const totalCount: number = rrObj?.totalCount ?? 0;
 
   if (rejectionLoading) {
     return (
@@ -70,24 +79,22 @@ const RejectionReasonsChart: React.FC = () => {
     return <Alert severity="error">{rejectionError}</Alert>;
   }
 
-  // Prepare display data: if none returned, use defaults with count=0
-  const rawData = rejectionReasonCount as RejectionReasonCount[];
-  const displayData: RejectionReasonCount[] =
-    rawData.length > 0
-      ? rawData
-      : defaultReasons.map(reason => ({ reason, count: 0, percent: 0 } as RejectionReasonCount));
+  let displayData: RejectionReasonCount[];
+  if (rawData.length >= MAX_ITEMS) {
+    displayData = rawData.slice(0, MAX_ITEMS);
+  } else {
+    const numDefaults = MAX_ITEMS - rawData.length;
+    const zeroDefaults = defaultReasons
+      .slice(0, numDefaults)
+      .map(r => ({ reason: r, count: 0, percent: 0 } as RejectionReasonCount));
+    displayData = [...rawData, ...zeroDefaults];
+  }
 
   const maxCount = Math.max(...displayData.map(d => d.count), 1);
 
   const chartOptions: ApexOptions = {
-    chart: {
-      background: 'transparent',
-      toolbar: { show: false },
-      zoom: { enabled: false },
-    },
-    plotOptions: {
-      bar: { horizontal: false, borderRadius: 10, columnWidth: '40%' },
-    },
+    chart: { background: 'transparent', toolbar: { show: false }, zoom: { enabled: false } },
+    plotOptions: { bar: { horizontal: false, borderRadius: 10, columnWidth: '40%' } },
     colors,
     stroke: { show: true, width: 2, colors: ['transparent'] },
     legend: { show: true },
@@ -109,7 +116,7 @@ const RejectionReasonsChart: React.FC = () => {
       xaxis: { lines: { show: true } },
       yaxis: { lines: { show: true } },
     },
-    yaxis: { show: true, min: 0, max: maxCount * 1 },
+    yaxis: { show: true, min: 0, max: maxCount },
     tooltip: {
       enabled: true,
       theme: 'light',
@@ -123,9 +130,7 @@ const RejectionReasonsChart: React.FC = () => {
     },
   };
 
-  const series = [
-    { name: 'Count', data: displayData.map(d => d.count) },
-  ];
+  const series = [{ name: 'Count', data: displayData.map(d => d.count) }];
 
   return (
     <Card
@@ -147,6 +152,14 @@ const RejectionReasonsChart: React.FC = () => {
               Current month breakdown
             </Typography>
           </Box>
+        }
+        action={
+          // Use a Chip for clearer total display
+          <Chip
+            label={`Total: ${totalCount}`}
+            size="small"
+            sx={{ fontWeight: 700 }}
+          />
         }
       />
       <Divider sx={{ borderColor: '#f3f4f6' }} />
