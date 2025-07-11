@@ -37,29 +37,80 @@ const SnapshotCards: React.FC = () => {
   };
 
   // Show skeleton placeholders
-  if (snapshotLoading) {
-    return (
-      <Grid container spacing={3}>
-        {Array.from({ length: 4 }).map((_, idx) => (
-          <Grid item xs={12} sm={6} md={3} key={idx}>
-            <Card sx={{ height: '100%', borderRadius: 2, overflow: 'hidden' }}>
-              <CardContent sx={{ p: 4 }}>
-                <Box display="flex" alignItems="center" gap={3} mb={3}>
-                  <Skeleton variant="circular" width={64} height={64} />
-                  <Skeleton variant="text" width={100} height={28} />
-                </Box>
-                <Skeleton variant="text" width="60%" height={56} />
-                <Skeleton variant="text" width="40%" height={24} />
-                <Box mt={2}>
-                  <Skeleton variant="rectangular" width={80} height={32} />
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
-    );
-  }
+
+if (snapshotLoading) {
+  return (
+    <Grid container spacing={{ xs: 2, sm: 3, md: 4 }}>
+      {Array.from({ length: 4 }).map((_, idx) => (
+        <Grid item xs={12} sm={6} md={3} key={idx}>
+          <Card
+            sx={{
+              height: '100%',
+              borderRadius: 3,
+              boxShadow: 4,
+              overflow: 'hidden',
+              transition: 'transform 0.3s',
+              '&:hover': { transform: 'translateY(-4px)' },
+              bgcolor: 'background.paper',
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
+              {/* Avatar + Title */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                <Skeleton
+                  animation="wave"
+                  variant="circular"
+                  width={56}
+                  height={56}
+                />
+                <Skeleton
+                  animation="wave"
+                  variant="text"
+                  width={80}
+                  height={24}
+                />
+              </Box>
+
+              {/* Main Heading */}
+              <Skeleton
+                animation="wave"
+                variant="rectangular"
+                height={32}
+                sx={{ mb: 1, borderRadius: 1 }}
+              />
+
+              {/* Subtext lines */}
+              <Skeleton
+                animation="wave"
+                variant="text"
+                width="80%"
+                height={32}
+              />
+              <Skeleton
+                animation="wave"
+                variant="text"
+                width="40%"
+                height={20}
+              />
+
+              {/* Action button placeholder */}
+              <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
+                <Skeleton
+                  animation="wave"
+                  variant="rectangular"
+                  width={60}
+                  height={28}
+                  sx={{ borderRadius: 2 }}
+                />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+      ))}
+    </Grid>
+  );
+}
+
 
   // Show error if any
   if (snapshotError) {

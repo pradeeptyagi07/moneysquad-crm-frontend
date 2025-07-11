@@ -1,4 +1,3 @@
-// ContactInfoCards.tsx
 "use client";
 
 import React, { useState } from "react";
@@ -44,44 +43,46 @@ export const ContactInfoCards: React.FC<ContactInfoCardsProps> = ({ data }) => {
       setSnackbarOpen(true);
     });
   };
+
   const handleClose = () => setSnackbarOpen(false);
 
   return (
-    <Box sx={{ p: { xs: 2, md: 4 }, backgroundColor: "#F5F7FA" }}>
+    <Box sx={{ py: { xs: 4, md: 6 }, px: { xs: 2, md: 8 }, bgcolor: "#F9FAFB" }}>
       {/* Section Title */}
       <Typography
-        variant="h4"
+        variant="h3"
         align="center"
         gutterBottom
         sx={{
-          fontWeight: 700,
+          fontWeight: 800,
           background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-          backgroundClip: "text",
           WebkitBackgroundClip: "text",
           color: "transparent",
-          mb: { xs: 3, md: 5 },
+          mb: { xs: 4, md: 6 },
         }}
       >
         Contact Details
       </Typography>
 
       {/* Cards Grid */}
-      <Grid container spacing={4} justifyContent="center">
+      <Grid container spacing={6} justifyContent="center">
         {(["grievance", "payout"] as (keyof typeof data)[]).map((key) => {
           const info = data[key];
           return (
             <Grid key={key} item xs={12} md={6} lg={5}>
               <Paper
-                elevation={2}
+                elevation={4}
                 sx={{
                   position: "relative",
-                  borderRadius: 3,
-                  backgroundColor: "#fff",
+                  borderRadius: 4,
+                  bgcolor: "#fff",
                   overflow: "hidden",
-                  transition: "transform 0.3s, box-shadow 0.3s",
+                  transition: "transform 0.4s, box-shadow 0.4s",
+                  border: `1px solid ${alpha(theme.palette.primary.main, 0.15)}`,
+                  boxShadow: `0 8px 24px ${alpha(theme.palette.common.black, 0.06)}`,
                   "&:hover": {
-                    transform: "translateY(-4px)",
-                    boxShadow: "0 12px 32px rgba(0,0,0,0.1)",
+                    transform: "translateY(-6px)",
+                    boxShadow: `0 12px 36px ${alpha(theme.palette.common.black, 0.1)}`,
                   },
                   "&::before": {
                     content: '""',
@@ -89,55 +90,55 @@ export const ContactInfoCards: React.FC<ContactInfoCardsProps> = ({ data }) => {
                     top: 0,
                     left: 0,
                     width: "100%",
-                    height: 4,
-                    background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+                    height: 6,
+                    background: `linear-gradient(135deg, ${theme.palette.primary.dark}, ${theme.palette.secondary.dark})`,
                   },
-                  p: { xs: 2.5, md: 4 },
+                  p: { xs: 3, md: 5 },
                 }}
               >
                 {/* Card Header */}
                 <Typography
-                  variant="h6"
+                  variant="h5"
                   fontWeight={700}
                   color="text.primary"
-                  mb={2}
+                  mb={3}
                 >
                   {labelMap[key]}
                 </Typography>
 
-                <Stack spacing={2}>
+                <Stack spacing={3}>
                   {[
                     { label: "Name", field: "name" as const },
                     { label: "Phone", field: "phone" as const },
                     { label: "Email", field: "email" as const },
-                  ].map(({ label, field }, idx) => (
+                  ].map(({ label, field }) => (
                     <Box key={field}>
-                      <Divider sx={{ mb: 1 }} />
+                      <Divider sx={{ mb: 2 }} />
                       <Typography
-                        variant="subtitle2"
+                        variant="subtitle1"
                         color="text.secondary"
                         gutterBottom
+                        sx={{ letterSpacing: '0.5px' }}
                       >
                         {label}
                       </Typography>
                       <Stack
                         direction="row"
                         alignItems="center"
-                        spacing={1}
+                        spacing={1.5}
                         sx={{
-                          backgroundColor: alpha(theme.palette.divider, 0.04),
-                          borderRadius: 1.5,
-                          px: 2,
-                          py: 1,
+                          bgcolor: alpha(theme.palette.divider, 0.06),
+                          borderRadius: 2,
+                          px: 3,
+                          py: 1.5,
                         }}
                       >
                         <Typography
-                          variant="body1"
+                          variant={field === "name" ? "h6" : "body1"}
                           sx={{
                             flexGrow: 1,
-                            color: theme.palette.text.primary,
-                            fontFamily: field === "name" ? "inherit" : "monospace",
-                            fontWeight: field === "name" ? 600 : 500,
+                            fontWeight: field === "name" ? 700 : 500,
+                            fontFamily: field === "name" ? 'inherit' : 'ui-monospace, Monaco, Cascadia Code, monospace',
                           }}
                         >
                           {info[field]}
@@ -145,7 +146,6 @@ export const ContactInfoCards: React.FC<ContactInfoCardsProps> = ({ data }) => {
                         {field !== "name" && (
                           <Tooltip title={`Copy ${label}`}>
                             <IconButton
-                              size="small"
                               onClick={() =>
                                 handleCopy(
                                   info[field],
@@ -153,24 +153,18 @@ export const ContactInfoCards: React.FC<ContactInfoCardsProps> = ({ data }) => {
                                 )
                               }
                               sx={{
+                                width: 36,
+                                height: 36,
                                 color: theme.palette.primary.main,
-                                backgroundColor: alpha(
-                                  theme.palette.primary.main,
-                                  0.1
-                                ),
-                                "&:hover": {
-                                  backgroundColor: alpha(
-                                    theme.palette.primary.main,
-                                    0.2
-                                  ),
-                                  transform: "scale(1.1)",
+                                bgcolor: alpha(theme.palette.primary.main, 0.15),
+                                transition: "transform 0.2s, bgcolor 0.2s",
+                                '&:hover': {
+                                  bgcolor: alpha(theme.palette.primary.main, 0.25),
+                                  transform: "scale(1.2)",
                                 },
-                                transition: "all 0.2s ease",
-                                width: 32,
-                                height: 32,
                               }}
                             >
-                              <ContentCopyIcon fontSize="small" />
+                              <ContentCopyIcon />
                             </IconButton>
                           </Tooltip>
                         )}
@@ -187,16 +181,11 @@ export const ContactInfoCards: React.FC<ContactInfoCardsProps> = ({ data }) => {
       {/* Copy Confirmation Snackbar */}
       <Snackbar
         open={snackbarOpen}
-        autoHideDuration={2000}
+        autoHideDuration={2500}
         onClose={handleClose}
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
-        <Alert
-          onClose={handleClose}
-          severity="success"
-          variant="filled"
-          sx={{ width: "100%" }}
-        >
+        <Alert onClose={handleClose} severity="success" variant="filled" sx={{ width: "100%" }}>
           {copiedLabel} copied to clipboard!
         </Alert>
       </Snackbar>

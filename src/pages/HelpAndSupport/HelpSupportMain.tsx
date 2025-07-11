@@ -120,13 +120,7 @@ const HelpSupportMain = () => {
     );
   }
 
-  // Gradient for section titles
-  const gradientText = {
-    background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-    backgroundClip: "text",
-    WebkitBackgroundClip: "text",
-    color: "transparent",
-  };
+
 
   return (
     <Box
@@ -142,9 +136,37 @@ const HelpSupportMain = () => {
         alignItems="center"
         mb={4}
       >
-        <Typography variant="h3" fontWeight={700} >
-          Help & Support
+          {/* Header Section */}
+      <Box textAlign="left" mb={2}>
+        <Typography
+          variant="h4"
+          sx={{
+            fontWeight: 600,
+            fontSize: { xs: '1rem', md: '2rem' },
+            background: 'linear-gradient(135deg, #1e293b 0%, #64748b 100%)',
+            backgroundClip: 'text',
+            WebkitBackgroundClip: 'text',
+            color: 'transparent',
+            mb: 2,
+            letterSpacing: '-0.025em',
+          }}
+        >
+          Get Support
         </Typography>
+        <Typography
+          variant="h6"
+          color="text.secondary"
+          sx={{ 
+            maxWidth: 700, 
+            mx: 'auto', 
+            lineHeight: 1.7,
+            fontSize: '1.125rem',
+            fontWeight: 400,
+          }}
+        >
+          Choose your preferred way to reach us. Our dedicated support team is ready to assist you with expert guidance and personalized solutions.
+        </Typography>
+      </Box>
         {isAdmin && (
           <IconButton
             onClick={() => setIsDialogOpen(true)}
@@ -163,8 +185,7 @@ const HelpSupportMain = () => {
       {/* Email/Phone/WhatsApp/Office Section */}
       <Box
         sx={{
-          p: { xs: 2, md: 3 },
-          borderRadius: 2,
+        
           mb: 3,
         }}
       >
@@ -187,29 +208,13 @@ const HelpSupportMain = () => {
       </Paper>
 
       {/* Additional Contacts Section */}
-      <Paper
-        elevation={1}
-        sx={{
-          p: { xs: 1, md: 2 },
-          borderRadius: 2,
-          mb: 1,
-          backgroundColor: "#fff",
-        }}
-      >
-        <Typography
-          variant="h5"
-          fontWeight={600}
-          mb={2}
-        >
-          Additional Contacts
-        </Typography>
+     
         <ContactInfoCards
           data={{
             grievance: supportData.grievance,
             payout: supportData.payout,
           }}
         />
-      </Paper>
 
       {/* Admin Edit Dialog */}
       {isAdmin && (
