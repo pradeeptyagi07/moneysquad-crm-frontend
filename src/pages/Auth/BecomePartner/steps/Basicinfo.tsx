@@ -2,7 +2,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useAppDispatch } from "../../../../hooks/useAppDispatch"
 import {
   Box,
@@ -10,7 +10,6 @@ import {
   TextField,
   MenuItem,
   Button,
-  Typography,
   InputAdornment,
   CircularProgress,
   Alert,
@@ -19,17 +18,17 @@ import {
 import { VerifiedUser } from "@mui/icons-material"
 import { sendPartnerOtp, verifyPartnerOtp } from "../../../../store/slices/signupPartnerSlice"
 import type { PartnerFormData } from "../index"
-import { color } from "framer-motion"
 
 interface BasicInfoProps {
   formData: PartnerFormData
   updateFormData: (data: Partial<PartnerFormData>) => void
+  onValidationChange?: (isValid: boolean) => void
 }
 
 const registrationTypes = ["Individual", "Proprietorship", "Partnership", "LLP", "Private Limited", "Other"]
 const teamStrengthOptions = ["<5", "5-15", "15-30", "30-50", "50+"]
 
-const BasicInfo: React.FC<BasicInfoProps> = ({ formData, updateFormData }) => {
+const BasicInfo: React.FC<BasicInfoProps> = ({ formData, updateFormData, onValidationChange }) => {
   const dispatch = useAppDispatch()
   const theme = useTheme()
 
@@ -47,23 +46,15 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ formData, updateFormData }) => {
   const [isVerifying, setIsVerifying] = useState(false)
   const [isSendingOtp, setIsSendingOtp] = useState(false)
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    if (errors[name as keyof typeof errors]) {
-      setErrors({ ...errors, [name]: "" })
-    }
-    updateFormData({ [name]: value })
-  }
-
   const validateField = (name: string, value: string) => {
     switch (name) {
       case "fullName":
-        return value ? "" : "Full name is required"
+        return value.trim() ? "" : "Full name is required"
       case "mobileNumber":
         return value
           ? /^[6-9]\d{9}$/.test(value)
             ? ""
-            : "Enter a valid 10-digit mobile number"
+            : "Enter a valid 10-digit mobile number starting with 6-9"
           : "Mobile number is required"
       case "email":
         return value
@@ -82,9 +73,57 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ formData, updateFormData }) => {
     }
   }
 
+  const checkFormValidity = () => {
+    const requiredFields = ["fullName", "mobileNumber", "email", "registrationType"]
+    const isNonIndividual = formData.registrationType && formData.registrationType !== "Individual"
+
+    if (isNonIndividual) {
+      requiredFields.push("teamStrength")
+    }
+
+    // Check if all required fields have valid values
+    for (const field of requiredFields) {
+      const value = formData[field as keyof PartnerFormData] as string
+      if (!value || validateField(field, value)) {
+        return false
+      }
+    }
+
+    // Check if OTP is verified
+    if (!formData.otpVerified) {
+      return false
+    }
+
+    return true
+  }
+
+  // Check validity whenever form data changes
+  useEffect(() => {
+    const isValid = checkFormValidity()
+    onValidationChange?.(isValid)
+  }, [formData, onValidationChange])
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+
+    // Clear error when user starts typing
+    if (errors[name as keyof typeof errors]) {
+      setErrors({ ...errors, [name]: "" })
+    }
+
+    // For mobile number, only allow digits and limit to 10 characters
+    if (name === "mobileNumber") {
+      const numericValue = value.replace(/\D/g, "").slice(0, 10)
+      updateFormData({ [name]: numericValue })
+    } else {
+      updateFormData({ [name]: value })
+    }
+  }
+
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-    setErrors({ ...errors, [name]: validateField(name, value) })
+    const errorMessage = validateField(name, value)
+    setErrors({ ...errors, [name]: errorMessage })
   }
 
   const handleSendOtp = async () => {
@@ -98,6 +137,7 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ formData, updateFormData }) => {
     try {
       await dispatch(sendPartnerOtp(formData.email)).unwrap()
       setOtpSent(true)
+      setOtpError("")
     } catch (error) {
       setOtpError(error as string)
     } finally {
@@ -111,10 +151,16 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ formData, updateFormData }) => {
       return
     }
 
+    if (!/^\d{6}$/.test(otp)) {
+      setOtpError("Please enter a valid 6-digit OTP")
+      return
+    }
+
     setIsVerifying(true)
     try {
       await dispatch(verifyPartnerOtp({ email: formData.email, otp })).unwrap()
       updateFormData({ otpVerified: true })
+      setOtpError("")
     } catch (error) {
       setOtpError(error as string)
     } finally {
@@ -173,6 +219,7 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ formData, updateFormData }) => {
             InputProps={{
               startAdornment: <InputAdornment position="start">+91</InputAdornment>,
               sx: { borderRadius: 2 },
+              inputProps: { maxLength: 10 },
             }}
           />
         </Grid>
@@ -209,7 +256,7 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ formData, updateFormData }) => {
             <Button
               variant="contained"
               onClick={handleSendOtp}
-              disabled={isSendingOtp || !formData.email}
+              disabled={isSendingOtp || !formData.email || !!validateField("email", formData.email)}
               sx={{
                 height: "56px",
                 borderRadius: 2,
@@ -230,18 +277,23 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ formData, updateFormData }) => {
                 label="Enter Verification Code"
                 value={otp}
                 onChange={(e) => {
-                  setOtp(e.target.value)
+                  const numericValue = e.target.value.replace(/\D/g, "").slice(0, 6)
+                  setOtp(numericValue)
                   if (otpError) setOtpError("")
                 }}
                 error={!!otpError}
                 helperText={otpError}
                 sx={{ flex: 1 }}
-                InputProps={{ sx: { borderRadius: 2 } }}
+                InputProps={{
+                  sx: { borderRadius: 2 },
+                  inputProps: { maxLength: 6 },
+                }}
+                placeholder="6-digit code"
               />
               <Button
                 variant="contained"
                 onClick={handleVerifyOtp}
-                disabled={isVerifying || !otp}
+                disabled={isVerifying || !otp || otp.length !== 6}
                 sx={{
                   height: "56px",
                   borderRadius: 2,
@@ -313,9 +365,6 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ formData, updateFormData }) => {
             </TextField>
           </Grid>
         )}
-
-
-
       </Grid>
     </Box>
   )

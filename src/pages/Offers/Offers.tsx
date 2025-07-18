@@ -41,7 +41,7 @@ import {
 // Transition component for dialogs
 const Transition = React.forwardRef(function Transition(
   props: TransitionProps & { children: React.ReactElement },
-  ref: React.Ref<unknown>
+  ref: React.Ref<unknown>,
 ) {
   return <Slide direction="" ref={ref} {...props} />
 })
@@ -67,14 +67,12 @@ const Offers: React.FC = () => {
 
   // Redux state & dispatch
   const dispatch = useAppDispatch()
-  const { offers, loading, error, success } = useAppSelector(
-    state => state.offers
-  )
-  const selectedOffer = useAppSelector(state => state.offers.selectedOffer)
+  const { offers, loading, error, success } = useAppSelector((state) => state.offers)
+  const selectedOffer = useAppSelector((state) => state.offers.selectedOffer)
 
   // Pagination state
   const [page, setPage] = useState(0)
-  const [rowsPerPage, setRowsPerPage] = useState(8)
+  const [rowsPerPage, setRowsPerPage] = useState(9)
 
   // Snackbar notifications
   const [snackbar, setSnackbar] = useState({
@@ -117,17 +115,14 @@ const Offers: React.FC = () => {
     setOpenCreateDialog(false)
     dispatch(setSelectedOffer(null))
   }
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) =>
-    setSearchTerm(e.target.value)
-  const handleFilterChange = (_: React.SyntheticEvent, newVal: number) =>
-    setFilterTab(newVal)
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)
+  const handleFilterChange = (_: React.SyntheticEvent, newVal: number) => setFilterTab(newVal)
   const handleChangePage = (_: unknown, newPage: number) => setPage(newPage)
   const handleChangeRowsPerPage = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setRowsPerPage(parseInt(e.target.value, 10))
+    setRowsPerPage(Number.parseInt(e.target.value, 10))
     setPage(0)
   }
-  const handleCloseSnackbar = () =>
-    setSnackbar(prev => ({ ...prev, open: false }))
+  const handleCloseSnackbar = () => setSnackbar((prev) => ({ ...prev, open: false }))
   const handleDeleteOffer = (id: string) => dispatch(deleteOffer(id))
   const handleEditOffer = (offer: BankOffer) => {
     dispatch(setSelectedOffer(offer))
@@ -136,22 +131,32 @@ const Offers: React.FC = () => {
 
   // Filter & paginate logic
   const filteredOffers = Array.isArray(offers)
-    ? offers.filter(o => {
-        const matches = [o.bankName, o.loanType, o.offerHeadline]
-          .filter(Boolean)
-          .some(t => t!.toLowerCase().includes(searchTerm.toLowerCase()))
-        if (!matches) return false
-        if (filterTab === 1) return o.isFeatured
-        if (filterTab === 2) return o.loanType.startsWith("PL")
-        if (filterTab === 3) return o.loanType.startsWith("BL")
-        if (filterTab === 4) return o.loanType.startsWith("SEPL")
-        return true
-      })
+    ? offers
+        .filter((o) => {
+          const matches = [o.bankName, o.loanType, o.offerHeadline]
+            .filter(Boolean)
+            .some((t) => t!.toLowerCase().includes(searchTerm.toLowerCase()))
+          if (!matches) return false
+          if (filterTab === 1) return o.isFeatured
+          if (filterTab === 2) return o.loanType.startsWith("PL")
+          if (filterTab === 3) return o.loanType.startsWith("BL")
+          if (filterTab === 4) return o.loanType.startsWith("SEPL")
+          return true
+        })
+        .sort((a, b) => {
+          // Check if offers are expired
+          const aExpired = a.offerValidity ? new Date(a.offerValidity).getTime() < Date.now() : false
+          const bExpired = b.offerValidity ? new Date(b.offerValidity).getTime() < Date.now() : false
+
+          // If one is expired and the other isn't, put expired at the end
+          if (aExpired && !bExpired) return 1
+          if (!aExpired && bExpired) return -1
+
+          // If both have same expiration status, maintain original order
+          return 0
+        })
     : []
-  const paginatedOffers = filteredOffers.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
-  )
+  const paginatedOffers = filteredOffers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
 
   return (
     <Box>
@@ -258,7 +263,7 @@ const Offers: React.FC = () => {
       {/* Offer cards */}
       <Grid container spacing={4}>
         {!loading &&
-          paginatedOffers.map(offer => (
+          paginatedOffers.map((offer) => (
             <Grid item xs={12} sm={6} md={4} key={offer._id}>
               <OfferCard
                 offer={offer}
@@ -280,7 +285,7 @@ const Offers: React.FC = () => {
             onPageChange={handleChangePage}
             rowsPerPage={rowsPerPage}
             onRowsPerPageChange={handleChangeRowsPerPage}
-            rowsPerPageOptions={[8, 16, 24]}
+            rowsPerPageOptions={[9, 27, 36]}
           />
         </Box>
       )}

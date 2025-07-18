@@ -127,6 +127,8 @@ const LeadsFilterBar: React.FC<LeadsFilterBarProps> = ({
     { value: "approved", label: "Approved" },
     { value: "disbursed", label: "Disbursed" },
     { value: "closed", label: "Closed" },
+        { value: "rejected", label: "Rejected" },
+
     { value: "expired", label: "Expired" },
   ], []);
 

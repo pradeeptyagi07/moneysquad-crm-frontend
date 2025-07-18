@@ -153,32 +153,37 @@ const BecomePartner: React.FC = () => {
     window.scrollTo(0, 0)
   }
 
-const handleSubmit = async () => {
-  setIsSubmitting(true)
-  try {
-    const result = await dispatch(createPartner(formData)).unwrap()
-    setPartnerId(result?.data?.partnerId)
-    setSnackbarSeverity("success")
-    setSnackbarMessage("Partner registered successfully!")
-    setSnackbarOpen(true)
-    setShowSuccessDialog(true)
-  } catch (error: any) {
-    const errorMsg =
-      typeof error === "string"
-        ? error
-        : error?.message ||
-          error?.response?.data?.message ||
-          "Something went wrong while submitting. Please try again."
+  const handleSubmit = async () => {
+    setIsSubmitting(true)
+    try {
+      const result = await dispatch(
+        createPartner({
+          ...formData,
+          email: formData.email.trim().toLowerCase(),
+          dateOfBirth: formData.dateOfBirth ?? undefined,
+        }),
+      ).unwrap()
 
-    setSnackbarSeverity("error")
-    setSnackbarMessage(errorMsg)
-    setSnackbarOpen(true)
-  } finally {
-    // ✅ Ensure it resets regardless of success/failure
-    setIsSubmitting(false)
+      setPartnerId(result?.data?.partnerId)
+      setSnackbarSeverity("success")
+      setSnackbarMessage("Partner registered successfully!")
+      setSnackbarOpen(true)
+      setShowSuccessDialog(true)
+    } catch (error: any) {
+      const errorMsg =
+        typeof error === "string"
+          ? error
+          : error?.message ||
+            error?.response?.data?.message ||
+            "Something went wrong while submitting. Please try again."
+
+      setSnackbarSeverity("error")
+      setSnackbarMessage(errorMsg)
+      setSnackbarOpen(true)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
-}
-
 
   const handleExit = () => setShowExitDialog(true)
   const confirmExit = () => navigate("/")
@@ -202,55 +207,133 @@ const handleSubmit = async () => {
     }
   }
 
+  // Enhanced validation function that checks both presence and validity of fields
+  const validateField = (field: string, value: any): boolean => {
+    switch (field) {
+      case "fullName":
+        return !!(value && value.trim().length > 0)
+      case "mobileNumber":
+        return !!(value && /^[6-9]\d{9}$/.test(value))
+      case "email":
+        return !!(value && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))
+      case "emergencyContact":
+        return !!(value && /^[6-9]\d{9}$/.test(value))
+      case "addressPincode":
+        return !!(value && /^\d{6}$/.test(value))
+      case "accountNumber":
+        return !!(value && /^\d{9,18}$/.test(value))
+      case "ifscCode":
+        return !!(value && /^[A-Z]{4}0[A-Z0-9]{6}$/.test(value))
+      default:
+        return !!value
+    }
+  }
+
   const isStepValid = () => {
     switch (activeStep) {
       case 0: {
-        const basicInfoValid =
-          formData.fullName &&
-          formData.mobileNumber &&
-          formData.email &&
-          formData.registrationType &&
-          formData.otpVerified
+        // Basic Info validation
+        const requiredFields = [
+          { field: "fullName", value: formData.fullName },
+          { field: "mobileNumber", value: formData.mobileNumber },
+          { field: "email", value: formData.email },
+          { field: "registrationType", value: formData.registrationType },
+        ]
+
+        // Check if all required fields are valid
+        for (const { field, value } of requiredFields) {
+          if (!validateField(field, value)) {
+            return false
+          }
+        }
 
         // Check team strength if registering as non-individual
         const isNonIndividual = formData.registrationType !== "Individual"
-        const teamStrengthValid = !isNonIndividual || formData.teamStrength
+        if (isNonIndividual && !formData.teamStrength) {
+          return false
+        }
 
-        return basicInfoValid && teamStrengthValid
+        // Check if OTP is verified
+        return formData.otpVerified
       }
-      case 1:
-        return (
-          formData.dateOfBirth &&
-          formData.employmentType &&
-          formData.emergencyContact &&
-          formData.focusProduct &&
-          formData.role &&
-          formData.experienceInSellingLoans
-        )
-      case 2:
-        return formData.addressLine1 && formData.city && formData.addressPincode && formData.addressType
+
+      case 1: {
+        // Personal Details validation
+        const requiredFields = [
+          { field: "dateOfBirth", value: formData.dateOfBirth },
+          { field: "employmentType", value: formData.employmentType },
+          { field: "emergencyContact", value: formData.emergencyContact },
+          { field: "focusProduct", value: formData.focusProduct },
+          { field: "role", value: formData.role },
+          { field: "experienceInSellingLoans", value: formData.experienceInSellingLoans },
+        ]
+
+        for (const { field, value } of requiredFields) {
+          if (!validateField(field, value)) {
+            return false
+          }
+        }
+        return true
+      }
+
+      case 2: {
+        // Address Details validation
+        const requiredFields = [
+          { field: "addressLine1", value: formData.addressLine1 },
+          { field: "city", value: formData.city },
+          { field: "addressPincode", value: formData.addressPincode },
+          { field: "addressType", value: formData.addressType },
+        ]
+
+        for (const { field, value } of requiredFields) {
+          if (!validateField(field, value)) {
+            return false
+          }
+        }
+        return true
+      }
+
       case 3: {
-        const bankDetailsValid =
-          formData.accountHolderName &&
-          formData.accountType &&
-          formData.relationshipWithAccountHolder &&
-          formData.bankName &&
-          formData.accountNumber &&
-          formData.confirmAccountNumber &&
-          formData.ifscCode &&
-          formData.branchName &&
-          formData.accountNumber === formData.confirmAccountNumber
+        // Bank Details validation
+        const requiredFields = [
+          { field: "accountHolderName", value: formData.accountHolderName },
+          { field: "accountType", value: formData.accountType },
+          { field: "relationshipWithAccountHolder", value: formData.relationshipWithAccountHolder },
+          { field: "bankName", value: formData.bankName },
+          { field: "accountNumber", value: formData.accountNumber },
+          { field: "confirmAccountNumber", value: formData.confirmAccountNumber },
+          { field: "ifscCode", value: formData.ifscCode },
+          { field: "branchName", value: formData.branchName },
+        ]
+
+        for (const { field, value } of requiredFields) {
+          if (!validateField(field, value)) {
+            return false
+          }
+        }
+
+        // Check if account numbers match
+        if (formData.accountNumber !== formData.confirmAccountNumber) {
+          return false
+        }
 
         // Check GST billing if account type is Current or Others
         const needsGstBilling = formData.accountType === "Current" || formData.accountType === "Others"
-        const gstBillingValid = !needsGstBilling || formData.isGstBillingApplicable
+        if (needsGstBilling && !formData.isGstBillingApplicable) {
+          return false
+        }
 
-        return bankDetailsValid && gstBillingValid
+        return true
       }
-      case 4:
-        return !!formData.panCard && !!formData.aadharFront && !!formData.aadharBack
+
+      case 4: {
+        // Upload Documents validation
+        return !!(formData.panCard && formData.aadharFront && formData.aadharBack)
+      }
+
       case 5:
         return true
+
       default:
         return false
     }
@@ -265,102 +348,114 @@ const handleSubmit = async () => {
         position: "relative",
       }}
     >
-<Container maxWidth="lg">
-  <Box
-    sx={{
-      mb: 4,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      position: "relative",
-    }}
-  >
-    <Box sx={{ display: "flex", alignItems: "center" }}>
-      <IconButton onClick={handleExit} sx={{ mr: 2 }}>
-        <ArrowBack />
-      </IconButton>
-      <Typography
-        variant="h4"
-        sx={{
-          fontWeight: 700,
-          background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
-          WebkitBackgroundClip: "text",
-          WebkitTextFillColor: "transparent",
-        }}
-      >
-        Become a Partner
-      </Typography>
-    </Box>
-    <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-      <Box
-        component="img"
-        src="/images/MoneySquad-logo.png"
-        alt="MoneySquad"
-        sx={{ height: { xs: 30, md: 40 }, mb: 0.5 }}
-      />
-      <Typography variant="subtitle1" sx={{ color: "primary.main", fontWeight: 700, letterSpacing: 0.5 }}>
-        Partner Portal
-      </Typography>
-    </Box>
-  </Box>
-
-  <Card sx={{ borderRadius: 3, background: "#fff" }}>
-    <CardContent sx={{ p: { xs: 2, md: 4 } }}>
-      <Stepper
-        activeStep={activeStep}
-        orientation={isMobile ? "vertical" : "horizontal"}
-        alternativeLabel={!isMobile}
-      >
-        {steps.map((label) => (
-          <Step key={label}>
-            <StepLabel>{label}</StepLabel>
-          </Step>
-        ))}
-      </Stepper>
-
-      <Grid item xs={12}>
+      <Container maxWidth="lg">
         <Box
           sx={{
+            mb: 4,
             display: "flex",
             alignItems: "center",
-            gap: 1,
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            backgroundColor: "#f8fafc",
-            border: "1px solid #e2e8f0",
-            borderRadius: 2,
-            px: 2,
-            py: 1.5,
-            mt: 2,
+            justifyContent: "space-between",
+            position: "relative",
           }}
         >
-          <Box component="span" sx={{ color: "error.main", fontWeight: 700 }}>
-            *
+          <Box sx={{ display: "flex", alignItems: "center" }}>
+            <IconButton onClick={handleExit} sx={{ mr: 2 }}>
+              <ArrowBack />
+            </IconButton>
+            <Typography
+              variant="h4"
+              sx={{
+                fontWeight: 700,
+                background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+              }}
+            >
+              Become a Partner
+            </Typography>
           </Box>
-          <Typography variant="body2" sx={{ color: "text.secondary" }} noWrap>
-            All fields marked with an asterisk are mandatory. Your email will be verified via a verification code.
-          </Typography>
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+            }}
+          >
+            <Box
+              component="img"
+              src="/images/MoneySquad-logo.png"
+              alt="MoneySquad"
+              sx={{ height: { xs: 30, md: 40 }, mb: 0.5 }}
+            />
+            <Typography
+              variant="subtitle1"
+              sx={{
+                color: "primary.main",
+                fontWeight: 700,
+                letterSpacing: 0.5,
+              }}
+            >
+              Partner Portal
+            </Typography>
+          </Box>
         </Box>
-      </Grid>
 
-      <Box sx={{ mt: 4 }}>{renderStepContent()}</Box>
+        <Card sx={{ borderRadius: 3, background: "#fff" }}>
+          <CardContent sx={{ p: { xs: 2, md: 4 } }}>
+            <Stepper
+              activeStep={activeStep}
+              orientation={isMobile ? "vertical" : "horizontal"}
+              alternativeLabel={!isMobile}
+            >
+              {steps.map((label) => (
+                <Step key={label}>
+                  <StepLabel>{label}</StepLabel>
+                </Step>
+              ))}
+            </Stepper>
 
-      <Box sx={{ display: "flex", justifyContent: "space-between", mt: 4 }}>
-        <Button variant="outlined" onClick={activeStep === 0 ? handleExit : handleBack}>
-          {activeStep === 0 ? "Cancel" : "Back"}
-        </Button>
-        <Button
-          variant="contained"
-          onClick={activeStep === steps.length - 1 ? handleSubmit : handleNext}
-          disabled={!isStepValid() || isSubmitting}
-        >
-          {activeStep === steps.length - 1 ? (isSubmitting ? "Submitting..." : "Submit") : "Continue"}
-        </Button>
-      </Box>
-    </CardContent>
-  </Card>
-</Container>
+            <Grid item xs={12}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  backgroundColor: "#f8fafc",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: 2,
+                  px: 2,
+                  py: 1.5,
+                  mt: 2,
+                }}
+              >
+                <Box component="span" sx={{ color: "error.main", fontWeight: 700 }}>
+                  *
+                </Box>
+                <Typography variant="body2" sx={{ color: "text.secondary" }} noWrap>
+                  All fields marked with an asterisk are mandatory. Your email will be verified via a verification code.
+                </Typography>
+              </Box>
+            </Grid>
 
+            <Box sx={{ mt: 4 }}>{renderStepContent()}</Box>
+
+            <Box sx={{ display: "flex", justifyContent: "space-between", mt: 4 }}>
+              <Button variant="outlined" onClick={activeStep === 0 ? handleExit : handleBack}>
+                {activeStep === 0 ? "Cancel" : "Back"}
+              </Button>
+              <Button
+                variant="contained"
+                onClick={activeStep === steps.length - 1 ? handleSubmit : handleNext}
+                disabled={!isStepValid() || isSubmitting}
+              >
+                {activeStep === steps.length - 1 ? (isSubmitting ? "Submitting..." : "Submit") : "Continue"}
+              </Button>
+            </Box>
+          </CardContent>
+        </Card>
+      </Container>
 
       {/* Success Dialog */}
       <Dialog open={showSuccessDialog} maxWidth="sm" fullWidth>

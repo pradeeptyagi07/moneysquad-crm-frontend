@@ -1,6 +1,15 @@
-import type { Theme } from "@mui/material"
-import type { LeadStatus } from "../../../data/leadTypes"
-import { AccessTime, CheckCircle, Close, Pending, MonetizationOn, Archive, HourglassEmpty, PersonAdd } from "@mui/icons-material"
+import type { Theme } from "@mui/material";
+import type { LeadStatus } from "../../../data/leadTypes";
+import {
+  AccessTime,
+  CheckCircle,
+  Close,
+  Pending,
+  MonetizationOn,
+  Archive,
+  HourglassEmpty,
+  PersonAdd,
+} from "@mui/icons-material";
 
 // Format currency values
 export const formatCurrency = (amount: number): string => {
@@ -8,51 +17,53 @@ export const formatCurrency = (amount: number): string => {
     style: "currency",
     currency: "INR",
     maximumFractionDigits: 0,
-  }).format(amount)
-}
-
+  }).format(amount);
+};
+;
 // Get color for lead status
 export const getStatusColor = (status: LeadStatus, theme: Theme): string => {
   switch (status) {
+    case "new lead":
+      return "#6BC6D4";
     case "pending":
-      return theme.palette.warning.main
+      return "#FFD85A";
     case "login":
-      return theme.palette.error.main
+      return "#8B9EFF";
     case "approved":
-      return theme.palette.info.main
+      return "#6FD58A";
     case "rejected":
-      return theme.palette.error.main
+      return "#F0808B";
     case "disbursed":
-      return " #12AA9E"
+      return " #12AA9E";
     case "closed":
-      return theme.palette.success.dark
+      return "#A9B1B7";
     case "expired":
-      return theme.palette.text.disabled
+      return theme.palette.text.disabled;
     default:
-      return theme.palette.text.secondary
+      return theme.palette.text.secondary;
   }
-}
+};
 
 // Get icon for lead status
 export function getStatusIcon(status: string) {
   switch (status.toLowerCase()) {
     case "pending":
-      return Pending
+      return Pending;
     case "login":
-      return AccessTime
+      return AccessTime;
     case "approved":
-      return CheckCircle
+      return CheckCircle;
     case "rejected":
-      return Close
+      return Close;
     case "disbursed":
-      return MonetizationOn
+      return MonetizationOn;
     case "closed":
-      return Archive
+      return Archive;
     case "expired":
-      return HourglassEmpty
+      return HourglassEmpty;
     case "new lead":
-      return PersonAdd
+      return PersonAdd;
     default:
-      return Pending
+      return Pending;
   }
 }

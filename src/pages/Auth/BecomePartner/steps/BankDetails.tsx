@@ -1,7 +1,8 @@
 // File: steps/BankDetails.tsx
 "use client"
 
-import React, { useState, useEffect } from "react"
+import type React from "react"
+import { useState, useEffect } from "react"
 import {
   Box,
   Grid,
@@ -72,35 +73,10 @@ const BankDetails: React.FC<BankDetailsProps> = ({ formData, updateFormData }) =
     }
   }, [dispatch, banks.length, banksFetched])
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    if (errors[name as keyof typeof errors]) {
-      setErrors(prev => ({ ...prev, [name]: "" }))
-    }
-    // Validate matching account numbers
-    if (name === "confirmAccountNumber" && value && value !== formData.accountNumber) {
-      setErrors(prev => ({ ...prev, confirmAccountNumber: "Account numbers do not match" }))
-    } else if (name === "accountNumber" && formData.confirmAccountNumber && value !== formData.confirmAccountNumber) {
-      setErrors(prev => ({ ...prev, confirmAccountNumber: "Account numbers do not match" }))
-    }
-    updateFormData({ [name]: value })
-    // Only one eye toggle active at a time
-    if (name === "accountNumber") setShowConfirmAccountNumber(false)
-    if (name === "confirmAccountNumber") setShowAccountNumber(false)
-  }
-
-  const handleBankChange = (_: any, newValue: any) => {
-    const bankName = newValue ? newValue.name : ""
-    updateFormData({ bankName })
-    if (bankName && errors.bankName) {
-      setErrors(prev => ({ ...prev, bankName: "" }))
-    }
-  }
-
   const validateField = (name: string, value: string) => {
     switch (name) {
       case "accountHolderName":
-        return value ? "" : "Account holder name is required"
+        return value.trim() ? "" : "Account holder name is required"
       case "accountType":
         return value ? "" : "Please select account type"
       case "relationshipWithAccountHolder":
@@ -111,7 +87,7 @@ const BankDetails: React.FC<BankDetailsProps> = ({ formData, updateFormData }) =
         return value
           ? /^\d{9,18}$/.test(value)
             ? ""
-            : "Enter a valid account number"
+            : "Enter a valid account number (9-18 digits)"
           : "Account number is required"
       case "confirmAccountNumber":
         return value
@@ -121,12 +97,12 @@ const BankDetails: React.FC<BankDetailsProps> = ({ formData, updateFormData }) =
           : "Please confirm account number"
       case "ifscCode":
         return value
-          ? /^[A-Z]{4}0[A-Z0-9]{6}$/.test(value)
+          ? /^[A-Z]{4}0[A-Z0-9]{6}$/.test(value.toUpperCase())
             ? ""
             : "Enter a valid IFSC code (First 4 letters, then 0, then 6 chars)"
           : "IFSC code is required"
       case "branchName":
-        return value ? "" : "Branch name is required"
+        return value.trim() ? "" : "Branch name is required"
       case "isGstBillingApplicable": {
         const needs = formData.accountType === "Current" || formData.accountType === "Others"
         return needs && !value ? "Please select GST billing option" : ""
@@ -136,10 +112,54 @@ const BankDetails: React.FC<BankDetailsProps> = ({ formData, updateFormData }) =
     }
   }
 
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+
+    if (errors[name as keyof typeof errors]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }))
+    }
+
+    let processedValue = value
+
+    // Process specific fields
+    if (name === "accountNumber" || name === "confirmAccountNumber") {
+      // Only allow digits for account numbers
+      processedValue = value.replace(/\D/g, "").slice(0, 18)
+    } else if (name === "ifscCode") {
+      // Convert to uppercase and limit to 11 characters
+      processedValue = value.toUpperCase().slice(0, 11)
+    }
+
+    updateFormData({ [name]: processedValue })
+
+    // Validate matching account numbers in real-time
+    if (name === "confirmAccountNumber" && processedValue && processedValue !== formData.accountNumber) {
+      setErrors((prev) => ({ ...prev, confirmAccountNumber: "Account numbers do not match" }))
+    } else if (
+      name === "accountNumber" &&
+      formData.confirmAccountNumber &&
+      processedValue !== formData.confirmAccountNumber
+    ) {
+      setErrors((prev) => ({ ...prev, confirmAccountNumber: "Account numbers do not match" }))
+    }
+
+    // Only one eye toggle active at a time
+    if (name === "accountNumber") setShowConfirmAccountNumber(false)
+    if (name === "confirmAccountNumber") setShowAccountNumber(false)
+  }
+
+  const handleBankChange = (_: any, newValue: any) => {
+    const bankName = newValue ? newValue.name : ""
+    updateFormData({ bankName })
+    if (bankName && errors.bankName) {
+      setErrors((prev) => ({ ...prev, bankName: "" }))
+    }
+  }
+
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     const error = validateField(name, value)
-    setErrors(prev => ({ ...prev, [name]: error }))
+    setErrors((prev) => ({ ...prev, [name]: error }))
   }
 
   const showGstBilling = formData.accountType === "Current" || formData.accountType === "Others"
@@ -184,7 +204,7 @@ const BankDetails: React.FC<BankDetailsProps> = ({ formData, updateFormData }) =
             InputLabelProps={labelProps}
             InputProps={{ sx: { borderRadius: 2 } }}
           >
-            {accountTypes.map(option => (
+            {accountTypes.map((option) => (
               <MenuItem key={option} value={option}>
                 {option}
               </MenuItem>
@@ -208,7 +228,7 @@ const BankDetails: React.FC<BankDetailsProps> = ({ formData, updateFormData }) =
             InputLabelProps={labelProps}
             InputProps={{ sx: { borderRadius: 2 } }}
           >
-            {relationshipOptions.map(option => (
+            {relationshipOptions.map((option) => (
               <MenuItem key={option} value={option}>
                 {option}
               </MenuItem>
@@ -220,11 +240,11 @@ const BankDetails: React.FC<BankDetailsProps> = ({ formData, updateFormData }) =
         <Grid item xs={12} md={6}>
           <Autocomplete
             options={banks}
-            getOptionLabel={option => option.name}
-            value={banks.find(bank => bank.name === formData.bankName) || null}
+            getOptionLabel={(option) => option.name}
+            value={banks.find((bank) => bank.name === formData.bankName) || null}
             onChange={handleBankChange}
             loading={banksLoading}
-            renderInput={params => (
+            renderInput={(params) => (
               <TextField
                 {...params}
                 required
@@ -250,14 +270,14 @@ const BankDetails: React.FC<BankDetailsProps> = ({ formData, updateFormData }) =
               </li>
             )}
             filterOptions={(options, { inputValue }) =>
-              options.filter(opt => opt.name.toLowerCase().includes(inputValue.toLowerCase()))
+              options.filter((opt) => opt.name.toLowerCase().includes(inputValue.toLowerCase()))
             }
             noOptionsText="No banks found"
             sx={{ width: "100%" }}
           />
         </Grid>
 
-  {/* Account Number */}
+        {/* Account Number */}
         <Grid item xs={12} md={6}>
           <TextField
             fullWidth
@@ -277,12 +297,13 @@ const BankDetails: React.FC<BankDetailsProps> = ({ formData, updateFormData }) =
                 onCopy: (e: React.ClipboardEvent) => e.preventDefault(),
                 onCut: (e: React.ClipboardEvent) => e.preventDefault(),
                 onContextMenu: (e: React.MouseEvent) => e.preventDefault(),
+                maxLength: 18,
               },
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton
                     onClick={() => {
-                      setShowAccountNumber(prev => !prev)
+                      setShowAccountNumber((prev) => !prev)
                       setShowConfirmAccountNumber(false)
                     }}
                     edge="end"
@@ -315,12 +336,13 @@ const BankDetails: React.FC<BankDetailsProps> = ({ formData, updateFormData }) =
                 onCopy: (e: React.ClipboardEvent) => e.preventDefault(),
                 onCut: (e: React.ClipboardEvent) => e.preventDefault(),
                 onContextMenu: (e: React.MouseEvent) => e.preventDefault(),
+                maxLength: 18,
               },
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton
                     onClick={() => {
-                      setShowConfirmAccountNumber(prev => !prev)
+                      setShowConfirmAccountNumber((prev) => !prev)
                       setShowAccountNumber(false)
                     }}
                     edge="end"
@@ -348,6 +370,7 @@ const BankDetails: React.FC<BankDetailsProps> = ({ formData, updateFormData }) =
             InputLabelProps={labelProps}
             InputProps={{
               sx: { borderRadius: 2 },
+              inputProps: { maxLength: 11 },
               endAdornment: (
                 <InputAdornment position="end">
                   <Tooltip title="IFSC code format: First 4 letters + 0 + 6 characters (e.g., HDFC0123456)">
@@ -382,8 +405,8 @@ const BankDetails: React.FC<BankDetailsProps> = ({ formData, updateFormData }) =
         {showGstBilling && (
           <Grid item xs={12}>
             <FormControl component="fieldset" error={!!errors.isGstBillingApplicable}>
-              <FormLabel component="legend" sx={{ mb: 1 }} {...labelProps}>
-                Is GST billing applicable? *
+              <FormLabel component="legend" required sx={{ mb: 1 }}>
+                Is GST Billing Applicable?
               </FormLabel>
               <RadioGroup
                 row
@@ -395,23 +418,22 @@ const BankDetails: React.FC<BankDetailsProps> = ({ formData, updateFormData }) =
                 <FormControlLabel value="No" control={<Radio />} label="No" />
               </RadioGroup>
               {errors.isGstBillingApplicable && (
-                <Typography variant="caption" color="error" sx={{ mt: 1 }}>
+                <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
                   {errors.isGstBillingApplicable}
                 </Typography>
               )}
             </FormControl>
-            <Alert severity="info" sx={{ mt: 2 }}>
-              GST Amount to be processed after you file GSTR-1 for that invoice.
-            </Alert>
           </Grid>
         )}
 
-
-
+        {/* Info Alert */}
         <Grid item xs={12}>
-          <Typography variant="body2" color="text.secondary">
-            Your bank details are secure and will only be used for commission payouts.
-          </Typography>
+          <Alert severity="info" sx={{ borderRadius: 2 }}>
+            <Typography variant="body2">
+              <strong>Important:</strong> Please ensure all bank details are accurate. Commission payments will be made
+              to this account.
+            </Typography>
+          </Alert>
         </Grid>
       </Grid>
     </Box>

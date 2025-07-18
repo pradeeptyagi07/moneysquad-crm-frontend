@@ -22,33 +22,37 @@ const AddressDetails: React.FC<AddressDetailsProps> = ({ formData, updateFormDat
     addressType: "",
   })
 
+  const validateField = (name: string, value: string) => {
+    switch (name) {
+      case "addressLine1":
+        return value.trim() ? "" : "Address line 1 is required"
+      case "city":
+        return value.trim() ? "" : "City is required"
+      case "addressPincode":
+        return value ? (/^\d{6}$/.test(value) ? "" : "Enter a valid 6-digit pincode") : "Pincode is required"
+      case "addressType":
+        return value ? "" : "Please select address type"
+      default:
+        return ""
+    }
+  }
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
+
     if (errors[name as keyof typeof errors]) {
       setErrors({
         ...errors,
         [name]: "",
       })
     }
-    updateFormData({ [name]: value })
-  }
 
-  const validateField = (name: string, value: string) => {
-    switch (name) {
-      case "addressLine1":
-        return value ? "" : "Address line 1 is required"
-      case "city":
-        return value ? "" : "City is required"
-      case "addressPincode":
-        return value
-          ? /^\d{6}$/.test(value)
-            ? ""
-            : "Enter a valid 6-digit pincode"
-          : "Pincode is required"
-      case "addressType":
-        return value ? "" : "Please select address type"
-      default:
-        return ""
+    // For pincode, only allow digits and limit to 6 characters
+    if (name === "addressPincode") {
+      const numericValue = value.replace(/\D/g, "").slice(0, 6)
+      updateFormData({ [name]: numericValue })
+    } else {
+      updateFormData({ [name]: value })
     }
   }
 
@@ -70,10 +74,7 @@ const AddressDetails: React.FC<AddressDetailsProps> = ({ formData, updateFormDat
     },
   }
 
-  const addressTitle =
-    formData.registrationType === "Individual"
-      ? "Residence Address"
-      : "Work Address"
+  const addressTitle = formData.registrationType === "Individual" ? "Residence Address" : "Work Address"
 
   return (
     <Box>
@@ -148,7 +149,10 @@ const AddressDetails: React.FC<AddressDetailsProps> = ({ formData, updateFormDat
             error={!!errors.addressPincode}
             helperText={errors.addressPincode}
             InputLabelProps={labelProps}
-            InputProps={{ sx: { borderRadius: 2 } }}
+            InputProps={{
+              sx: { borderRadius: 2 },
+              inputProps: { maxLength: 6 },
+            }}
           />
         </Grid>
 

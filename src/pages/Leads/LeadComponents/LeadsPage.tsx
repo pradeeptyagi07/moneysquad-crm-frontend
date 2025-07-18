@@ -237,7 +237,7 @@ const LeadsPage: React.FC = () => {
 
   // EXPORT: only current page
   const handleExportCsv = () => {
-    const visible = filteredRows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+    const visible = filteredRows;
     const data = visible.map((r) => ({
       LeadID: r.leadId,
       Partner: r.partnerName,
@@ -257,7 +257,7 @@ const LeadsPage: React.FC = () => {
   };
 
   const handleExportExcel = () => {
-    const visible = filteredRows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+    const visible = filteredRows;
     const ws = XLSX.utils.json_to_sheet(
       visible.map((r) => ({
         LeadID: r.leadId,

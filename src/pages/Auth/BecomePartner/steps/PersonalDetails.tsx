@@ -42,14 +42,7 @@ const currentProfessionOptions = [
   "Other",
 ]
 
-const focusProducts = [
-  "Credit Card",
-  "Personal Loan",
-  "Business Loan",
-  "Home Loan",
-  "Insurance",
-  "Other",
-]
+const focusProducts = ["Credit Card", "Personal Loan", "Business Loan", "Home Loan", "Insurance", "Other"]
 
 const experienceOptions = [
   "Completely New",
@@ -70,6 +63,35 @@ const PersonalDetails: React.FC<PersonalDetailsProps> = ({ formData, updateFormD
     experienceInSellingLoans: "",
   })
 
+  const validateField = (name: string, value: string | null) => {
+    switch (name) {
+      case "dateOfBirth":
+        if (!value) return "Date of birth is required"
+        const birthDate = new Date(value)
+        const today = new Date()
+        let age = today.getFullYear() - birthDate.getFullYear()
+        const monthDiff = today.getMonth() - birthDate.getMonth()
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+          age--
+        }
+        return age >= 18 ? "" : "You must be at least 18 years old"
+      case "employmentType":
+        return value ? "" : "Please select your current profession"
+      case "emergencyContact":
+        return value
+          ? /^[6-9]\d{9}$/.test(value)
+            ? ""
+            : "Enter a valid 10-digit mobile number starting with 6-9"
+          : "Emergency contact is required"
+      case "focusProduct":
+        return value ? "" : "Please select your focus product"
+      case "experienceInSellingLoans":
+        return value ? "" : "Please select your experience in selling loans"
+      default:
+        return ""
+    }
+  }
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
 
@@ -80,37 +102,23 @@ const PersonalDetails: React.FC<PersonalDetailsProps> = ({ formData, updateFormD
       })
     }
 
-    updateFormData({ [name]: value })
+    // For emergency contact, only allow digits and limit to 10 characters
+    if (name === "emergencyContact") {
+      const numericValue = value.replace(/\D/g, "").slice(0, 10)
+      updateFormData({ [name]: numericValue })
+    } else {
+      updateFormData({ [name]: value })
+    }
   }
 
   const handleDateChange = (date: Date | null) => {
     if (errors.dateOfBirth) {
-      setErrors({
-        ...errors,
-        dateOfBirth: "",
-      })
+      setErrors({ ...errors, dateOfBirth: "" })
     }
 
-    updateFormData({ dateOfBirth: date ? date.toISOString() : null })
-  }
-
-  const validateField = (name: string, value: string) => {
-    switch (name) {
-      case "employmentType":
-        return value ? "" : "Please select your current profession"
-      case "emergencyContact":
-        return value
-          ? /^[6-9]\d{9}$/.test(value)
-            ? ""
-            : "Enter a valid 10-digit mobile number"
-          : "Emergency contact is required"
-      case "focusProduct":
-        return value ? "" : "Please select your focus product"
-      case "experienceInSellingLoans":
-        return value ? "" : "Please select your experience in selling loans"
-      default:
-        return ""
-    }
+    // Format to YYYY-MM-DD string
+    const formattedDate = date ? date.toISOString().split("T")[0] : null
+    updateFormData({ dateOfBirth: formattedDate })
   }
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
@@ -123,6 +131,14 @@ const PersonalDetails: React.FC<PersonalDetailsProps> = ({ formData, updateFormD
     })
   }
 
+  const handleDateBlur = () => {
+    const errorMessage = validateField("dateOfBirth", formData.dateOfBirth)
+    setErrors({
+      ...errors,
+      dateOfBirth: errorMessage,
+    })
+  }
+
   // Label props for red asterisk on required fields
   const labelProps = {
     sx: {
@@ -131,8 +147,6 @@ const PersonalDetails: React.FC<PersonalDetailsProps> = ({ formData, updateFormD
       },
     },
   }
-
-  const isNonIndividual = Boolean(formData.employmentType)
 
   return (
     <Box>
@@ -152,9 +166,10 @@ const PersonalDetails: React.FC<PersonalDetailsProps> = ({ formData, updateFormD
           <LocalizationProvider dateAdapter={AdapterDateFns}>
             <DatePicker
               label="Date of Birth"
-              mask="__/__/____"
+              format="dd-MM-yyyy"
               value={formData.dateOfBirth ? new Date(formData.dateOfBirth) : null}
               onChange={handleDateChange}
+              maxDate={new Date()}
               slotProps={{
                 textField: {
                   fullWidth: true,
@@ -163,6 +178,7 @@ const PersonalDetails: React.FC<PersonalDetailsProps> = ({ formData, updateFormD
                   helperText: errors.dateOfBirth,
                   InputLabelProps: labelProps,
                   InputProps: { sx: { borderRadius: 2 } },
+                  onBlur: handleDateBlur,
                 },
               }}
             />
@@ -230,6 +246,7 @@ const PersonalDetails: React.FC<PersonalDetailsProps> = ({ formData, updateFormD
             InputProps={{
               startAdornment: <InputAdornment position="start">+91</InputAdornment>,
               sx: { borderRadius: 2 },
+              inputProps: { maxLength: 10 },
             }}
           />
         </Grid>

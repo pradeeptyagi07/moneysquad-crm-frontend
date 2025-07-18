@@ -15,7 +15,6 @@ import {
   IconButton,
   Menu,
   MenuItem,
-  Chip,
   Tooltip,
   TablePagination,
   CircularProgress,
@@ -44,29 +43,54 @@ import { useAppSelector } from "../../../hooks/useAppSelector"
 import { exportDisbursedLeadsToExcel, exportDisbursedLeadsToCSV } from "../utils/exportUtils"
 import { styled, useTheme } from "@mui/system"
 
+interface Theme {
+  typography: {
+    pxToRem: (px: number) => string
+    fontWeightBold: number
+  }
+  spacing: (factor: number, ...args: number[]) => string
+  shape: {
+    borderRadius: number
+  }
+}
 
 export const LabelWarning = styled(Box)(({ theme }: { theme: Theme }) => ({
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  background: '#FFA319',           // custom orange
-  color: '#FFFFFF',                // white text
-  textTransform: 'uppercase',
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  background: "#FFA319", // custom orange
+  color: "#FFFFFF", // white text
+  textTransform: "uppercase",
   fontSize: theme.typography.pxToRem(10),
   fontWeight: theme.typography.fontWeightBold,
-  lineHeight: 1,                   // reset since flex centering handles vertical alignment
+  lineHeight: 1, // reset since flex centering handles vertical alignment
   height: 22,
   padding: theme.spacing(0, 2),
   borderRadius: theme.shape.borderRadius,
 }))
 
 export const LabelSuccess = styled(Box)(({ theme }: { theme: Theme }) => ({
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  background: '#57CA22',           // custom green
-  color: '#FFFFFF',                // white text
-  textTransform: 'uppercase',
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  background: "#57CA22", // custom green
+  color: "#FFFFFF", // white text
+  textTransform: "uppercase",
+  fontSize: theme.typography.pxToRem(10),
+  fontWeight: theme.typography.fontWeightBold,
+  lineHeight: 1,
+  height: 22,
+  padding: theme.spacing(0, 2),
+  borderRadius: theme.shape.borderRadius,
+}))
+
+export const LabelError = styled(Box)(({ theme }: { theme: Theme }) => ({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  background: "#FF4444", // custom red
+  color: "#FFFFFF", // white text
+  textTransform: "uppercase",
   fontSize: theme.typography.pxToRem(10),
   fontWeight: theme.typography.fontWeightBold,
   lineHeight: 1,
@@ -86,7 +110,7 @@ interface DisbursedLeadsFilters {
 }
 
 const DisbursedLeadsTable: React.FC = () => {
-    const theme = useTheme()
+  const theme = useTheme()
 
   const { userRole } = useAuth()
   const dispatch = useAppDispatch()
@@ -172,6 +196,11 @@ const DisbursedLeadsTable: React.FC = () => {
 
     return true
   })
+
+  // Check if any lead has associate data
+  const hasAssociateData = filteredLeads.some(
+    (lead) => lead.associate && lead.associate.name && lead.associate.name.trim() !== "",
+  )
 
   // Get current page data
   const paginatedLeads = filteredLeads.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
@@ -298,133 +327,139 @@ const DisbursedLeadsTable: React.FC = () => {
       </Box>
 
       {/* Table */}
-    <TableContainer sx={{ mt: 2 }}>
-      <Table stickyHeader sx={{ minWidth: 1600 }}>
-        <TableHead>
-          <TableRow>
-            {/* 2) Partner/Associate first */}
-            {isPartner ? (
-              <TableCell>Associate</TableCell>
-            ) : (
-              <TableCell>Partner</TableCell>
-            )}
-            <TableCell>Created At</TableCell>
-            <TableCell>Lead ID</TableCell>
-            <TableCell>Applicant</TableCell>
-            <TableCell>Lender</TableCell>
-            <TableCell>Disbursal Amount</TableCell>
-            <TableCell>Commission %</TableCell>
-            <TableCell>Gross Payout</TableCell>
-            <TableCell>Net Payout</TableCell>
-            <TableCell>Payout Status</TableCell>
-            <TableCell align="right">Actions</TableCell>
-          </TableRow>
-        </TableHead>
-
-        <TableBody>
-          {paginatedLeads.map((row) => (
-            <TableRow key={row._id} hover>
-              {/* Partner / Associate cell */}
-              {isPartner ? (
-                <TableCell>
-                  <Typography fontWeight={500}>{row.associate.name}</Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    ({row.associate.associateDisplayId})
-                  </Typography>
-                </TableCell>
-              ) : (
-                <TableCell>
-                  <Typography fontWeight={500}>{row.partner.name}</Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    ({row.partner.partnerId})
-                  </Typography>
-                </TableCell>
-              )}
-
-              {/* Created At */}
-              <TableCell>
-                <Typography variant="body2" color="text.secondary">
-                  {formatDate(row.createdAt)}
-                </Typography>
-              </TableCell>
-
-              {/* Lead ID */}
-              <TableCell>
-                <Typography fontWeight={500}>{row.leadId}</Typography>
-              </TableCell>
-
-              {/* Applicant */}
-              <TableCell>
-                <Typography fontWeight={500}>{row.applicant.name}</Typography>
-                {row.applicant.business && (
-                  <Typography variant="caption" color="text.secondary">
-                    {row.applicant.business}
-                  </Typography>
-                )}
-              </TableCell>
-
-              {/* Lender */}
-              <TableCell>
-                <Typography fontWeight={500}>{row.lender.name}</Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {row.lender.loanType}
-                </Typography>
-              </TableCell>
-
-              {/* Disbursal Amount */}
-              <TableCell>₹{row.disbursedAmount.toLocaleString()}</TableCell>
-
-              {/* Commission % */}
-              <TableCell>
-                <Box display="flex" alignItems="center" gap={0.5}>
-                  <Typography>{row.commission}%</Typography>
-                  {isAdmin && row.isTopupLoan && (
-                    <Tooltip title="Top-up Loan">
-                      <InfoOutlined fontSize="small" color="info" />
-                    </Tooltip>
-                  )}
-                  {isAdmin && row.warning && (
-                    <Tooltip title="Warning">
-                      <WarningAmberRounded fontSize="small" color="warning" />
-                    </Tooltip>
-                  )}
-                </Box>
-              </TableCell>
-
-              {/* Gross & Net Payout */}
-              <TableCell>₹{row.grossPayout.toLocaleString()}</TableCell>
-              <TableCell>₹{row.netPayout.toLocaleString()}</TableCell>
-
-              {/* 3) Payout Status using custom Label */}
-              <TableCell>
-                <Box display="flex" flexDirection="column" gap={0.5}>
-                  {row.payoutStatus === 'paid' ? (
-                    <LabelSuccess>Paid</LabelSuccess>
-                  ) : row.payoutStatus === 'pending' ? (
-                    <LabelWarning>Pending</LabelWarning>
-                  ) : (
-                    <LabelError>{row.payoutStatus}</LabelError>
-                  )}
-                  <Box display="flex" alignItems="center" gap={0.5}>
-                    <AccessTime fontSize="small" color="disabled" />
-                    <Typography variant="caption" color="text.secondary">
-                      {formatPayoutStatusDate(row.payoutStatusUpdatedAt)}
-                    </Typography>
-                  </Box>
-                </Box>
-              </TableCell>
-
-              {/* Actions */}
-              <TableCell align="right">
-                <IconButton onClick={(e) => handleMenuOpen(e, row)}>
-                  <MoreVert />
-                </IconButton>
-              </TableCell>
+      <TableContainer sx={{ mt: 2 }}>
+        <Table stickyHeader sx={{ minWidth: 1600 }}>
+          <TableHead>
+            <TableRow>
+              {/* Conditionally show Partner/Associate column */}
+              {isPartner ? hasAssociateData && <TableCell>Associate</TableCell> : <TableCell>Partner</TableCell>}
+              <TableCell>Created At</TableCell>
+              <TableCell>Lead ID</TableCell>
+              <TableCell>Applicant</TableCell>
+              <TableCell>Lender</TableCell>
+              <TableCell>Disbursal Amount</TableCell>
+              <TableCell>Commission %</TableCell>
+              <TableCell>Gross Payout</TableCell>
+              <TableCell>Net Payout</TableCell>
+              <TableCell>Payout Status</TableCell>
+              <TableCell align="right">Actions</TableCell>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
+          </TableHead>
+
+          <TableBody>
+            {paginatedLeads.map((row) => (
+              <TableRow key={row._id} hover>
+                {/* Conditionally render Partner/Associate cell */}
+                {isPartner ? (
+                  hasAssociateData && (
+                    <TableCell>
+                      {row.associate && row.associate.name && row.associate.name.trim() !== "" ? (
+                        <>
+                          <Typography fontWeight={500}>{row.associate.name}</Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            ({row.associate.associateDisplayId})
+                          </Typography>
+                        </>
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">
+                          No Associate
+                        </Typography>
+                      )}
+                    </TableCell>
+                  )
+                ) : (
+                  <TableCell>
+                    <Typography fontWeight={500}>{row.partner.name}</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      ({row.partner.partnerId})
+                    </Typography>
+                  </TableCell>
+                )}
+
+                {/* Created At */}
+                <TableCell>
+                  <Typography variant="body2" color="text.secondary">
+                    {formatDate(row.createdAt)}
+                  </Typography>
+                </TableCell>
+
+                {/* Lead ID */}
+                <TableCell>
+                  <Typography fontWeight={500}>{row.leadId}</Typography>
+                </TableCell>
+
+                {/* Applicant */}
+                <TableCell>
+                  <Typography fontWeight={500}>{row.applicant.name}</Typography>
+                  {row.applicant.business && (
+                    <Typography variant="caption" color="text.secondary">
+                      {row.applicant.business}
+                    </Typography>
+                  )}
+                </TableCell>
+
+                {/* Lender */}
+                <TableCell>
+                  <Typography fontWeight={500}>{row.lender.name}</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {row.lender.loanType}
+                  </Typography>
+                </TableCell>
+
+                {/* Disbursal Amount */}
+                <TableCell>₹{row.disbursedAmount.toLocaleString()}</TableCell>
+
+                {/* Commission % */}
+                <TableCell>
+                  <Box display="flex" alignItems="center" gap={0.5}>
+                    <Typography>{row.commission}%</Typography>
+                    {isAdmin && row.isTopupLoan && (
+                      <Tooltip title="Top-up Loan">
+                        <InfoOutlined fontSize="small" color="info" />
+                      </Tooltip>
+                    )}
+                    {isAdmin && row.warning && (
+                      <Tooltip title="Warning">
+                        <WarningAmberRounded fontSize="small" color="warning" />
+                      </Tooltip>
+                    )}
+                  </Box>
+                </TableCell>
+
+                {/* Gross & Net Payout */}
+                <TableCell>₹{row.grossPayout.toLocaleString()}</TableCell>
+                <TableCell>₹{row.netPayout.toLocaleString()}</TableCell>
+
+                {/* Payout Status using custom Label */}
+                <TableCell>
+                  <Box display="flex" flexDirection="column" gap={0.5}>
+                    {row.payoutStatus === "paid" ? (
+                      <LabelSuccess>Paid</LabelSuccess>
+                    ) : row.payoutStatus === "pending" ? (
+                      <LabelWarning>Pending</LabelWarning>
+                    ) : (
+                      <LabelError>{row.payoutStatus}</LabelError>
+                    )}
+                    <Box display="flex" alignItems="center" gap={0.5}>
+                      <AccessTime fontSize="small" color="disabled" />
+                      <Typography variant="caption" color="text.secondary">
+                        {formatPayoutStatusDate(row.payoutStatusUpdatedAt)}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </TableCell>
+
+                {/* Actions */}
+                <TableCell align="right">
+                  <IconButton onClick={(e) => handleMenuOpen(e, row)}>
+                    <MoreVert />
+                  </IconButton>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
 
       {/* Pagination */}
       <TablePagination

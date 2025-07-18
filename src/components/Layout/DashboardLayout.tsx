@@ -1,7 +1,7 @@
-"use client";
+"use client"
 
-import React, { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import React, { useState, useEffect } from "react"
+import { useNavigate, useLocation } from "react-router-dom"
 import {
   useTheme,
   useMediaQuery,
@@ -14,14 +14,13 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
-  Toolbar,
   Typography,
   Avatar,
   Button,
   Tooltip,
   Collapse,
-} from "@mui/material";
-import MenuIcon from "@mui/icons-material/Menu";
+} from "@mui/material"
+import MenuIcon from "@mui/icons-material/Menu"
 import {
   Dashboard as DashboardIcon,
   People as PeopleIcon,
@@ -37,18 +36,17 @@ import {
   ExpandLess,
   ExpandMore,
   ChevronLeft,
-  ChevronRight,
-} from "@mui/icons-material";
-import { useAuth } from "../../hooks/useAuth";
-import { useAppDispatch } from "../../hooks/useAppDispatch";
+} from "@mui/icons-material"
+import { useAuth } from "../../hooks/useAuth"
+import { useAppDispatch } from "../../hooks/useAppDispatch"
 import {
   fetchUserData,
   selectUserData,
   isManagerUser,
   isPartnerUser,
   isAssociateUser,
-} from "../../store/slices/userDataSlice";
-import { useAppSelector } from "../../hooks/useAppSelector";
+} from "../../store/slices/userDataSlice"
+import { useAppSelector } from "../../hooks/useAppSelector"
 
 // Increased responsive drawer widths for better text visibility
 const drawerWidths = {
@@ -57,22 +55,22 @@ const drawerWidths = {
   md: 250,
   lg: 285,
   xl: 270,
-};
+}
 
-const miniWidth = 64;
+const miniWidth = 64
 
 export interface DashboardMenuItem {
-  text: string;
-  icon: string;
-  path: string;
-  children?: DashboardMenuItem[];
+  text: string
+  icon: string
+  path: string
+  children?: DashboardMenuItem[]
 }
 
 export interface DashboardLayoutProps {
-  children: React.ReactNode;
-  menuItems: DashboardMenuItem[];
-  userRole?: string;
-  userName?: string;
+  children: React.ReactNode
+  menuItems: DashboardMenuItem[]
+  userRole?: string
+  userName?: string
 }
 
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({
@@ -81,156 +79,139 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   userRole: propUserRole,
   userName: propUserName,
 }) => {
-  const theme = useTheme();
-  const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
-  const isLgUp = useMediaQuery(theme.breakpoints.up("lg"));
-  const isXlUp = useMediaQuery(theme.breakpoints.up("xl"));
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
-  const [expandedItems, setExpandedItems] = useState<string[]>([]);
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { logout } = useAuth();
-  const dispatch = useAppDispatch();
+  const theme = useTheme()
+  const isMdUp = useMediaQuery(theme.breakpoints.up("md"))
+  const isLgUp = useMediaQuery(theme.breakpoints.up("lg"))
+  const isXlUp = useMediaQuery(theme.breakpoints.up("xl"))
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const [collapsed, setCollapsed] = useState(false)
+  const [expandedItems, setExpandedItems] = useState<string[]>([])
+  const navigate = useNavigate()
+  const location = useLocation()
+  const { logout } = useAuth()
+  const dispatch = useAppDispatch()
 
   // Get responsive drawer width
   const getCurrentDrawerWidth = () => {
-    if (isXlUp) return drawerWidths.xl;
-    if (isLgUp) return drawerWidths.lg;
-    if (isMdUp) return drawerWidths.md;
-    return drawerWidths.sm;
-  };
+    if (isXlUp) return drawerWidths.xl
+    if (isLgUp) return drawerWidths.lg
+    if (isMdUp) return drawerWidths.md
+    return drawerWidths.sm
+  }
 
-  const fullWidth = getCurrentDrawerWidth();
-  const drawerWidth = isMdUp ? (collapsed ? miniWidth : fullWidth) : fullWidth;
+  const fullWidth = getCurrentDrawerWidth()
+  const drawerWidth = isMdUp ? (collapsed ? miniWidth : fullWidth) : fullWidth
 
   // fetch full user data
-  const userData = useAppSelector(selectUserData);
+  const userData = useAppSelector(selectUserData)
   useEffect(() => {
-    dispatch(fetchUserData());
-  }, [dispatch]);
+    dispatch(fetchUserData())
+  }, [dispatch])
 
   // determine display ID
-  let displayId: string | null = null;
-  if (isManagerUser(userData)) displayId = userData.managerId;
-  else if (isPartnerUser(userData)) displayId = userData.partnerId;
-  else if (isAssociateUser(userData)) displayId = userData.associateDisplayId;
+  let displayId: string | null = null
+  if (isManagerUser(userData)) displayId = userData.managerId
+  else if (isPartnerUser(userData)) displayId = userData.partnerId
+  else if (isAssociateUser(userData)) displayId = userData.associateDisplayId
 
   // resolve name & role
-  const auth = useAppSelector((s) => (s as any).auth);
-  let resolvedName = propUserName || "";
+  const auth = useAppSelector((s) => (s as any).auth)
+  let resolvedName = propUserName || ""
   if (!resolvedName && auth.user) {
-    const { firstName, lastName, basicInfo } = auth.user;
-    resolvedName =
-      [firstName, lastName].filter(Boolean).join(" ") ||
-      basicInfo?.fullName ||
-      "";
+    const { firstName, lastName, basicInfo } = auth.user
+    resolvedName = [firstName, lastName].filter(Boolean).join(" ") || basicInfo?.fullName || ""
   }
-  const resolvedRole = propUserRole || (auth as any).userRole || "";
+  const resolvedRole = propUserRole || (auth as any).userRole || ""
 
-  const handleDrawerToggle = () => setMobileOpen((open) => !open);
-  const handleCollapseToggle = () => setCollapsed((c) => !c);
+  const handleDrawerToggle = () => setMobileOpen((open) => !open)
+  const handleCollapseToggle = () => setCollapsed((c) => !c)
   const handleLogout = () => {
-    logout();
-    navigate("/");
-  };
+    logout()
+    navigate("/")
+  }
 
   const handleExpandClick = (itemText: string) => {
-    setExpandedItems(prev => 
-      prev.includes(itemText) 
-        ? prev.filter(item => item !== itemText)
-        : [...prev, itemText]
-    );
-  };
+    setExpandedItems((prev) =>
+      prev.includes(itemText) ? prev.filter((item) => item !== itemText) : [...prev, itemText],
+    )
+  }
 
   const getIcon = (iconName: string) => {
     switch (iconName) {
       case "Dashboard":
-        return <DashboardIcon />;
+        return <DashboardIcon />
       case "People":
-        return <PeopleIcon />;
+        return <PeopleIcon />
       case "LocalOffer":
-        return <LocalOfferIcon />;
+        return <LocalOfferIcon />
       case "AttachMoney":
-        return <AttachMoneyIcon />;
+        return <AttachMoneyIcon />
       case "Settings":
-        return <SettingsIcon />;
+        return <SettingsIcon />
       case "Groups":
-        return <GroupsIcon />;
+        return <GroupsIcon />
       case "SupervisorAccount":
-        return <SupervisorAccountIcon />;
+        return <SupervisorAccountIcon />
       case "Help":
-        return <HelpOutlineIcon />;
+        return <HelpOutlineIcon />
       case "TrainingResources":
-        return <LibraryBooksIcon />;
+        return <LibraryBooksIcon />
       case "PartnerManagement":
-        return <GroupWorkIcon />;
+        return <GroupWorkIcon />
       default:
-        return <DashboardIcon />;
+        return <DashboardIcon />
     }
-  };
+  }
 
-  const isActive = (path: string) => location.pathname === path;
-  const avatarText = resolvedName
-    ? resolvedName.charAt(0).toUpperCase()
-    : "U";
+  const isActive = (path: string) => location.pathname === path
+  const avatarText = resolvedName ? resolvedName.charAt(0).toUpperCase() : "U"
 
-  const renderMenuItem = (item: DashboardMenuItem, level: number = 0) => {
-    const active = isActive(item.path);
-    const hasChildren = item.children && item.children.length > 0;
-    const isExpanded = expandedItems.includes(item.text);
+  const renderMenuItem = (item: DashboardMenuItem, level = 0) => {
+    const active = isActive(item.path)
+    const hasChildren = item.children && item.children.length > 0
+    const isExpanded = expandedItems.includes(item.text)
     // On mobile, always show full text; on desktop, show full text when expanded or use tooltip when collapsed
-    const shouldShowTooltip = collapsed && isMdUp;
-    const showText = !collapsed || !isMdUp; // Always show text on mobile
+    const shouldShowTooltip = collapsed && isMdUp
+    const showText = !collapsed || !isMdUp // Always show text on mobile
 
     return (
       <React.Fragment key={item.text}>
         <ListItem disablePadding>
-          <Tooltip 
-            title={shouldShowTooltip ? item.text : ""} 
-            placement="right"
-            arrow
-          >
+          <Tooltip title={shouldShowTooltip ? item.text : ""} placement="right" arrow>
             <ListItemButton
               onClick={() => {
                 if (hasChildren) {
-                  handleExpandClick(item.text);
+                  handleExpandClick(item.text)
                 } else {
-                  navigate(item.path);
-                  if (!isMdUp) setMobileOpen(false);
+                  navigate(item.path)
+                  if (!isMdUp) setMobileOpen(false)
                 }
               }}
               sx={{
-                justifyContent: (collapsed && isMdUp) ? "center" : "initial",
+                justifyContent: collapsed && isMdUp ? "center" : "initial",
                 borderRadius: 2,
                 mb: 0.5,
                 mx: 0,
                 ml: level * 2,
-                px: (collapsed && isMdUp) ? 1 : 2,
+                px: collapsed && isMdUp ? 1 : 2,
                 transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                 position: "relative",
-                backgroundColor: active
-                  ? "rgba(15,118,110,0.08)"
-                  : "transparent",
+                backgroundColor: active ? "rgba(15,118,110,0.08)" : "transparent",
                 minHeight: 48,
                 "&:hover": {
-                  backgroundColor: active
-                    ? "rgba(15,118,110,0.12)"
-                    : "rgba(15,118,110,0.04)",
-                  transform: (collapsed && isMdUp) ? "none" : "translateX(4px)",
-                  boxShadow: active
-                    ? "0 4px 20px rgba(15,118,110,0.15)"
-                    : "0 2px 10px rgba(0,0,0,0.08)",
+                  backgroundColor: active ? "rgba(15,118,110,0.12)" : "rgba(15,118,110,0.04)",
+                  transform: collapsed && isMdUp ? "none" : "translateX(4px)",
+                  boxShadow: active ? "0 4px 20px rgba(15,118,110,0.15)" : "0 2px 10px rgba(0,0,0,0.08)",
                 },
                 "&:active": {
-                  transform: (collapsed && isMdUp) ? "none" : "translateX(2px)",
+                  transform: collapsed && isMdUp ? "none" : "translateX(2px)",
                 },
               }}
             >
               <ListItemIcon
                 sx={{
-                  minWidth: (collapsed && isMdUp) ? 0 : { xs: 36, sm: 30 },
-                  mr: (collapsed && isMdUp) ? 0 : 2,
+                  minWidth: collapsed && isMdUp ? 0 : { xs: 36, sm: 30 },
+                  mr: collapsed && isMdUp ? 0 : 2,
                   justifyContent: "center",
                   color: active ? "#0f766e" : "rgba(0,0,0,0.7)",
                   transition: "all 0.2s",
@@ -266,7 +247,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               {hasChildren && showText && (
                 <IconButton
                   size="small"
-                  sx={{ 
+                  sx={{
                     color: active ? "#0f766e" : "rgba(0,0,0,0.54)",
                     minWidth: "auto",
                     p: 0,
@@ -275,7 +256,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                   {isExpanded ? <ExpandLess /> : <ExpandMore />}
                 </IconButton>
               )}
-              {active && (
+              {active && !(collapsed && isMdUp) && (
                 <Box
                   sx={{
                     width: { xs: 4, sm: 5, lg: 6 },
@@ -283,7 +264,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                     borderRadius: "50%",
                     backgroundColor: "#0f766e",
                     position: "absolute",
-                    right: (collapsed && isMdUp) ? 12 : 16,
+                    right: collapsed && isMdUp ? 12 : 16,
                     animation: "pulse 2s infinite",
                     "@keyframes pulse": {
                       "0%": { opacity: 1 },
@@ -304,8 +285,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           </Collapse>
         )}
       </React.Fragment>
-    );
-  };
+    )
+  }
 
   const drawer = (
     <Box
@@ -322,83 +303,98 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           right: 0,
           width: "1px",
           height: "100%",
-          background:
-            "linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.05) 100%)",
+          background: "linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.05) 100%)",
         },
       }}
     >
-  <Box
-  sx={{
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between", // or "flex-start"
-    py: { xs: 1.5, sm: 2 },
-    px: (collapsed && isMdUp) ? 1 : 2,
-    minHeight: { xs: 56, sm: 60 },
-    position: "relative",
-    "&::after": {
-      content: '""',
-      position: "absolute",
-      bottom: 0,
-      left: "50%",
-      transform: "translateX(-50%)",
-      width: (collapsed && isMdUp) ? "80%" : "60%",
-      height: "1px",
-      background: "rgba(0,0,0,0.08)",
-    },
-  }}
->
-  {/* Collapse Button on the left */}
-  {isMdUp && (
-    <Tooltip title={collapsed ? "Expand" : "Collapse"} placement="right" arrow>
-      <IconButton
-        onClick={handleCollapseToggle}
-        size="small"
+      <Box
         sx={{
-          color: "#0f766e",
-          backgroundColor: "rgba(15,118,110,0.08)",
-          transition: "all 0.2s",
-          width: 32,
-          height: 32,
-          mr: 1,
-          "&:hover": {
-            backgroundColor: "rgba(15,118,110,0.12)",
-            transform: "scale(1.1)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between", // or "flex-start"
+          py: { xs: 1.5, sm: 2 },
+          px: collapsed && isMdUp ? 1 : 2,
+          minHeight: { xs: 56, sm: 60 },
+          position: "relative",
+          "&::after": {
+            content: '""',
+            position: "absolute",
+            bottom: 0,
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: collapsed && isMdUp ? "80%" : "60%",
+            height: "1px",
+            background: "rgba(0,0,0,0.08)",
           },
         }}
       >
-        {collapsed ? <ChevronRight /> : <ChevronLeft />}
-      </IconButton>
-    </Tooltip>
-  )}
+        {/* Collapse Button on the left */}
+        {isMdUp && (
+          <Tooltip title={collapsed ? "Expand" : "Collapse"} placement="right" arrow>
+            <IconButton
+              onClick={handleCollapseToggle}
+              size="small"
+              sx={{
+                color: "#0f766e",
+                backgroundColor: collapsed ? "transparent" : "rgba(15,118,110,0.08)",
+                transition: "all 0.2s",
+                width: 32,
+                height: 32,
+                mr: 1,
+                "&:hover": {
+                  backgroundColor: collapsed ? "transparent" : "rgba(15,118,110,0.12)",
+                  transform: collapsed ? "none" : "scale(1.1)",
+                },
+              }}
+            >
+              {collapsed ? (
+               <Box
+  component="img"
+  src="/images/MoneySquad_sidebar.png"
+  alt="Expand Sidebar"
+  sx={{
+    width: "40px",        // Bigger size
+    height: "40px",
+    objectFit: "contain",
+    display: "block",
+    ml: 1.5,                // Left margin = theme.spacing(2)
+    maxWidth: "none"      // Override any max-width from parent/container
+  }}
+/>
 
-  {/* Logo */}
-  <Box
-    component="img"
-    src="/images/MoneySquad-logo.png"
-    alt="MoneySquad Logo"
-    sx={{
-      height: { xs: 28, sm: 32, md: 36 },
-      width: "auto",
-      maxWidth: "85%",
-      objectFit: "contain",
-      filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.1))",
-      transition: "all 0.3s ease",
-      opacity: (collapsed && isMdUp) ? 0 : 1,
-      transform: (collapsed && isMdUp) ? "scale(0.8)" : "scale(1)",
-      "&:hover": {
-        transform: (collapsed && isMdUp) ? "scale(0.8)" : "scale(1.02)",
-      },
-    }}
-  />
-</Box>
+              ) : (
+                <ChevronLeft />
+              )}
+            </IconButton>
+          </Tooltip>
+        )}
 
+        {/* Logo */}
+        <Box
+          component="img"
+          src="/images/MoneySquad-logo.png"
+          alt="MoneySquad Logo"
+          sx={{
+            height: { xs: 28, sm: 32, md: 36 },
+            width: "auto",
+            maxWidth: "85%",
+            objectFit: "contain",
+            filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.1))",
+            transition: "all 0.3s ease",
+            opacity: collapsed && isMdUp ? 0 : 1,
+            transform: collapsed && isMdUp ? "scale(0.8)" : "scale(1)",
+            "&:hover": {
+              transform: collapsed && isMdUp ? "scale(0.8)" : "scale(1.02)",
+            },
+          }}
+        />
+      </Box>
 
       {/* Navigation List */}
       <List
         sx={{
           flexGrow: 1,
-          px: (collapsed && isMdUp) ? 1 : { xs: 1.5, sm: 2 },
+          px: collapsed && isMdUp ? 1 : { xs: 1.5, sm: 2 },
           py: 1,
           overflowY: "auto",
           overflowX: "hidden",
@@ -432,157 +428,155 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       </List>
 
       {/* Professional Profile Section */}
-<Box
-  sx={{
-    p: (collapsed && isMdUp) ? 1 : { xs: 1.2, sm: 1.5 },
-    m: (collapsed && isMdUp) ? 0.5 : { xs: 0.8, sm: 1 },
-    borderRadius: 2,
-    background: "#ffffff",
-    border: "1px solid #e2e8f0",
-    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
-    position: "relative",
-    transition: "all 0.2s ease",
-    "&:hover": {
-      boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-      borderColor: "#cbd5e1",
-    },
-  }}
->
-  <Box
-    sx={{
-      display: "flex",
-      alignItems: "center",
-      justifyContent: (collapsed && isMdUp) ? "center" : "flex-start",
-      mb: (collapsed && isMdUp) ? 0 : { xs: 1, sm: 1.2 },
-    }}
-  >
-    <Tooltip title={(collapsed && isMdUp) ? resolvedName || "User" : ""} placement="right" arrow>
-      <Box sx={{ position: "relative" }}>
-        <Avatar
-          sx={{
-            bgcolor: "#0f766e",
-            color: "white",
-            width: { xs: 32, sm: 36 },
-            height: { xs: 32, sm: 36 },
-            fontSize: { xs: "0.875rem", sm: "1rem" },
-            fontWeight: 600,
-            mx: (collapsed && isMdUp) ? "auto" : 0,
-            transition: "all 0.2s ease",
-          }}
-        >
-          {avatarText}
-        </Avatar>
+      <Box
+        sx={{
+          p: collapsed && isMdUp ? 1 : { xs: 1.2, sm: 1.5 },
+          m: collapsed && isMdUp ? 0.5 : { xs: 0.8, sm: 1 },
+          borderRadius: 2,
+          background: "#ffffff",
+          border: "1px solid #e2e8f0",
+          boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
+          position: "relative",
+          transition: "all 0.2s ease",
+          "&:hover": {
+            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+            borderColor: "#cbd5e1",
+          },
+        }}
+      >
         <Box
           sx={{
-            position: "absolute",
-            bottom: -1,
-            right: -1,
-            width: 8,
-            height: 8,
-            borderRadius: "50%",
-            backgroundColor: "#22c55e",
-            border: "2px solid white",
-            display: (collapsed && isMdUp) ? "none" : "block",
-          }}
-        />
-      </Box>
-    </Tooltip>
-
-    {!(collapsed && isMdUp) && (
-      <Box sx={{ ml: 1.5, flex: 1, minWidth: 0 }}>
-        <Typography
-          variant="subtitle2"
-          sx={{
-            fontWeight: 600,
-            fontSize: { xs: "0.875rem", sm: "0.9rem" },
-            color: "#1e293b",
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: collapsed && isMdUp ? "center" : "flex-start",
+            mb: collapsed && isMdUp ? 0 : { xs: 1, sm: 1.2 },
           }}
         >
-          {resolvedName || "User"}
-        </Typography>
+          <Tooltip title={collapsed && isMdUp ? resolvedName || "User" : ""} placement="right" arrow>
+            <Box sx={{ position: "relative" }}>
+              <Avatar
+                sx={{
+                  bgcolor: "#0f766e",
+                  color: "white",
+                  width: { xs: 32, sm: 36 },
+                  height: { xs: 32, sm: 36 },
+                  fontSize: { xs: "0.875rem", sm: "1rem" },
+                  fontWeight: 600,
+                  mx: collapsed && isMdUp ? "auto" : 0,
+                  transition: "all 0.2s ease",
+                }}
+              >
+                {avatarText}
+              </Avatar>
+              <Box
+                sx={{
+                  position: "absolute",
+                  bottom: -1,
+                  right: -1,
+                  width: 8,
+                  height: 8,
+                  borderRadius: "50%",
+                  backgroundColor: "#22c55e",
+                  border: "2px solid white",
+                  display: collapsed && isMdUp ? "none" : "block",
+                }}
+              />
+            </Box>
+          </Tooltip>
 
-<Box
-  sx={{
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "flex-start",
-    gap: 0.1,
-    mt: 0.2,
-  }}
->
-  <Typography
-    variant="caption"
-    sx={{
-      fontSize: { xs: "0.75rem", sm: "0.8rem" },
-      color: "#64748b",
-      fontWeight: 500,
-      textTransform: "uppercase",
-      letterSpacing: "0.025em",
-    }}
-  >
-    {resolvedRole || "Role"}
-  </Typography>
+          {!(collapsed && isMdUp) && (
+            <Box sx={{ ml: 1.5, flex: 1, minWidth: 0 }}>
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  fontWeight: 600,
+                  fontSize: { xs: "0.875rem", sm: "0.9rem" },
+                  color: "#1e293b",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                {resolvedName || "User"}
+              </Typography>
 
-  {displayId && (
-    <Typography
-      variant="caption"
-      sx={{
-        fontSize: { xs: "0.75rem", sm: "0.8rem" },
-        color: "#64748b",
-        fontFamily: "ui-monospace, Monaco, 'Cascadia Code', monospace",
-        fontWeight: 500,
-      }}
-    >
-      {displayId}
-    </Typography>
-  )}
-</Box>
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                  gap: 0.1,
+                  mt: 0.2,
+                }}
+              >
+                <Typography
+                  variant="caption"
+                  sx={{
+                    fontSize: { xs: "0.75rem", sm: "0.8rem" },
+                    color: "#64748b",
+                    fontWeight: 500,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.025em",
+                  }}
+                >
+                  {resolvedRole || "Role"}
+                </Typography>
 
+                {displayId && (
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      fontSize: { xs: "0.75rem", sm: "0.8rem" },
+                      color: "#64748b",
+                      fontFamily: "ui-monospace, Monaco, 'Cascadia Code', monospace",
+                      fontWeight: 500,
+                    }}
+                  >
+                    {displayId}
+                  </Typography>
+                )}
+              </Box>
+            </Box>
+          )}
+        </Box>
+
+        {!(collapsed && isMdUp) && (
+          <Button
+            variant="outlined"
+            startIcon={<LogoutIcon sx={{ fontSize: "16px !important" }} />}
+            onClick={handleLogout}
+            fullWidth
+            size="small"
+            sx={{
+              borderColor: "#e2e8f0",
+              color: "#0f766e",
+              backgroundColor: "#ffffff",
+              textTransform: "none",
+              fontSize: { xs: "0.8rem", sm: "0.85rem" },
+              py: 0.6,
+              fontWeight: 500,
+              minHeight: { xs: 32, sm: 36 },
+              borderRadius: 1.5,
+              transition: "all 0.2s ease",
+              "&:hover": {
+                borderColor: "#0f766e",
+                backgroundColor: "#ffffff",
+                color: "#0d5a54",
+                boxShadow: "0 2px 8px rgba(15, 118, 110, 0.15)",
+                transform: "translateY(-1px)",
+              },
+              "&:active": {
+                transform: "translateY(0)",
+                boxShadow: "0 1px 3px rgba(15, 118, 110, 0.2)",
+              },
+            }}
+          >
+            Sign Out
+          </Button>
+        )}
       </Box>
-    )}
-  </Box>
-
-  {!(collapsed && isMdUp) && (
-    <Button
-      variant="outlined"
-      startIcon={<LogoutIcon sx={{ fontSize: "16px !important" }} />}
-      onClick={handleLogout}
-      fullWidth
-      size="small"
-      sx={{
-        borderColor: "#e2e8f0",
-        color: "#0f766e",
-        backgroundColor: "#ffffff",
-        textTransform: "none",
-        fontSize: { xs: "0.8rem", sm: "0.85rem" },
-        py: 0.6,
-        fontWeight: 500,
-        minHeight: { xs: 32, sm: 36 },
-        borderRadius: 1.5,
-        transition: "all 0.2s ease",
-        "&:hover": {
-          borderColor: "#0f766e",
-          backgroundColor: "#ffffff",
-          color: "#0d5a54",
-          boxShadow: "0 2px 8px rgba(15, 118, 110, 0.15)",
-          transform: "translateY(-1px)",
-        },
-        "&:active": {
-          transform: "translateY(0)",
-          boxShadow: "0 1px 3px rgba(15, 118, 110, 0.2)",
-        },
-      }}
-    >
-      Sign Out
-    </Button>
-  )}
-</Box>
-
     </Box>
-  );
+  )
 
   return (
     <>
@@ -606,7 +600,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
               width: { xs: 48, sm: 52 },
               height: { xs: 48, sm: 52 },
-              "&:hover": { 
+              "&:hover": {
                 transform: "scale(1.05)",
                 backgroundColor: "#f8fafc",
               },
@@ -629,9 +623,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             "& .MuiDrawer-paper": {
               width: isMdUp ? drawerWidth : "min(85vw, 300px)",
               border: "none",
-              boxShadow: isMdUp
-                ? "0 0 20px rgba(0,0,0,0.06)"
-                : "0 10px 40px rgba(0,0,0,0.12)",
+              boxShadow: isMdUp ? "0 0 20px rgba(0,0,0,0.06)" : "0 10px 40px rgba(0,0,0,0.12)",
               transition: "width 0.3s ease",
               overflowX: "hidden",
             },
@@ -639,7 +631,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         >
           {drawer}
         </Drawer>
-        
+
         {/* Main Content Area */}
         <Box
           component="main"
@@ -657,13 +649,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           }}
         >
           {/* your page content grows here */}
-          <Box sx={{ flexGrow: 1 }}>
-            {children}
-          </Box>
+          <Box sx={{ flexGrow: 1 }}>{children}</Box>
         </Box>
       </Box>
     </>
-  );
-};
+  )
+}
 
-export default DashboardLayout;
+export default DashboardLayout

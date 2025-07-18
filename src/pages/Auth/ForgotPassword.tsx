@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState } from "react"
+import type React from "react";
+import { useState } from "react";
 import {
   Box,
   Typography,
@@ -13,63 +13,68 @@ import {
   Alert,
   Fade,
   Link as MuiLink,
-} from "@mui/material"
-import { Link, useNavigate } from "react-router-dom"
-import { motion } from "framer-motion"
-import OtpInput from "react-otp-input"
-import { LockReset, Email, ArrowBack } from "@mui/icons-material"
-import { useAppDispatch } from "../../hooks/useAppDispatch"
-import { sendOtp, forgotPassword } from "../../store/slices/authSlice"
+} from "@mui/material";
+import { Link, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import OtpInput from "react-otp-input";
+import { LockReset, Email, ArrowBack } from "@mui/icons-material";
+import { useAppDispatch } from "../../hooks/useAppDispatch";
+import { sendOtp, forgotPassword } from "../../store/slices/authSlice";
 
 const ForgotPassword = () => {
-  const dispatch = useAppDispatch()
-  const navigate = useNavigate()
-  const [email, setEmail] = useState("")
-  const [otp, setOtp] = useState("")
-  const [step, setStep] = useState(1)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [otp, setOtp] = useState("");
+  const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (!email) {
-      setError("Please enter your email address")
-      return
+      setError("Please enter your email address");
+      return;
     }
 
-    setLoading(true)
-    setError("")
+    setLoading(true);
+    setError("");
     try {
-      await dispatch(sendOtp(String(email))).unwrap()
-      setStep(2)
+      await dispatch(sendOtp(String(email).toLowerCase(),)).unwrap();
+      setStep(2);
     } catch (err: any) {
-      setError(err || "Failed to send OTP. Please try again.")
+      setError(err || "Failed to send OTP. Please try again.");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleOtpSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (otp.length !== 6) {
-      setError("Please enter the complete 6-digit OTP")
-      return
+      setError("Please enter the complete 6-digit OTP");
+      return;
     }
 
-    setLoading(true)
-    setError("")
+    setLoading(true);
+    setError("");
     try {
-      await dispatch(forgotPassword({ email: String(email), otp })).unwrap()
-      setStep(3)
+      await dispatch(
+        forgotPassword({ email: String(email).toLowerCase(), otp })
+      ).unwrap();
+      setStep(3);
     } catch (err: any) {
-      setError(err || "Invalid OTP. Please try again.")
+      setError(err || "Invalid OTP. Please try again.");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
-    <Container maxWidth="sm" sx={{ height: "100vh", display: "flex", alignItems: "center" }}>
+    <Container
+      maxWidth="sm"
+      sx={{ height: "100vh", display: "flex", alignItems: "center" }}
+    >
       <Paper
         elevation={0}
         sx={{
@@ -140,11 +145,16 @@ const ForgotPassword = () => {
             >
               <LockReset sx={{ fontSize: 40, color: "white" }} />
             </Box>
-            <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, color: "#10b981" }}>
+            <Typography
+              variant="h5"
+              gutterBottom
+              sx={{ fontWeight: 600, color: "#10b981" }}
+            >
               Password Reset Successful!
             </Typography>
             <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-              A new password has been sent to your email. You can now log in with this new password.
+              A new password has been sent to your email. You can now log in
+              with this new password.
             </Typography>
             <Button
               variant="contained"
@@ -168,7 +178,11 @@ const ForgotPassword = () => {
             </Button>
           </Box>
         ) : (
-          <Box component="form" onSubmit={step === 1 ? handleEmailSubmit : handleOtpSubmit} sx={{ width: "100%" }}>
+          <Box
+            component="form"
+            onSubmit={step === 1 ? handleEmailSubmit : handleOtpSubmit}
+            sx={{ width: "100%" }}
+          >
             {step === 1 ? (
               <TextField
                 fullWidth
@@ -179,7 +193,9 @@ const ForgotPassword = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={loading}
-                InputProps={{ startAdornment: <Email color="action" sx={{ mr: 1 }} /> }}
+                InputProps={{
+                  startAdornment: <Email color="action" sx={{ mr: 1 }} />,
+                }}
                 sx={{
                   mb: 3,
                   "& .MuiOutlinedInput-root": {
@@ -204,7 +220,11 @@ const ForgotPassword = () => {
                   mx: "auto",
                 }}
               >
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mb: 1 }}
+                >
                   We've sent a 6-digit code to
                 </Typography>
                 <Typography variant="body1" fontWeight={600} sx={{ mb: 4 }}>
@@ -259,7 +279,7 @@ const ForgotPassword = () => {
                             e.key !== "ArrowLeft" &&
                             e.key !== "ArrowRight"
                           ) {
-                            e.preventDefault()
+                            e.preventDefault();
                           }
                         }}
                       />
@@ -294,12 +314,30 @@ const ForgotPassword = () => {
                 },
               }}
             >
-              {loading ? <CircularProgress size={24} color="inherit" /> : step === 1 ? "Send Verification Code" : "Verify & Reset Password"}
+              {loading ? (
+                <CircularProgress size={24} color="inherit" />
+              ) : step === 1 ? (
+                "Send Verification Code"
+              ) : (
+                "Verify & Reset Password"
+              )}
             </Button>
 
             {step === 2 && (
-              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
-                <Button startIcon={<ArrowBack />} onClick={() => setStep(1)} disabled={loading} sx={{ color: "text.secondary" }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  width: "100%",
+                }}
+              >
+                <Button
+                  startIcon={<ArrowBack />}
+                  onClick={() => setStep(1)}
+                  disabled={loading}
+                  sx={{ color: "text.secondary" }}
+                >
                   Back
                 </Button>
               </Box>
@@ -327,7 +365,7 @@ const ForgotPassword = () => {
         </Box>
       </Paper>
     </Container>
-  )
-}
+  );
+};
 
-export default ForgotPassword
+export default ForgotPassword;

@@ -3,7 +3,7 @@
 import type { RouteObject } from "react-router-dom"
 import { Navigate } from "react-router-dom"
 import PartnerLayout from "../components/Layout/PartnerLayout"
-import PartnerOverview from "../pages/Overview/PartnerOverview"
+import PartnerOverview from "../pages/Overview/CommonOverview"
 import Leads from "../pages/Leads/Leads"
 import Offers from "../pages/Offers/Offers"
 import Commissions from "../pages/Commissions/Commissions"

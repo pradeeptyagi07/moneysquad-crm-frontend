@@ -3,14 +3,14 @@
 import type { RouteObject } from "react-router-dom";
 import { Navigate } from "react-router-dom";
 import ManagerLayout from "../components/Layout/ManagerLayout";
-import ManagerOverview from "../pages/Overview/ManagerOverview";
 import Leads from "../pages/Leads/Leads";
 import Settings from "../pages/Settings/Settings";
 import type { JSX } from "react/jsx-runtime";
 import { useAppSelector } from "../hooks/useAppSelector";
 import TrainingResourcesTab from "../pages/TrainingResources/TrainingResources";
 import Offers from "../pages/Offers/Offers";
-import PartnerOverview from "../pages/Overview/PartnerOverview";
+import PartnerOverview from "../pages/Overview/CommonOverview";
+import CommonOverview from "../pages/Overview/CommonOverview";
 
 // Protected route component specific to manager role
 const ManagerRoute = ({ children }: { children: JSX.Element }) => {
@@ -39,7 +39,7 @@ const managerRoutes: RouteObject[] = [
     children: [
       {
         index: true,
-        element: <ManagerOverview />,
+        element: <CommonOverview />,
       },
       {
         path: "overview",
