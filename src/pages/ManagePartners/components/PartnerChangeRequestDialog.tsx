@@ -17,6 +17,7 @@ import {
   selectActionLoading,
   clearActionState,
 } from "../../../store/slices/changeRequestSlice"
+import { fetchAllPartners } from "../../../store/slices/managePartnerSlice"
 import { useAppSelector } from "../../../hooks/useAppSelector"
 
 interface PartnerChangeRequestDialogProps {
@@ -96,6 +97,10 @@ const PartnerChangeRequestDialog: React.FC<PartnerChangeRequestDialogProps> = ({
         console.log("Refreshing requests after approve...")
         dispatch(fetchAdminRequests(partner._id))
       }
+
+      // Refresh the partner list to update any changes
+      console.log("Refreshing partner list after approval...")
+      dispatch(fetchAllPartners())
     } catch (error) {
       console.error("Failed to approve request:", error)
     }
@@ -116,6 +121,10 @@ const PartnerChangeRequestDialog: React.FC<PartnerChangeRequestDialogProps> = ({
         console.log("Refreshing requests after decline...")
         dispatch(fetchAdminRequests(partner._id))
       }
+
+      // Refresh the partner list to update any changes
+      console.log("Refreshing partner list after decline...")
+      dispatch(fetchAllPartners())
     } catch (error) {
       console.error("Failed to decline request:", error)
     }

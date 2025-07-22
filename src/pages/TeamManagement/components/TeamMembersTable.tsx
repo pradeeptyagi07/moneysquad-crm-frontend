@@ -1,6 +1,8 @@
-"use client";
+"use client"
 
-import { useState } from "react";
+import type React from "react"
+
+import { useState, useEffect } from "react"
 import {
   Box,
   Table,
@@ -20,65 +22,66 @@ import {
   ListItemText,
   Tooltip,
   Pagination,
-} from "@mui/material";
-import { MoreVert, Edit, Delete, Visibility } from "@mui/icons-material";
-import type { Manager } from "../../../store/slices/teamSLice";
+} from "@mui/material"
+import { MoreVert, Edit, Delete, Visibility } from "@mui/icons-material"
+import type { Manager } from "../../../store/slices/teamSLice"
 
 interface TeamMembersTableProps {
-  teamMembers: Manager[];
-  onEdit: (member: Manager) => void;
-  onDelete: (member: Manager) => void;
-  onViewDetails: (member: Manager) => void;
-  onStatusChange: (memberId: string, newStatus: "active" | "inactive") => void;
+  teamMembers: Manager[]
+  onEdit: (member: Manager) => void
+  onDelete: (member: Manager) => void
+  onViewDetails: (member: Manager) => void
+  onStatusChange: (memberId: string, newStatus: "active" | "inactive") => void
 }
 
-const TeamMembersTable: React.FC<TeamMembersTableProps> = ({
-  teamMembers,
-  onEdit,
-  onDelete,
-  onViewDetails,
-}) => {
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [selectedMember, setSelectedMember] = useState<Manager | null>(null);
-  const [page, setPage] = useState(1);
-  const rowsPerPage = 5;
+const TeamMembersTable: React.FC<TeamMembersTableProps> = ({ teamMembers, onEdit, onDelete, onViewDetails }) => {
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
+  const [selectedMember, setSelectedMember] = useState<Manager | null>(null)
+  const [page, setPage] = useState(1)
+  const rowsPerPage = 5
 
-  const handleMenuOpen = (
-    event: React.MouseEvent<HTMLElement>,
-    member: Manager
-  ) => {
-    setAnchorEl(event.currentTarget);
-    setSelectedMember(member);
-  };
+  // Auto page navigation logic
+  useEffect(() => {
+    if (teamMembers.length > 0) {
+      const maxPage = Math.ceil(teamMembers.length / rowsPerPage)
+      if (page > maxPage) {
+        setPage(maxPage)
+      }
+    } else if (page > 1) {
+      setPage(1)
+    }
+  }, [teamMembers.length, page, rowsPerPage])
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, member: Manager) => {
+    setAnchorEl(event.currentTarget)
+    setSelectedMember(member)
+  }
 
   const handleMenuClose = () => {
-    setAnchorEl(null);
-    setSelectedMember(null);
-  };
+    setAnchorEl(null)
+    setSelectedMember(null)
+  }
 
   const handleEdit = () => {
-    if (selectedMember) onEdit(selectedMember);
-    handleMenuClose();
-  };
+    if (selectedMember) onEdit(selectedMember)
+    handleMenuClose()
+  }
 
   const handleDelete = () => {
-    if (selectedMember) onDelete(selectedMember);
-    handleMenuClose();
-  };
+    if (selectedMember) onDelete(selectedMember)
+    handleMenuClose()
+  }
 
   const handleViewDetails = () => {
-    if (selectedMember) onViewDetails(selectedMember);
-    handleMenuClose();
-  };
+    if (selectedMember) onViewDetails(selectedMember)
+    handleMenuClose()
+  }
 
   const handlePageChange = (_: React.ChangeEvent<unknown>, value: number) => {
-    setPage(value);
-  };
+    setPage(value)
+  }
 
-  const paginatedMembers = teamMembers.slice(
-    (page - 1) * rowsPerPage,
-    page * rowsPerPage
-  );
+  const paginatedMembers = teamMembers.slice((page - 1) * rowsPerPage, page * rowsPerPage)
 
   return (
     <>
@@ -116,11 +119,7 @@ const TeamMembersTable: React.FC<TeamMembersTableProps> = ({
                 <TableRow key={member._id} hover>
                   <TableCell>
                     <Box sx={{ display: "flex", alignItems: "center" }}>
-                      <Avatar
-                        src="/professional-person.png"
-                        alt="avatar"
-                        sx={{ width: 40, height: 40, mr: 2 }}
-                      />
+                      <Avatar src="/professional-person.png" alt="avatar" sx={{ width: 40, height: 40, mr: 2 }} />
                       <Box>
                         <Typography variant="body1" fontWeight={500}>
                           {member.firstName} {member.lastName}
@@ -143,14 +142,8 @@ const TeamMembersTable: React.FC<TeamMembersTableProps> = ({
                       label={member.status === "active" ? "Active" : "Inactive"}
                       size="small"
                       sx={{
-                        backgroundColor:
-                          member.status === "active"
-                            ? "success.lighter"
-                            : "grey.200",
-                        color:
-                          member.status === "active"
-                            ? "success.dark"
-                            : "text.secondary",
+                        backgroundColor: member.status === "active" ? "success.lighter" : "grey.200",
+                        color: member.status === "active" ? "success.dark" : "text.secondary",
                         fontWeight: 600,
                       }}
                     />
@@ -162,10 +155,7 @@ const TeamMembersTable: React.FC<TeamMembersTableProps> = ({
                   </TableCell>
                   <TableCell align="right">
                     <Tooltip title="More options">
-                      <IconButton
-                        size="small"
-                        onClick={(e) => handleMenuOpen(e, member)}
-                      >
+                      <IconButton size="small" onClick={(e) => handleMenuOpen(e, member)}>
                         <MoreVert />
                       </IconButton>
                     </Tooltip>
@@ -219,7 +209,7 @@ const TeamMembersTable: React.FC<TeamMembersTableProps> = ({
         </MenuItem>
       </Menu>
     </>
-  );
-};
+  )
+}
 
-export default TeamMembersTable;
+export default TeamMembersTable

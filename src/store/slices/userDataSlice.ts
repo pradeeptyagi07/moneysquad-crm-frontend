@@ -30,6 +30,13 @@ interface ManagerUser extends BaseUser {
   role: "manager"
 }
 
+// Agreement Accepted Log Interface
+interface AgreementAcceptedLog {
+  timestamp: string
+  ip: string
+  _id: string
+}
+
 // Partner User Interface
 interface PartnerUser extends BaseUser {
   partnerId: string
@@ -38,6 +45,7 @@ interface PartnerUser extends BaseUser {
     mobile: string
     email: string
     registeringAs: string
+    teamStrength?: string
     _id: string
   }
   personalInfo: {
@@ -46,6 +54,7 @@ interface PartnerUser extends BaseUser {
     emergencyContactNumber: string
     focusProduct: string
     roleSelection: string
+    experienceInSellingLoans?: string
     _id: string
   }
   addressDetails: {
@@ -73,12 +82,14 @@ interface PartnerUser extends BaseUser {
     panCard: string
     aadharFront: string
     aadharBack: string
-    cancelledCheque: string
-    gstCertificate: string
+    cancelledCheque?: string
+    gstCertificate?: string
     aditional: string
     _id: string
   }
   commissionPlan: string
+  agreementAccepted?: boolean
+  agreementAcceptedLogs?: AgreementAcceptedLog[]
   role: "partner"
 }
 
@@ -102,6 +113,13 @@ interface UserDataResponse {
   data: UserData
 }
 
+// Partner Agreement Accept Response Interface
+interface PartnerAgreementResponse {
+  success: boolean
+  message: string
+  data?: any
+}
+
 // State Interface
 interface UserDataState {
   userData: UserData | null
@@ -109,6 +127,8 @@ interface UserDataState {
   error: string | null
   updating: boolean
   updateError: string | null
+  acceptingAgreement: boolean
+  agreementError: string | null
 }
 
 // Initial State
@@ -118,7 +138,12 @@ const initialState: UserDataState = {
   error: null,
   updating: false,
   updateError: null,
+  acceptingAgreement: false,
+  agreementError: null,
 }
+
+// Helper function to delay execution
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 // Async Thunk for fetching user data
 export const fetchUserData = createAsyncThunk<UserData, void, { rejectValue: string }>(
@@ -156,6 +181,68 @@ export const updateUserData = createAsyncThunk<UserData, Partial<UserData>, { re
   },
 )
 
+// Async Thunk for accepting partner agreement with retry logic
+export const acceptPartnerAgreement = createAsyncThunk<UserData, void, { rejectValue: string }>(
+  "userData/acceptPartnerAgreement",
+  async (_, { rejectWithValue }) => {
+    try {
+      // First, accept the agreement
+      const response = await axiosInstance.post<PartnerAgreementResponse>("/dashboard/partner-agreement-accept")
+
+      if (!response.data.success) {
+        return rejectWithValue(response.data.message || "Failed to accept agreement")
+      }
+
+      // Wait a bit for the backend to process the update
+      await delay(1000)
+
+      // Try to fetch updated user data with retry logic
+      let retries = 3
+      let userDataResponse: any = null
+
+      while (retries > 0) {
+        try {
+          userDataResponse = await axiosInstance.get<UserDataResponse>("/common/userdata")
+
+          if (userDataResponse.data.success) {
+            const userData = userDataResponse.data.data
+
+            // Check if the agreement is now accepted
+            if (isPartnerUser(userData) && userData.agreementAccepted === true) {
+              return userData
+            }
+
+            // If still not accepted, wait and retry
+            if (retries > 1) {
+              await delay(1500)
+              retries--
+              continue
+            }
+          }
+
+          break
+        } catch (fetchError) {
+          if (retries === 1) {
+            throw fetchError
+          }
+          await delay(1500)
+          retries--
+        }
+      }
+
+      // If we get here, either the fetch failed or agreement is still not accepted
+      // But the acceptance API succeeded, so we'll return the data we have
+      if (userDataResponse?.data?.success) {
+        return userDataResponse.data.data
+      } else {
+        return rejectWithValue("Failed to fetch updated user data after accepting agreement")
+      }
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || "Failed to accept agreement")
+    }
+  },
+)
+
 // User Data Slice
 const userDataSlice = createSlice({
   name: "userData",
@@ -166,12 +253,14 @@ const userDataSlice = createSlice({
       state.userData = null
       state.error = null
       state.updateError = null
+      state.agreementError = null
     },
 
     // Clear error
     clearError: (state) => {
       state.error = null
       state.updateError = null
+      state.agreementError = null
     },
 
     // Update user data locally (for optimistic updates)
@@ -211,6 +300,28 @@ const userDataSlice = createSlice({
         state.updating = false
         state.updateError = action.payload || "Failed to update user data"
       })
+      // Accept Partner Agreement
+      .addCase(acceptPartnerAgreement.pending, (state) => {
+        state.acceptingAgreement = true
+        state.agreementError = null
+        // Optimistically update the agreement status
+        if (state.userData && isPartnerUser(state.userData)) {
+          state.userData.agreementAccepted = true
+        }
+      })
+      .addCase(acceptPartnerAgreement.fulfilled, (state, action) => {
+        state.acceptingAgreement = false
+        state.userData = action.payload
+        state.agreementError = null
+      })
+      .addCase(acceptPartnerAgreement.rejected, (state, action) => {
+        state.acceptingAgreement = false
+        state.agreementError = action.payload || "Failed to accept agreement"
+        // Revert optimistic update on failure
+        if (state.userData && isPartnerUser(state.userData)) {
+          state.userData.agreementAccepted = false
+        }
+      })
   },
 })
 
@@ -226,6 +337,8 @@ export const selectUserDataLoading = (state: { userData: UserDataState }) => sta
 export const selectUserDataError = (state: { userData: UserDataState }) => state.userData.error
 export const selectUserDataUpdating = (state: { userData: UserDataState }) => state.userData.updating
 export const selectUserDataUpdateError = (state: { userData: UserDataState }) => state.userData.updateError
+export const selectAcceptingAgreement = (state: { userData: UserDataState }) => state.userData.acceptingAgreement
+export const selectAgreementError = (state: { userData: UserDataState }) => state.userData.agreementError
 
 // Type guards for checking user role
 export const isAdminUser = (user: UserData | null): user is AdminUser => {

@@ -2,7 +2,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Table,
   TableHead,
@@ -141,6 +141,20 @@ const LeadsDataTable: React.FC<LeadsDataTableProps> = ({
   const [currentRowData, setCurrentRowData] = useState<any>(null)
   const [hoveredRowId, setHoveredRowId] = useState<string | null>(null)
 
+  // Auto-navigate to appropriate page when filtered data changes
+  useEffect(() => {
+    if (rows.length > 0) {
+      const maxPage = Math.ceil(rows.length / rowsPerPage) - 1
+      if (page > maxPage) {
+        // If current page is beyond available pages, go to last available page
+        onPageChange(maxPage)
+      }
+    } else if (rows.length === 0 && page > 0) {
+      // If no data and not on first page, go to first page
+      onPageChange(0)
+    }
+  }, [rows.length, page, rowsPerPage, onPageChange])
+
   const handleMenuOpen = (e: React.MouseEvent<HTMLElement>, dbId: string, rowData: any) => {
     e.stopPropagation()
     setMenuDbId(dbId)
@@ -219,6 +233,9 @@ const LeadsDataTable: React.FC<LeadsDataTableProps> = ({
                   </TableCell>
                   <TableCell>
                     <Skeleton variant="text" width={60} />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton variant="text" width={80} />
                   </TableCell>
                   {showManagerCol && (
                     <TableCell>

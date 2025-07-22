@@ -12,7 +12,6 @@ import {
   Box,
   IconButton,
   Paper,
-  CircularProgress,
   Fade,
   TextField,
   Avatar,
@@ -25,8 +24,14 @@ import { useTheme } from "@mui/material/styles"
 import { useAppDispatch } from "../../../hooks/useAppDispatch"
 import { useAppSelector } from "../../../hooks/useAppSelector"
 import { getStatusColor, getStatusIcon } from "../utils/leadUtils"
-import { motion, AnimatePresence } from "framer-motion"
-import { clearTimeline, fetchLeadTimeline } from "../../../store/slices/leadSLice"
+import { motion } from "framer-motion"
+import {
+  clearTimeline,
+  fetchLeadTimeline,
+  fetchLeadRemarks,
+  createLeadRemark,
+  clearRemarks,
+} from "../../../store/slices/leadSLice"
 
 interface LeadTimelineDialogProps {
   open: boolean
@@ -48,60 +53,7 @@ interface TimelineEvent {
   __v: number
 }
 
-interface CommentEvent {
-  _id: string
-  leadId: string
-  comment: string
-  roleName: string
-  userName: string
-  createdAt: string
-}
-
-// Hardcoded comment data for demonstration
-const hardcodedComments: CommentEvent[] = [
-  {
-    _id: "comment_1",
-    leadId: "sample_lead",
-    comment: "Customer has provided all required documents. Moving forward with verification process.",
-    roleName: "Manager",
-    userName: "John Smith",
-    createdAt: "2024-01-15T04:00:00Z",
-  },
-  {
-    _id: "comment_2",
-    leadId: "sample_lead",
-    comment: "Verification completed successfully. Customer's credit score looks good.",
-    roleName: "Associate",
-    userName: "Sarah Johnson",
-    createdAt: "2024-01-15T08:15:00Z",
-  },
-  {
-    _id: "comment_3",
-    leadId: "sample_lead",
-    comment: "Customer called to inquire about the loan status. Provided update on current progress.",
-    roleName: "Partner",
-    userName: "Mike Davis",
-    createdAt: "2024-01-16T02:45:00Z",
-  },
-  {
-    _id: "comment_4",
-    leadId: "sample_lead",
-    comment: "Final approval received from underwriting team. Preparing disbursement documents.",
-    roleName: "Manager",
-    userName: "John Smith",
-    createdAt: "2024-01-16T09:50:00Z",
-  },
-  {
-    _id: "comment_5",
-    leadId: "sample_lead",
-    comment: "Documents have been sent to the customer via email. Awaiting signature confirmation.",
-    roleName: "Associate",
-    userName: "Sarah Johnson",
-    createdAt: "2024-01-17T05:00:00Z",
-  },
-]
-
-// Animation variants
+// Simple animation variants
 const listVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -109,13 +61,12 @@ const listVariants = {
     transition: {
       when: "beforeChildren",
       staggerChildren: 0.1,
-      delayChildren: 0.05,
     },
   },
 }
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 10 },
+  hidden: { opacity: 0, y: 20 },
   visible: {
     opacity: 1,
     y: 0,
@@ -125,41 +76,47 @@ const itemVariants = {
 
 const LeadTimelineDialog: React.FC<LeadTimelineDialogProps> = ({ open, onClose, lead }) => {
   const theme = useTheme()
-  console.log("Lead prop in Timeline Dialog:", lead);
+  console.log("Lead prop in Timeline Dialog:", lead)
 
   const dispatch = useAppDispatch()
-  const { currentTimeline: timeline, loading } = useAppSelector((s) => s.leads)
-  const [newComment, setNewComment] = useState("")
-  const [isAddingComment, setIsAddingComment] = useState(false)
+  const { currentTimeline: timeline, currentRemarks: remarks, loading } = useAppSelector((s) => s.leads)
+  const [newRemark, setNewRemark] = useState("")
+  const [isAddingRemark, setIsAddingRemark] = useState(false)
   const [activeTab, setActiveTab] = useState(0)
 
   useEffect(() => {
     if (open && lead?.leadId) {
+      setActiveTab(0) // Always open with timeline tab
       dispatch(fetchLeadTimeline(lead.leadId))
+      dispatch(fetchLeadRemarks(lead.leadId))
     }
     return () => {
       dispatch(clearTimeline())
+      dispatch(clearRemarks())
     }
   }, [open, lead?.leadId, dispatch])
 
-  const handleAddComment = async () => {
-    if (!newComment.trim()) return
+  const handleAddRemark = async () => {
+    if (!newRemark.trim() || !lead?.leadId) return
 
-    setIsAddingComment(true)
-    // Simulate API call
-    setTimeout(() => {
-      // Here you would normally dispatch an action to add the comment
-      console.log("Adding comment:", newComment)
-      setNewComment("")
-      setIsAddingComment(false)
-    }, 1000)
+    setIsAddingRemark(true)
+    try {
+      await dispatch(
+        createLeadRemark({
+          leadId: lead.leadId,
+          message: newRemark.trim(),
+        }),
+      ).unwrap()
+      setNewRemark("")
+    } catch (error) {
+      console.error("Failed to add remark:", error)
+    } finally {
+      setIsAddingRemark(false)
+    }
   }
 
   const events: TimelineEvent[] = timeline ? (Object.values(timeline).filter(Boolean) as TimelineEvent[]) : []
   const sortedEvents = events.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-  const sortedComments = hardcodedComments.sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-  )
 
   const getRoleColor = (roleName: string) => {
     switch (roleName.toLowerCase()) {
@@ -181,234 +138,243 @@ const LeadTimelineDialog: React.FC<LeadTimelineDialogProps> = ({ open, onClose, 
   }
 
   const renderTimelineEvents = () => (
-    <AnimatePresence>
-      <motion.div variants={listVariants} initial="hidden" animate="visible" exit="hidden">
-        {sortedEvents.map((event, idx) => {
-          const isLast = idx === sortedEvents.length - 1
-          const statusColor = getStatusColor(event.status, theme)
-          const Icon = getStatusIcon(event.status)
+    <motion.div variants={listVariants} initial="hidden" animate="visible">
+      {sortedEvents.map((event, idx) => {
+        const isLast = idx === sortedEvents.length - 1
+        const statusColor = getStatusColor(event.status, theme)
+        const Icon = getStatusIcon(event.status)
 
-          return (
-            <motion.div key={event._id} variants={itemVariants} style={{ position: "relative" }}>
+        return (
+          <motion.div key={event._id} variants={itemVariants} style={{ position: "relative" }}>
+            <Box
+              sx={{
+                display: "flex",
+                mb: 3,
+                position: "relative",
+                "&:before": {
+                  content: '""',
+                  position: "absolute",
+                  left: 20,
+                  top: 32,
+                  bottom: isLast ? "32px" : 0,
+                  width: 2,
+                  bgcolor: "divider",
+                },
+              }}
+            >
+              {/* Status icon */}
               <Box
                 sx={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: "50%",
                   display: "flex",
-                  mb: 3,
-                  position: "relative",
-                  "&:before": {
-                    content: '""',
-                    position: "absolute",
-                    left: 20,
-                    top: 32,
-                    bottom: isLast ? "32px" : 0,
-                    width: 2,
-                    bgcolor: "divider",
-                  },
+                  alignItems: "center",
+                  justifyContent: "center",
+                  bgcolor: `${statusColor}20`,
+                  color: statusColor,
+                  zIndex: 1,
+                  mr: 2,
+                  border: `2px solid ${statusColor}`,
                 }}
               >
-                {/* Status icon */}
-                <Box
-                  sx={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: "50%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    bgcolor: `${statusColor}20`,
-                    color: statusColor,
-                    zIndex: 1,
-                    mr: 2,
-                    border: `2px solid ${statusColor}`,
-                  }}
-                >
-                  <Icon fontSize="small" />
+                <Icon fontSize="small" />
+              </Box>
+
+              {/* Event card */}
+              <Paper
+                variant="outlined"
+                sx={{
+                  flex: 1,
+                  p: 2,
+                  borderLeft: `3px solid ${statusColor}`,
+                }}
+              >
+                <Typography variant="subtitle2" sx={{ color: statusColor, mb: 1 }}>
+                  {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
+                </Typography>
+
+                {/* Message */}
+                {event.message && (
+                  <Typography variant="body2" sx={{ mt: 1 }}>
+                    <strong>Message:</strong> {event.message}
+                  </Typography>
+                )}
+
+                {/* Rejected-specific content */}
+                {event.status.toLowerCase() === "rejected" ? (
+                  <Box sx={{ mt: 1 }}>
+                    {event.rejectReason && (
+                      <Typography variant="body2" color="error">
+                        <strong>Reason:</strong> {event.rejectReason}
+                      </Typography>
+                    )}
+                    {event.rejectComment && (
+                      <Typography variant="body2" sx={{ mt: 1 }}>
+                        <strong>Reject Comment:</strong> {event.rejectComment}
+                      </Typography>
+                    )}
+                    {event.rejectImage && (
+                      <Box sx={{ mt: 1 }}>
+                        <a href={event.rejectImage} target="_blank" rel="noopener noreferrer">
+                          <img
+                            src={event.rejectImage || "/placeholder.svg"}
+                            alt="Rejection Proof"
+                            style={{
+                              width: "100%",
+                              maxWidth: 300,
+                              borderRadius: 6,
+                              cursor: "pointer",
+                            }}
+                          />
+                        </a>
+                      </Box>
+                    )}
+                  </Box>
+                ) : (
+                  event.rejectComment && (
+                    <Typography variant="body2" sx={{ mt: 1 }}>
+                      <strong>Comment:</strong> {event.rejectComment}
+                    </Typography>
+                  )
+                )}
+
+                {/* Closed-specific details */}
+                {event.status.toLowerCase() === "closed" && event.closeReason && (
+                  <Typography variant="body2" color="warning.main" sx={{ mt: 1 }}>
+                    <strong>Close Reason:</strong> {event.closeReason}
+                  </Typography>
+                )}
+
+                {/* Timestamp */}
+                <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
+                  <Typography variant="body2" fontWeight="medium" sx={{ color: statusColor }}>
+                    {new Date(event.createdAt).toLocaleString(undefined, {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </Typography>
+                </Box>
+              </Paper>
+            </Box>
+          </motion.div>
+        )
+      })}
+
+      {!sortedEvents.length && (
+        <Typography align="center" color="textSecondary">
+          No timeline events available.
+        </Typography>
+      )}
+    </motion.div>
+  )
+
+  const renderRemarks = () => {
+    if (!remarks?.remarkMessage) {
+      return (
+        <Typography align="center" color="textSecondary">
+          No remarks available.
+        </Typography>
+      )
+    }
+
+    // Flatten all messages from all users and sort by timestamp
+    const allMessages = remarks.remarkMessage
+      .flatMap((userRemark) =>
+        userRemark.messages.map((message) => ({
+          ...message,
+          userName: userRemark.name,
+          userRole: userRemark.role,
+          userId: userRemark.userId,
+        })),
+      )
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+
+    return (
+      <motion.div variants={listVariants} initial="hidden" animate="visible">
+        {allMessages.map((message, index) => (
+          <motion.div key={`${message.userId}-${message.timestamp}-${index}`} variants={itemVariants}>
+            <Box
+              sx={{
+                display: "flex",
+                mb: 1.5,
+                alignItems: "flex-start",
+              }}
+            >
+              {/* User Avatar */}
+              <Avatar
+                sx={{
+                  width: 36,
+                  height: 36,
+                  bgcolor: getRoleColor(message.userRole),
+                  fontSize: "0.875rem",
+                  mr: 1.5,
+                  flexShrink: 0,
+                }}
+              >
+                {message.userName.charAt(0)}
+              </Avatar>
+
+              {/* Remark content */}
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                {/* Header with name, role, and timestamp */}
+                <Box sx={{ display: "flex", alignItems: "center", mb: 0.5, flexWrap: "wrap", gap: 0.5 }}>
+                  <Typography variant="body2" fontWeight="600" sx={{ color: getRoleColor(message.userRole) }}>
+                    {message.userName}
+                  </Typography>
+                  <Chip
+                    label={message.userRole}
+                    size="small"
+                    sx={{
+                      height: 20,
+                      fontSize: "0.7rem",
+                      bgcolor: `${getRoleColor(message.userRole)}15`,
+                      color: getRoleColor(message.userRole),
+                      fontWeight: 500,
+                    }}
+                  />
+                  <Typography variant="caption" sx={{ color: "text.secondary", ml: "auto" }}>
+                    {new Date(message.timestamp).toLocaleString(undefined, {
+                      month: "short",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </Typography>
                 </Box>
 
-                {/* Event card */}
+                {/* Remark text */}
                 <Paper
                   variant="outlined"
                   sx={{
-                    flex: 1,
-                    p: 2,
-                    borderLeft: `3px solid ${statusColor}`,
+                    p: 1.5,
+                    backgroundColor: "grey.50",
+                    borderRadius: 2,
+                    borderColor: "grey.200",
                   }}
                 >
-                  <Typography variant="subtitle2" sx={{ color: statusColor, mb: 1 }}>
-                    {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
+                  <Typography variant="body2" sx={{ lineHeight: 1.5, color: "text.primary" }}>
+                    {message.text}
                   </Typography>
-
-                  {/* Message */}
-                  {event.message && (
-                    <Typography variant="body2" sx={{ mt: 1 }}>
-                      <strong>Message:</strong> {event.message}
-                    </Typography>
-                  )}
-
-                  {/* Rejected-specific content */}
-                  {event.status.toLowerCase() === "rejected" ? (
-                    <Box sx={{ mt: 1 }}>
-                      {event.rejectReason && (
-                        <Typography variant="body2" color="error">
-                          <strong>Reason:</strong> {event.rejectReason}
-                        </Typography>
-                      )}
-                      {event.rejectComment && (
-                        <Typography variant="body2" sx={{ mt: 1 }}>
-                          <strong>Reject Comment:</strong> {event.rejectComment}
-                        </Typography>
-                      )}
-                      {event.rejectImage && (
-                        <Box sx={{ mt: 1 }}>
-                          <a href={event.rejectImage} target="_blank" rel="noopener noreferrer">
-                            <img
-                              src={event.rejectImage || "/placeholder.svg"}
-                              alt="Rejection Proof"
-                              style={{
-                                width: "100%",
-                                maxWidth: 300,
-                                borderRadius: 6,
-                                cursor: "pointer",
-                              }}
-                            />
-                          </a>
-                        </Box>
-                      )}
-                    </Box>
-                  ) : (
-                    event.rejectComment && (
-                      <Typography variant="body2" sx={{ mt: 1 }}>
-                        <strong>Comment:</strong> {event.rejectComment}
-                      </Typography>
-                    )
-                  )}
-
-                  {/* Closed-specific details */}
-                  {event.status.toLowerCase() === "closed" && event.closeReason && (
-                    <Typography variant="body2" color="warning.main" sx={{ mt: 1 }}>
-                      <strong>Close Reason:</strong> {event.closeReason}
-                    </Typography>
-                  )}
-
-                  {/* Emphasized Timestamp */}
-                  <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
-                    <Typography variant="body2" fontWeight="medium" sx={{ color: statusColor }}>
-                      {new Date(event.createdAt).toLocaleString(undefined, {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </Typography>
-                  </Box>
                 </Paper>
               </Box>
-            </motion.div>
-          )
-        })}
-
-        {!sortedEvents.length && (
-          <Typography align="center" color="textSecondary">
-            No timeline events available.
-          </Typography>
-        )}
+            </Box>
+          </motion.div>
+        ))}
       </motion.div>
-    </AnimatePresence>
-  )
+    )
+  }
 
-  const renderComments = () => (
-    <Box>
-      {/* Comments List */}
-      <AnimatePresence>
-        <motion.div variants={listVariants} initial="hidden" animate="visible" exit="hidden">
-          {sortedComments.map((comment) => {
-            return (
-              <motion.div key={comment._id} variants={itemVariants}>
-                <Box
-                  sx={{
-                    display: "flex",
-                    mb: 1.5,
-                    alignItems: "flex-start",
-                  }}
-                >
-                  {/* User Avatar */}
-                  <Avatar
-                    sx={{
-                      width: 36,
-                      height: 36,
-                      bgcolor: getRoleColor(comment.roleName),
-                      fontSize: "0.875rem",
-                      mr: 1.5,
-                      flexShrink: 0,
-                    }}
-                  >
-                    {comment.userName.charAt(0)}
-                  </Avatar>
-
-                  {/* Comment content */}
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    {/* Header with name, role, and timestamp */}
-                    <Box sx={{ display: "flex", alignItems: "center", mb: 0.5, flexWrap: "wrap", gap: 0.5 }}>
-                      <Typography variant="body2" fontWeight="600" sx={{ color: getRoleColor(comment.roleName) }}>
-                        {comment.userName}
-                      </Typography>
-                      <Chip
-                        label={comment.roleName}
-                        size="small"
-                        sx={{
-                          height: 20,
-                          fontSize: "0.7rem",
-                          bgcolor: `${getRoleColor(comment.roleName)}15`,
-                          color: getRoleColor(comment.roleName),
-                          fontWeight: 500,
-                        }}
-                      />
-                      <Typography variant="caption" sx={{ color: "text.secondary", ml: "auto" }}>
-                        {new Date(comment.createdAt).toLocaleString(undefined, {
-                          month: "short",
-                          day: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </Typography>
-                    </Box>
-
-                    {/* Comment text */}
-                    <Paper
-                      variant="outlined"
-                      sx={{
-                        p: 1.5,
-                        backgroundColor: "grey.50",
-                        borderRadius: 2,
-                        borderColor: "grey.200",
-                      }}
-                    >
-                      <Typography variant="body2" sx={{ lineHeight: 1.5, color: "text.primary" }}>
-                        {comment.comment}
-                      </Typography>
-                    </Paper>
-                  </Box>
-                </Box>
-              </motion.div>
-            )
-          })}
-
-          {!sortedComments.length && (
-            <Typography align="center" color="textSecondary">
-              No comments available.
-            </Typography>
-          )}
-        </motion.div>
-      </AnimatePresence>
-    </Box>
-  )
+  const remarkCount = remarks?.remarkMessage?.reduce((total, userRemark) => total + userRemark.messages.length, 0) || 0
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth TransitionComponent={Fade} transitionDuration={300}>
       <DialogTitle>
         <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Typography variant="h6">Lead Timeline & Comments</Typography>
+          <Typography variant="h6">Lead Timeline & Remarks</Typography>
           <IconButton edge="end" onClick={onClose} size="small">
             <Close />
           </IconButton>
@@ -429,16 +395,11 @@ const LeadTimelineDialog: React.FC<LeadTimelineDialogProps> = ({ open, onClose, 
         >
           <Tabs value={activeTab} onChange={handleTabChange} aria-label="timeline tabs">
             <Tab icon={<Timeline />} label="Status Timeline" iconPosition="start" sx={{ minHeight: 48 }} />
-            <Tab
-              icon={<Comment />}
-              label={`Comments (${sortedComments.length})`}
-              iconPosition="start"
-              sx={{ minHeight: 48 }}
-            />
+            <Tab icon={<Comment />} label={`Remarks (${remarkCount})`} iconPosition="start" sx={{ minHeight: 48 }} />
           </Tabs>
         </Box>
 
-        {/* Sticky Add Comment Section - Only visible in Comments tab */}
+        {/* Sticky Add Remark Section - Only visible in Remarks tab */}
         {activeTab === 1 && (
           <Paper
             elevation={0}
@@ -455,9 +416,9 @@ const LeadTimelineDialog: React.FC<LeadTimelineDialogProps> = ({ open, onClose, 
             <Box sx={{ display: "flex", gap: 1, alignItems: "flex-start" }}>
               <TextField
                 fullWidth
-                placeholder="Add your comment..."
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Add your remark..."
+                value={newRemark}
+                onChange={(e) => setNewRemark(e.target.value)}
                 size="small"
                 multiline
                 maxRows={3}
@@ -469,12 +430,12 @@ const LeadTimelineDialog: React.FC<LeadTimelineDialogProps> = ({ open, onClose, 
               />
               <Button
                 variant="contained"
-                onClick={handleAddComment}
-                disabled={!newComment.trim() || isAddingComment}
+                onClick={handleAddRemark}
+                disabled={!newRemark.trim() || isAddingRemark}
                 sx={{ minWidth: 60, borderRadius: 2 }}
                 size="small"
               >
-                {isAddingComment ? <CircularProgress size={16} /> : <Send fontSize="small" />}
+                {isAddingRemark ? "..." : <Send fontSize="small" />}
               </Button>
             </Box>
           </Paper>
@@ -483,12 +444,12 @@ const LeadTimelineDialog: React.FC<LeadTimelineDialogProps> = ({ open, onClose, 
         <Box sx={{ p: 3 }}>
           {loading ? (
             <Box display="flex" justifyContent="center" alignItems="center" p={4}>
-              <CircularProgress />
+              <Typography>Loading...</Typography>
             </Box>
           ) : (
             <>
               {activeTab === 0 && renderTimelineEvents()}
-              {activeTab === 1 && renderComments()}
+              {activeTab === 1 && renderRemarks()}
             </>
           )}
         </Box>

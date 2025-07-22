@@ -72,9 +72,22 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners }) => {
   }
 
   const paginatedPartners = partners.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+
   const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage)
   }
+
+  // Auto page navigation when filtered data changes
+  React.useEffect(() => {
+    if (partners.length > 0) {
+      const maxPage = Math.ceil(partners.length / rowsPerPage) - 1
+      if (page > maxPage) {
+        setPage(maxPage)
+      }
+    } else if (page > 0) {
+      setPage(0)
+    }
+  }, [partners.length, page, rowsPerPage])
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, partnerId: string) => {
     setAnchorEl(event.currentTarget)

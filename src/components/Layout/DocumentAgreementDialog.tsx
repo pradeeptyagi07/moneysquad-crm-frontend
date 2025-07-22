@@ -1,6 +1,8 @@
 "use client"
 
-import type React from "react"
+import React from "react"
+
+import type { ReactNode } from "react"
 import { useState } from "react"
 import {
   Dialog,
@@ -17,6 +19,7 @@ import {
   Divider,
   IconButton,
   Alert,
+  CircularProgress,
 } from "@mui/material"
 import {
   Close as CloseIcon,
@@ -31,10 +34,11 @@ interface DocumentAgreementDialogProps {
   open: boolean
   onClose: () => void
   onAccept: () => void
+  loading?: boolean
 }
 
 interface TabPanelProps {
-  children?: React.ReactNode
+  children?: ReactNode
   index: number
   value: number
 }
@@ -56,7 +60,12 @@ function TabPanel(props: TabPanelProps) {
   )
 }
 
-const DocumentAgreementDialog: React.FC<DocumentAgreementDialogProps> = ({ open, onClose, onAccept }) => {
+const DocumentAgreementDialog: React.FC<DocumentAgreementDialogProps> = ({
+  open,
+  onClose,
+  onAccept,
+  loading = false,
+}) => {
   const [activeTab, setActiveTab] = useState(0)
   const [allDocumentsAccepted, setAllDocumentsAccepted] = useState(false)
 
@@ -69,13 +78,18 @@ const DocumentAgreementDialog: React.FC<DocumentAgreementDialogProps> = ({ open,
   }
 
   const handleAccept = () => {
-    if (allDocumentsAccepted) {
-      // Store acceptance in localStorage
-      localStorage.setItem("partner_documents_accepted", "true")
-      localStorage.setItem("partner_documents_accepted_date", new Date().toISOString())
+    if (allDocumentsAccepted && !loading) {
       onAccept()
     }
   }
+
+  // Reset checkbox when dialog opens/closes
+  React.useEffect(() => {
+    if (!open) {
+      setAllDocumentsAccepted(false)
+      setActiveTab(0)
+    }
+  }, [open])
 
   const documents = [
     {
@@ -221,6 +235,13 @@ Copyright and Ownership
 
 General Conditions
 • Your use of the Service, including any content, information, or functionality contained within it, is provided "as is" and "as available" with no representations or warranties of any kind, either expressed or implied, including but not limited to, the implied warranties of merchantability, fitness for a particular purpose, and non-infringement. You assume total responsibility and risk for your use of this Service.
+• You understand that the Service can be used for transmission of your Content, and that during processing, your Content may be transferred unencrypted over the internet.
+• You understand that AltMoney uses third party vendors and hosting partners to provide necessary hardware, software, information, networking, storage, and related technology to run the service.
+• You agree not to resell, duplicate, reproduce, or exploit any part of the Service without the explicit written permission of AltMoney.
+• You may not use the service to store, host, or send unsolicited email (spam), chats or SMS messages. AltMoney is Anti-Spam compliant and does not authorize or permit spam to be sent out via the automation service by you. If there is evidence of spam, your services might be suspended without notice. Accidental spam must immediately be reported to AltMoney to prevent suspension.
+• You may not use the service to transmit any viruses, worms, or malicious content.
+• AltMoney makes no warranties regarding (i) your ability to use the Service, (ii) your satisfaction with the Service, (iii) that the Service will be available at all times, uninterrupted, and error-free (iv), the accuracy of mathematical calculations performed by the Service, and (v) that bugs or errors in the Service will be corrected.
+• AltMoney, its affiliates and its sponsors are neither responsible nor liable for any direct, indirect, incidental, consequential, special, exemplary, punitive, or other damages arising out of or relating in any way to your use of the Service. Your sole remedy for dissatisfaction with the Service is to stop using the Service.
 • You understand that the Service can be used for transmission of your Content, and that during processing, your Content may be transferred unencrypted over the internet.
 • You understand that AltMoney uses third party vendors and hosting partners to provide necessary hardware, software, information, networking, storage, and related technology to run the service.
 • You agree not to resell, duplicate, reproduce, or exploit any part of the Service without the explicit written permission of AltMoney.
@@ -405,10 +426,15 @@ Last Revised: May 15, 2025`,
           <IconButton
             onClick={onClose}
             size="small"
+            disabled={loading}
             sx={{
               color: "white",
               backgroundColor: "rgba(255, 255, 255, 0.1)",
               "&:hover": { backgroundColor: "rgba(255, 255, 255, 0.2)" },
+              "&:disabled": {
+                color: "rgba(255, 255, 255, 0.5)",
+                backgroundColor: "rgba(255, 255, 255, 0.05)",
+              },
             }}
           >
             <CloseIcon fontSize="small" />
@@ -432,6 +458,7 @@ Last Revised: May 15, 2025`,
           value={activeTab}
           onChange={handleTabChange}
           variant="fullWidth"
+          disabled={loading}
           sx={{
             minHeight: 48,
             "& .MuiTab-root": {
@@ -565,7 +592,7 @@ Last Revised: May 15, 2025`,
           gap: 1.5,
         }}
       >
-        {!allDocumentsAccepted && (
+        {!allDocumentsAccepted && !loading && (
           <Alert
             severity="warning"
             sx={{
@@ -580,12 +607,32 @@ Last Revised: May 15, 2025`,
           </Alert>
         )}
 
+        {loading && (
+          <Alert
+            severity="info"
+            sx={{
+              borderRadius: 1,
+              fontSize: "0.875rem",
+              "& .MuiAlert-message": {
+                fontWeight: 500,
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+              },
+            }}
+          >
+            <CircularProgress size={16} />
+            Processing your agreement acceptance...
+          </Alert>
+        )}
+
         <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <FormControlLabel
             control={
               <Checkbox
                 checked={allDocumentsAccepted}
                 onChange={handleAcceptanceChange}
+                disabled={loading}
                 sx={{
                   color: "#2563eb",
                   "&.Mui-checked": {
@@ -603,6 +650,7 @@ Last Revised: May 15, 2025`,
                 sx={{
                   fontWeight: 500,
                   color: allDocumentsAccepted ? "#065f46" : "#991b1b",
+                  opacity: loading ? 0.6 : 1,
                 }}
               >
                 I have read, understood, and agree to all the above documents
@@ -615,6 +663,7 @@ Last Revised: May 15, 2025`,
               onClick={onClose}
               variant="outlined"
               size="small"
+              disabled={loading}
               sx={{
                 borderColor: "#d1d5db",
                 color: "#6b7280",
@@ -624,24 +673,30 @@ Last Revised: May 15, 2025`,
                   borderColor: "#9ca3af",
                   backgroundColor: "#f9fafb",
                 },
+                "&:disabled": {
+                  borderColor: "#e5e7eb",
+                  color: "#9ca3af",
+                },
               }}
             >
               Cancel
             </Button>
             <Button
               onClick={handleAccept}
-              disabled={!allDocumentsAccepted}
+              disabled={!allDocumentsAccepted || loading}
               variant="contained"
               size="small"
               sx={{
-                background: allDocumentsAccepted ? "linear-gradient(135deg, #10b981 0%, #059669 100%)" : "#d1d5db",
+                background:
+                  allDocumentsAccepted && !loading ? "linear-gradient(135deg, #10b981 0%, #059669 100%)" : "#d1d5db",
                 color: "white",
                 fontWeight: 600,
                 px: 3,
-                boxShadow: allDocumentsAccepted ? "0 2px 8px 0 rgba(16, 185, 129, 0.3)" : "none",
+                boxShadow: allDocumentsAccepted && !loading ? "0 2px 8px 0 rgba(16, 185, 129, 0.3)" : "none",
                 "&:hover": {
-                  background: allDocumentsAccepted ? "linear-gradient(135deg, #059669 0%, #047857 100%)" : "#d1d5db",
-                  boxShadow: allDocumentsAccepted ? "0 4px 12px 0 rgba(16, 185, 129, 0.4)" : "none",
+                  background:
+                    allDocumentsAccepted && !loading ? "linear-gradient(135deg, #059669 0%, #047857 100%)" : "#d1d5db",
+                  boxShadow: allDocumentsAccepted && !loading ? "0 4px 12px 0 rgba(16, 185, 129, 0.4)" : "none",
                 },
                 "&:disabled": {
                   color: "white",
@@ -649,7 +704,12 @@ Last Revised: May 15, 2025`,
                 },
               }}
             >
-              {allDocumentsAccepted ? (
+              {loading ? (
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <CircularProgress size={16} color="inherit" />
+                  Processing...
+                </Box>
+              ) : allDocumentsAccepted ? (
                 <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                   <CheckCircleIcon sx={{ fontSize: 16 }} />
                   Accept & Continue

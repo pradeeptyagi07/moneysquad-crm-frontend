@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const axiosInstance = axios.create({
-  // baseURL: "http://178.236.185.187:5002/api",
+  // baseURL: "http://localhost:5003/api",
   // baseURL: "https://api.moneysquad.in/api/",
   // baseURL: "https://articles-task-volume-headset.trycloudflare.com/api",
 baseURL:"http://178.236.185.178:5003/api",
@@ -40,7 +40,7 @@ axiosInstance.interceptors.response.use(
       localStorage.removeItem("userRole");  // if you store role
 
       // 2) Optional: show a toast / console
-      console.warn("Session expired – logging you out");
+      // console.warn("Session expired – logging you out");
 
       // 3) Redirect to login (adjust path as needed)
       window.location.href = "/";

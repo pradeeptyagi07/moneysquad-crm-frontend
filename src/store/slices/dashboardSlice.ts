@@ -1,69 +1,74 @@
 // src/store/slices/dashboardSlice.ts
-import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import axiosInstance from "../../services/api";
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit"
+import axiosInstance from "../../services/api"
 
 // --- Types ---
 
 export interface FunnelStage {
-  name: string;
-  count: number;
-  currentCount: number;
-  conversionPct: number;
+  name: string
+  count: number
+  currentCount: number
+  conversionPct: number
 }
 
 export interface SnapshotData {
-  totalDisbursal: { current: number; previous: number; deltaPercent: number };
-  activeLeads: { count: number; unique: number };
-  commissionEarned: { thisMonth: number; previousMonth: number; deltaPercent: number };
-  approvalRate: { currentPercent: number; previousPercent: number; deltaPercent: number };
-  rejectionRate: { currentPercent: number; previousPercent: number; deltaPercent: number };
+  totalDisbursal: { current: number; previous: number; deltaPercent: number }
+  activeLeads: { count: number; unique: number }
+  commissionEarned: { thisMonth: number; previousMonth: number; deltaPercent: number }
+  approvalRate: { currentPercent: number; previousPercent: number; deltaPercent: number }
+  rejectionRate: { currentPercent: number; previousPercent: number; deltaPercent: number }
 }
 
 export interface RejectionReasonCount {
-  reason: string;
-  count: number;
-  percent: number;
+  reason: string
+  count: number
+  percent: number
+}
+
+export interface RejectionReasonResponse {
+  rejectionReasonCount: RejectionReasonCount[]
+  totalCount: number
 }
 
 export interface TrendData {
-  month: string;
-  value: number;
+  month: string
+  value: number
 }
 
 export interface Trends {
-  leadsAdded: TrendData[];
-  disbursals: TrendData[];
-  payouts: TrendData[];
+  leadsAdded: TrendData[]
+  disbursals: TrendData[]
+  payouts: TrendData[]
 }
 
 export interface MatrixData {
-  disbursalRatePct: number;
-  avgDisbursalTATdays: number;
-  avgLoanAmount: number;
-  targetAchievedPct: number | null;
+  disbursalRatePct: number
+  avgDisbursalTATdays: number
+  avgLoanAmount: number
+  targetAchievedPct: number | null
 }
 
 interface DashboardState {
   // funnel
-  funnelLoading: boolean;
-  funnelError: string | null;
-  funnelStages: FunnelStage[];
+  funnelLoading: boolean
+  funnelError: string | null
+  funnelStages: FunnelStage[]
   // snapshot
-  snapshotLoading: boolean;
-  snapshotError: string | null;
-  snapshot: SnapshotData | null;
+  snapshotLoading: boolean
+  snapshotError: string | null
+  snapshot: SnapshotData | null
   // rejection reasons
-  rejectionLoading: boolean;
-  rejectionError: string | null;
-  rejectionReasonCount: RejectionReasonCount[];
+  rejectionLoading: boolean
+  rejectionError: string | null
+  rejectionReasonCount: RejectionReasonResponse | null
   // trends
-  trendsLoading: boolean;
-  trendsError: string | null;
-  trends: Trends | null;
+  trendsLoading: boolean
+  trendsError: string | null
+  trends: Trends | null
   // matrix
-  matrixLoading: boolean;
-  matrixError: string | null;
-  matrix: MatrixData | null;
+  matrixLoading: boolean
+  matrixError: string | null
+  matrix: MatrixData | null
 }
 
 const initialState: DashboardState = {
@@ -77,7 +82,7 @@ const initialState: DashboardState = {
 
   rejectionLoading: false,
   rejectionError: null,
-  rejectionReasonCount: [],
+  rejectionReasonCount: null,
 
   trendsLoading: false,
   trendsError: null,
@@ -86,7 +91,7 @@ const initialState: DashboardState = {
   matrixLoading: false,
   matrixError: null,
   matrix: null,
-};
+}
 
 // --- Thunks ---
 
@@ -94,81 +99,66 @@ export const fetchFunnelData = createAsyncThunk<
   FunnelStage[],
   { period?: string; loanType?: string; associateId?: string } | undefined,
   { rejectValue: string }
->(
-  "dashboard/fetchFunnel",
-  async (params = {}, { rejectWithValue }) => {
-    try {
-      const res = await axiosInstance.get("/dashboard/funnel", { params });
-      return res.data.stages as FunnelStage[];
-    } catch (err: any) {
-      return rejectWithValue(err.response?.data?.message || "Failed to fetch funnel data");
-    }
+>("dashboard/fetchFunnel", async (params = {}, { rejectWithValue }) => {
+  try {
+    const res = await axiosInstance.get("/dashboard/funnel", { params })
+    return res.data.stages as FunnelStage[]
+  } catch (err: any) {
+    return rejectWithValue(err.response?.data?.message || "Failed to fetch funnel data")
   }
-);
+})
 
 export const fetchSnapshotData = createAsyncThunk<
   SnapshotData,
   { period?: string; loanType?: string; associateId?: string } | undefined,
   { rejectValue: string }
->(
-  "dashboard/fetchSnapshot",
-  async (params = {}, { rejectWithValue }) => {
-    try {
-      const res = await axiosInstance.get("/dashboard/snapshot", { params });
-      return res.data.snapshot as SnapshotData;
-    } catch (err: any) {
-      return rejectWithValue(err.response?.data?.message || "Failed to fetch snapshot data");
-    }
+>("dashboard/fetchSnapshot", async (params = {}, { rejectWithValue }) => {
+  try {
+    const res = await axiosInstance.get("/dashboard/snapshot", { params })
+    return res.data.snapshot as SnapshotData
+  } catch (err: any) {
+    return rejectWithValue(err.response?.data?.message || "Failed to fetch snapshot data")
   }
-);
+})
 
 export const fetchRejectionReasonCount = createAsyncThunk<
-  RejectionReasonCount[],
+  RejectionReasonResponse,
   { period?: string; loanType?: string; associateId?: string } | undefined,
   { rejectValue: string }
->(
-  "dashboard/fetchRejectionReasonCount",
-  async (params = {}, { rejectWithValue }) => {
-    try {
-      const res = await axiosInstance.get("/dashboard/rejection-reason-count", { params });
-      return res.data.rejectionReasonCount as RejectionReasonCount[];
-    } catch (err: any) {
-      return rejectWithValue(err.response?.data?.message || "Failed to fetch rejection reasons");
-    }
+>("dashboard/fetchRejectionReasonCount", async (params = {}, { rejectWithValue }) => {
+  try {
+    const res = await axiosInstance.get("/dashboard/rejection-reason-count", { params })
+    return res.data.data as RejectionReasonResponse
+  } catch (err: any) {
+    return rejectWithValue(err.response?.data?.message || "Failed to fetch rejection reasons")
   }
-);
+})
 
 export const fetchTrends = createAsyncThunk<
   Trends,
   { loanType?: string; associateId?: string; trendMonths?: number } | undefined,
   { rejectValue: string }
->(
-  "dashboard/fetchTrends",
-  async (params = { trendMonths: 3 }, { rejectWithValue }) => {
-    try {
-      const res = await axiosInstance.get("/dashboard/trends", { params });
-      return res.data.trends as Trends;
-    } catch (err: any) {
-      return rejectWithValue(err.response?.data?.message || "Failed to fetch trends");
-    }
+>("dashboard/fetchTrends", async (params = { trendMonths: 3 }, { rejectWithValue }) => {
+  try {
+    const res = await axiosInstance.get("/dashboard/trends", { params })
+    return res.data.trends as Trends
+  } catch (err: any) {
+    return rejectWithValue(err.response?.data?.message || "Failed to fetch trends")
   }
-);
+})
 
 export const fetchMatrix = createAsyncThunk<
   MatrixData,
   { period?: string; loanType?: string; associateId?: string } | undefined,
   { rejectValue: string }
->(
-  "dashboard/fetchMatrix",
-  async (params = {}, { rejectWithValue }) => {
-    try {
-      const res = await axiosInstance.get("/dashboard/matrix", { params });
-      return res.data.matrix as MatrixData;
-    } catch (err: any) {
-      return rejectWithValue(err.response?.data?.message || "Failed to fetch matrix");
-    }
+>("dashboard/fetchMatrix", async (params = {}, { rejectWithValue }) => {
+  try {
+    const res = await axiosInstance.get("/dashboard/matrix", { params })
+    return res.data.matrix as MatrixData
+  } catch (err: any) {
+    return rejectWithValue(err.response?.data?.message || "Failed to fetch matrix")
   }
-);
+})
 
 // --- Slice ---
 
@@ -177,95 +167,95 @@ const dashboardSlice = createSlice({
   initialState,
   reducers: {
     clearDashboardState(state) {
-      state.funnelError = null;
-      state.snapshotError = null;
-      state.rejectionError = null;
-      state.trendsError = null;
-      state.matrixError = null;
-      state.funnelStages = [];
-      state.snapshot = null;
-      state.rejectionReasonCount = [];
-      state.trends = null;
-      state.matrix = null;
+      state.funnelError = null
+      state.snapshotError = null
+      state.rejectionError = null
+      state.trendsError = null
+      state.matrixError = null
+      state.funnelStages = []
+      state.snapshot = null
+      state.rejectionReasonCount = null
+      state.trends = null
+      state.matrix = null
     },
   },
   extraReducers: (builder) => {
     // funnel
     builder
       .addCase(fetchFunnelData.pending, (s) => {
-        s.funnelLoading = true;
-        s.funnelError = null;
+        s.funnelLoading = true
+        s.funnelError = null
       })
       .addCase(fetchFunnelData.fulfilled, (s, a) => {
-        s.funnelLoading = false;
-        s.funnelStages = a.payload;
+        s.funnelLoading = false
+        s.funnelStages = a.payload
       })
       .addCase(fetchFunnelData.rejected, (s, a) => {
-        s.funnelLoading = false;
-        s.funnelError = a.payload as string;
-      });
+        s.funnelLoading = false
+        s.funnelError = a.payload as string
+      })
 
     // snapshot
     builder
       .addCase(fetchSnapshotData.pending, (s) => {
-        s.snapshotLoading = true;
-        s.snapshotError = null;
+        s.snapshotLoading = true
+        s.snapshotError = null
       })
       .addCase(fetchSnapshotData.fulfilled, (s, a) => {
-        s.snapshotLoading = false;
-        s.snapshot = a.payload;
+        s.snapshotLoading = false
+        s.snapshot = a.payload
       })
       .addCase(fetchSnapshotData.rejected, (s, a) => {
-        s.snapshotLoading = false;
-        s.snapshotError = a.payload as string;
-      });
+        s.snapshotLoading = false
+        s.snapshotError = a.payload as string
+      })
 
     // rejection reasons
     builder
       .addCase(fetchRejectionReasonCount.pending, (s) => {
-        s.rejectionLoading = true;
-        s.rejectionError = null;
+        s.rejectionLoading = true
+        s.rejectionError = null
       })
       .addCase(fetchRejectionReasonCount.fulfilled, (s, a) => {
-        s.rejectionLoading = false;
-        s.rejectionReasonCount = a.payload;
+        s.rejectionLoading = false
+        s.rejectionReasonCount = a.payload
       })
       .addCase(fetchRejectionReasonCount.rejected, (s, a) => {
-        s.rejectionLoading = false;
-        s.rejectionError = a.payload as string;
-      });
+        s.rejectionLoading = false
+        s.rejectionError = a.payload as string
+      })
 
     // trends
     builder
       .addCase(fetchTrends.pending, (s) => {
-        s.trendsLoading = true;
-        s.trendsError = null;
+        s.trendsLoading = true
+        s.trendsError = null
       })
       .addCase(fetchTrends.fulfilled, (s, a) => {
-        s.trendsLoading = false;
-        s.trends = a.payload;
+        s.trendsLoading = false
+        s.trends = a.payload
       })
       .addCase(fetchTrends.rejected, (s, a) => {
-        s.trendsLoading = false;
-        s.trendsError = a.payload as string;
-      });
+        s.trendsLoading = false
+        s.trendsError = a.payload as string
+      })
 
     // matrix
     builder
       .addCase(fetchMatrix.pending, (s) => {
-        s.matrixLoading = true;
-        s.matrixError = null;
+        s.matrixLoading = true
+        s.matrixError = null
       })
       .addCase(fetchMatrix.fulfilled, (s, a) => {
-        s.matrixLoading = false;
-        s.matrix = a.payload;
+        s.matrixLoading = false
+        s.matrix = a.payload
       })
       .addCase(fetchMatrix.rejected, (s, a) => {
-        s.matrixLoading = false;
-        s.matrixError = a.payload as string;
-      });
+        s.matrixLoading = false
+        s.matrixError = a.payload as string
+      })
   },
-});
+})
 
-export const { clearDashboardState } = dashboardSlice.actions;
-export default dashboardSlice.reducer;
+export const { clearDashboardState } = dashboardSlice.actions
+export default dashboardSlice.reducer

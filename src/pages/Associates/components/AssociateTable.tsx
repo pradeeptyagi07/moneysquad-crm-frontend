@@ -1,6 +1,7 @@
-// src/components/Associates/AssociateTable.tsx
+"use client"
 
-import React, { useState } from "react";
+import type React from "react"
+import { useState, useEffect } from "react"
 import {
   Table,
   TableHead,
@@ -16,46 +17,51 @@ import {
   Box,
   useTheme,
   Chip,
-} from "@mui/material";
-import { Edit, Delete, Person } from "@mui/icons-material";
-import Pagination from "@mui/material/Pagination";
+} from "@mui/material"
+import { Edit, Delete, Person } from "@mui/icons-material"
+import Pagination from "@mui/material/Pagination"
 
 export interface Associate {
-  _id: string;
-  associateId: string;
-  associateDisplayId: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  mobile: string;
-  location: string;
-  status: string;
-  createdAt: string;
+  _id: string
+  associateId: string
+  associateDisplayId: string
+  firstName: string
+  lastName: string
+  email: string
+  mobile: string
+  location: string
+  status: string
+  createdAt: string
 }
 
 interface AssociateTableProps {
-  associates: Associate[];
-  onEdit: (associate: Associate) => void;
-  onDelete: (associate: Associate) => void;
+  associates: Associate[]
+  onEdit: (associate: Associate) => void
+  onDelete: (associate: Associate) => void
 }
 
-const AssociateTable: React.FC<AssociateTableProps> = ({
-  associates,
-  onEdit,
-  onDelete,
-}) => {
-  const theme = useTheme();
-  const [page, setPage] = useState(1);
-  const rowsPerPage = 5;
+const AssociateTable: React.FC<AssociateTableProps> = ({ associates, onEdit, onDelete }) => {
+  const theme = useTheme()
+  const [page, setPage] = useState(1)
+  const rowsPerPage = 5
+
+  // Auto page navigation logic
+  useEffect(() => {
+    if (associates.length > 0) {
+      const maxPage = Math.ceil(associates.length / rowsPerPage)
+      if (page > maxPage) {
+        setPage(maxPage)
+      }
+    } else if (page > 1) {
+      setPage(1)
+    }
+  }, [associates.length, page, rowsPerPage])
 
   const handlePageChange = (_: React.ChangeEvent<unknown>, value: number) => {
-    setPage(value);
-  };
+    setPage(value)
+  }
 
-  const paginated = associates.slice(
-    (page - 1) * rowsPerPage,
-    page * rowsPerPage
-  );
+  const paginated = associates.slice((page - 1) * rowsPerPage, page * rowsPerPage)
 
   return (
     <>
@@ -95,11 +101,7 @@ const AssociateTable: React.FC<AssociateTableProps> = ({
                   <TableCell>
                     <Typography variant="body2">
                       {assoc.associateId}{" "}
-                      <Typography
-                        component="span"
-                        variant="caption"
-                        color="text.secondary"
-                      >
+                      <Typography component="span" variant="caption" color="text.secondary">
                         ({assoc.associateDisplayId})
                       </Typography>
                     </Typography>
@@ -126,11 +128,7 @@ const AssociateTable: React.FC<AssociateTableProps> = ({
 
                   <TableCell>
                     <Typography variant="body2">{assoc.email}</Typography>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      display="block"
-                    >
+                    <Typography variant="caption" color="text.secondary" display="block">
                       {assoc.mobile}
                     </Typography>
                   </TableCell>
@@ -141,10 +139,7 @@ const AssociateTable: React.FC<AssociateTableProps> = ({
 
                   <TableCell>
                     <Chip
-                      label={
-                        assoc.status.charAt(0).toUpperCase() +
-                        assoc.status.slice(1)
-                      }
+                      label={assoc.status.charAt(0).toUpperCase() + assoc.status.slice(1)}
                       size="small"
                       variant="outlined"
                       sx={{ textTransform: "capitalize" }}
@@ -152,10 +147,7 @@ const AssociateTable: React.FC<AssociateTableProps> = ({
                   </TableCell>
 
                   <TableCell>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                    >
+                    <Typography variant="caption" color="text.secondary">
                       {new Date(assoc.createdAt).toLocaleDateString("en-IN", {
                         year: "numeric",
                         month: "short",
@@ -166,20 +158,12 @@ const AssociateTable: React.FC<AssociateTableProps> = ({
 
                   <TableCell align="right">
                     <Tooltip title="Edit">
-                      <IconButton
-                        size="small"
-                        color="primary"
-                        onClick={() => onEdit(assoc)}
-                      >
+                      <IconButton size="small" color="primary" onClick={() => onEdit(assoc)}>
                         <Edit fontSize="small" />
                       </IconButton>
                     </Tooltip>
                     <Tooltip title="Delete">
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={() => onDelete(assoc)}
-                      >
+                      <IconButton size="small" color="error" onClick={() => onDelete(assoc)}>
                         <Delete fontSize="small" />
                       </IconButton>
                     </Tooltip>
@@ -202,7 +186,7 @@ const AssociateTable: React.FC<AssociateTableProps> = ({
         />
       </Box>
     </>
-  );
-};
+  )
+}
 
-export default AssociateTable;
+export default AssociateTable
