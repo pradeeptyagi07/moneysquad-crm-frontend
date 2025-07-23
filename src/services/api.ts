@@ -33,7 +33,7 @@ axiosInstance.interceptors.response.use(
     const status = error.response?.status;
     const message = error.response?.data?.message;
 
-    if (status === 401) {
+    if (message === "Invalid token") {
       // 1) Clear token & any other persisted user info
       localStorage.removeItem("token");
       localStorage.removeItem("user");      // if you store user JSON
