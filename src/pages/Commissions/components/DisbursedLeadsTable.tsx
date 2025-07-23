@@ -333,7 +333,7 @@ const DisbursedLeadsTable: React.FC = () => {
             <TableRow>
               {/* Conditionally show Partner/Associate column */}
               {isPartner ? hasAssociateData && <TableCell>Associate</TableCell> : <TableCell>Partner</TableCell>}
-              <TableCell>Created At</TableCell>
+              <TableCell>Disbursed At</TableCell>
               <TableCell>Lead ID</TableCell>
               <TableCell>Applicant</TableCell>
               <TableCell>Lender</TableCell>
