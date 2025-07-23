@@ -204,7 +204,7 @@ This Agreement is an electronic record as per the Information Technology Act, 20
       content: `Terms of Use
 MoneySquad (Altmoney Technologies Private Limited)
 
-Altmoney Technologies Pvt. Ltd. ("AltMoney" or "MoneySquad", "altmoney.in", "moneysquad.in" or AltMoney Applications, including its subsidiaries or affiliated companies, henceforth also referred as 'AltMoney', 'we' or the 'Company) and its related services ("Service") subject to your compliance with the terms and conditions ("Terms of Service") set forth below. Please read the following carefully.
+Altmoney Technologies Pvt. Ltd. ("AltMoney" or "MoneySquad", "moneysquad.in" or AltMoney Applications, including its subsidiaries or affiliated companies, henceforth also referred as 'AltMoney', 'we' or the 'Company) and its related services ("Service") subject to your compliance with the terms and conditions ("Terms of Service") set forth below. Please read the following carefully.
 
 MoneySquad and AltMoney can be interpreted here interchangeably.
 
@@ -267,7 +267,7 @@ Last Revised: May 15, 2025`,
       content: `Privacy Policy
 MoneySquad (Altmoney Technologies Private Limited)
 
-Altmoney Technologies Pvt. Ltd. ("AltMoney" or "MoneySquad", "altmoney.in", "moneysquad.in" or AltMoney Applications, including its subsidiaries or affiliated companies, henceforth also referred as 'AltMoney', 'we' or the 'Company) is keen on data security as we are well aware that our users (you) care about how the personal information is used. Hosted on high performing Google & Amazon clouds, we assure you that all our customer information is held confidential. We never sell our customer list or our customer information. All the customer information collected such as name, email address, phone number, social media handles, mailing address, billing information or any other information related to third party integrations is collected for the sole purpose of providing best services to our customers and to update them of the improvements to our product and services.
+Altmoney Technologies Pvt. Ltd. ("AltMoney" or "MoneySquad", "moneysquad.in" or AltMoney Applications, including its subsidiaries or affiliated companies, henceforth also referred as 'AltMoney', 'we' or the 'Company) is keen on data security as we are well aware that our users (you) care about how the personal information is used. Hosted on high performing Google & Amazon clouds, we assure you that all our customer information is held confidential. We never sell our customer list or our customer information. All the customer information collected such as name, email address, phone number, social media handles, mailing address, billing information or any other information related to third party integrations is collected for the sole purpose of providing best services to our customers and to update them of the improvements to our product and services.
 
 MoneySquad and AltMoney can be used interchangeably here.
 
