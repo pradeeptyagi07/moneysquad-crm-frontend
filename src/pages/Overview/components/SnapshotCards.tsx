@@ -1,205 +1,158 @@
+"use client"
+
 // src/components/dashboard/components/SnapshotCards.tsx
-import React from 'react';
-import CountUp from 'react-countup';
-import { useSelector } from 'react-redux';
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Grid,
-  Chip,
-  Alert,
-  Skeleton,
-} from '@mui/material';
-import {
-  TrendingUp,
-  TrendingDown,
-  AccountBalance,
-  People,
-  CheckCircle,
-  Cancel,
-  AttachMoney,
-} from '@mui/icons-material';
-import { useAuth } from '../../../hooks/useAuth';
-import type { RootState } from '../../../store';
+import React from "react"
+import CountUp from "react-countup"
+import { useSelector } from "react-redux"
+import { Box, Card, CardContent, Typography, Grid, Chip, Alert, Skeleton } from "@mui/material"
+import { TrendingUp, TrendingDown, AccountBalance, People, CheckCircle, Cancel, AttachMoney } from "@mui/icons-material"
+import { useAuth } from "../../../hooks/useAuth"
+import type { RootState } from "../../../store"
 
 const SnapshotCards: React.FC = () => {
-  const { userRole } = useAuth();
-  const { snapshot, snapshotLoading, snapshotError } = useSelector(
-    (state: RootState) => state.dashboard
-  );
+  const { userRole } = useAuth()
+  const { snapshot, snapshotLoading, snapshotError } = useSelector((state: RootState) => state.dashboard)
 
   const formatCurrency = (amount: number) => {
-    if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)}L`;
-    if (amount >= 1000)   return `₹${(amount / 1000).toFixed(0)}K`;
-    return `₹${amount.toLocaleString()}`;
-  };
+    if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)}L`
+    if (amount >= 1000) return `₹${(amount / 1000).toFixed(0)}K`
+    return `₹${amount.toLocaleString()}`
+  }
 
   // Show skeleton placeholders
+  if (snapshotLoading) {
+    return (
+      <Grid container spacing={{ xs: 2, sm: 3, md: 4 }}>
+        {Array.from({ length: 4 }).map((_, idx) => (
+          <Grid item xs={12} sm={6} md={3} key={idx}>
+            <Card
+              sx={{
+                height: "100%",
+                borderRadius: 3,
+                boxShadow: 4,
+                overflow: "hidden",
+                transition: "transform 0.3s",
+                "&:hover": { transform: "translateY(-4px)" },
+                bgcolor: "background.paper",
+              }}
+            >
+              <CardContent sx={{ p: 3 }}>
+                {/* Avatar + Title */}
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
+                  <Skeleton animation="wave" variant="circular" width={56} height={56} />
+                  <Skeleton animation="wave" variant="text" width={80} height={24} />
+                </Box>
 
-if (snapshotLoading) {
-  return (
-    <Grid container spacing={{ xs: 2, sm: 3, md: 4 }}>
-      {Array.from({ length: 4 }).map((_, idx) => (
-        <Grid item xs={12} sm={6} md={3} key={idx}>
-          <Card
-            sx={{
-              height: '100%',
-              borderRadius: 3,
-              boxShadow: 4,
-              overflow: 'hidden',
-              transition: 'transform 0.3s',
-              '&:hover': { transform: 'translateY(-4px)' },
-              bgcolor: 'background.paper',
-            }}
-          >
-            <CardContent sx={{ p: 3 }}>
-              {/* Avatar + Title */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                <Skeleton
-                  animation="wave"
-                  variant="circular"
-                  width={56}
-                  height={56}
-                />
-                <Skeleton
-                  animation="wave"
-                  variant="text"
-                  width={80}
-                  height={24}
-                />
-              </Box>
+                {/* Main Heading */}
+                <Skeleton animation="wave" variant="rectangular" height={32} sx={{ mb: 1, borderRadius: 1 }} />
 
-              {/* Main Heading */}
-              <Skeleton
-                animation="wave"
-                variant="rectangular"
-                height={32}
-                sx={{ mb: 1, borderRadius: 1 }}
-              />
+                {/* Subtext lines */}
+                <Skeleton animation="wave" variant="text" width="80%" height={32} />
+                <Skeleton animation="wave" variant="text" width="40%" height={20} />
 
-              {/* Subtext lines */}
-              <Skeleton
-                animation="wave"
-                variant="text"
-                width="80%"
-                height={32}
-              />
-              <Skeleton
-                animation="wave"
-                variant="text"
-                width="40%"
-                height={20}
-              />
-
-              {/* Action button placeholder */}
-              <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
-                <Skeleton
-                  animation="wave"
-                  variant="rectangular"
-                  width={60}
-                  height={28}
-                  sx={{ borderRadius: 2 }}
-                />
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-      ))}
-    </Grid>
-  );
-}
-
+                {/* Action button placeholder */}
+                <Box sx={{ mt: 3, display: "flex", justifyContent: "flex-end" }}>
+                  <Skeleton animation="wave" variant="rectangular" width={60} height={28} sx={{ borderRadius: 2 }} />
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+    )
+  }
 
   // Show error if any
   if (snapshotError) {
     return (
-      <Alert severity="error" sx={{ fontSize: '1rem' }}>
+      <Alert severity="error" sx={{ fontSize: "1rem" }}>
         {snapshotError}
       </Alert>
-    );
+    )
   }
 
   if (!snapshot) {
-    return null;
+    return null
   }
 
   // Define cards array
   const cards = [
     {
-      title: 'Total Disbursal',
-      rawValue: snapshot.totalDisbursal.current,
-      previousValue: formatCurrency(snapshot.totalDisbursal.previous),
-      delta: snapshot.totalDisbursal.deltaPercent,
+      title: "Total Disbursal",
+      rawValue: snapshot.totalDisbursal.current_month_amount,
+      previousValue: formatCurrency(snapshot.totalDisbursal.previous_month_amount),
+      delta: snapshot.totalDisbursal.delta_percentage,
       icon: <AccountBalance />,
-      primaryColor: '#2563eb',
-      lightColor: '#dbeafe',
-      iconBg: '#eff6ff',
-      gradientFrom: '#2563eb',
-      gradientTo: '#1d4ed8',
+      primaryColor: "#2563eb",
+      lightColor: "#dbeafe",
+      iconBg: "#eff6ff",
+      gradientFrom: "#2563eb",
+      gradientTo: "#1d4ed8",
       isPercentage: false,
       isCurrency: true,
     },
     {
-      title: 'Active Leads',
-      rawValue: snapshot.activeLeads.count,
-      subtitle: `${snapshot.activeLeads.unique} unique`,
+      title: "Leads Added",
+      rawValue: snapshot.leadAdded.leads_added,
+      subtitle: `${snapshot.leadAdded.unique_lead} unique${snapshot.activeLeads ? ` • ${snapshot.activeLeads.totalActiveLeads} active (${snapshot.activeLeads.uniqueCount} unique)` : ""}`,
       delta: null,
       icon: <People />,
-      primaryColor: '#16a34a',
-      lightColor: '#d1fae5',
-      iconBg: '#ecfdf5',
-      gradientFrom: '#16a34a',
-      gradientTo: '#15803d',
+      primaryColor: "#16a34a",
+      lightColor: "#d1fae5",
+      iconBg: "#ecfdf5",
+      gradientFrom: "#16a34a",
+      gradientTo: "#15803d",
       isPercentage: false,
       isCurrency: false,
     },
     {
-      title: 'Approval Rate',
-      rawValue: snapshot.approvalRate.currentPercent,
-      previousValue: `${snapshot.approvalRate.previousPercent}%`,
-      delta: snapshot.approvalRate.deltaPercent,
+      title: "Current Approval",
+      rawValue: snapshot.approvalStatus.current_month_amount,
+      previousValue: formatCurrency(snapshot.approvalStatus.previous_month_amount),
+      delta: snapshot.approvalStatus.delta_percentage,
       icon: <CheckCircle />,
-      primaryColor: '#9333ea',
-      lightColor: '#e9d5ff',
-      iconBg: '#f3e8ff',
-      gradientFrom: '#9333ea',
-      gradientTo: '#7c3aed',
-      isPercentage: true,
-      isCurrency: false,
+      primaryColor: "#9333ea",
+      lightColor: "#e9d5ff",
+      iconBg: "#f3e8ff",
+      gradientFrom: "#9333ea",
+      gradientTo: "#7c3aed",
+      isPercentage: false,
+      isCurrency: true,
     },
-    ...(userRole === 'partner'
-      ? [{
-          title: 'Commission Earned',
-          rawValue: snapshot.commissionEarned.thisMonth,
-          previousValue: formatCurrency(snapshot.commissionEarned.previousMonth),
-          delta: snapshot.commissionEarned.deltaPercent,
-          icon: <AttachMoney />,
-          primaryColor: '#ea580c',
-          lightColor: '#fed7aa',
-          iconBg: '#fff7ed',
-          gradientFrom: '#ea580c',
-          gradientTo: '#dc2626',
-          isPercentage: false,
-          isCurrency: true,
-        }]
-      : [{
-          title: 'Rejection Rate',
-          rawValue: snapshot.rejectionRate.currentPercent,
-          previousValue: `${snapshot.rejectionRate.previousPercent}%`,
-          delta: snapshot.rejectionRate.deltaPercent,
-          icon: <Cancel />,
-          primaryColor: '#dc2626',
-          lightColor: '#fecaca',
-          iconBg: '#fef2f2',
-          gradientFrom: '#dc2626',
-          gradientTo: '#b91c1c',
-          isPercentage: true,
-          isCurrency: false,
-        }]
-    ),
-  ];
+    ...(userRole === "partner"
+      ? [
+          {
+            title: "Commission Earned",
+            rawValue: snapshot.commissionEarned.current_month_amount,
+            previousValue: formatCurrency(snapshot.commissionEarned.previous_month_amount),
+            delta: snapshot.commissionEarned.delta_percentage,
+            icon: <AttachMoney />,
+            primaryColor: "#ea580c",
+            lightColor: "#fed7aa",
+            iconBg: "#fff7ed",
+            gradientFrom: "#ea580c",
+            gradientTo: "#dc2626",
+            isPercentage: false,
+            isCurrency: true,
+          },
+        ]
+      : [
+          {
+            title: "Rejection Rate",
+            rawValue: snapshot.rejectionRation.rejection_ratio_this_month,
+            previousValue: `${snapshot.rejectionRation.rejection_ratio_prev_month}%`,
+            delta: snapshot.rejectionRation.delta_percentage,
+            icon: <Cancel />,
+            primaryColor: "#dc2626",
+            lightColor: "#fecaca",
+            iconBg: "#fef2f2",
+            gradientFrom: "#dc2626",
+            gradientTo: "#b91c1c",
+            isPercentage: true,
+            isCurrency: false,
+          },
+        ]),
+  ]
 
   return (
     <Grid container spacing={3}>
@@ -207,18 +160,17 @@ if (snapshotLoading) {
         <Grid item xs={12} sm={6} md={3} key={idx}>
           <Card
             sx={{
-              height: '100%',
+              height: "100%",
               borderRadius: 1.5,
-              overflow: 'hidden',
-              position: 'relative',
-              transition: 'all 0.3s',
-              '&:hover': {
-                transform: 'translateY(-4px)',
-                boxShadow:
-                  '0 20px 25px -5px rgba(0,0,0,0.1),0 10px 10px -5px rgba(0,0,0,0.04)',
+              overflow: "hidden",
+              position: "relative",
+              transition: "all 0.3s",
+              "&:hover": {
+                transform: "translateY(-4px)",
+                boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1),0 10px 10px -5px rgba(0,0,0,0.04)",
                 borderColor: card.title,
-                '& .bg-graphic': {
-                  transform: 'scale(1.1) rotate(5deg)',
+                "& .bg-graphic": {
+                  transform: "scale(1.1) rotate(5deg)",
                   opacity: 0.25,
                 },
               },
@@ -228,15 +180,15 @@ if (snapshotLoading) {
             <Box
               className="bg-graphic"
               sx={{
-                position: 'absolute',
+                position: "absolute",
                 bottom: -30,
                 right: -30,
                 width: 180,
                 height: 140,
                 opacity: 0.15,
-                pointerEvents: 'none',
-                transition: 'all 0.4s ease',
-                transform: 'rotate(-10deg)',
+                pointerEvents: "none",
+                transition: "all 0.4s ease",
+                transform: "rotate(-10deg)",
               }}
             >
               <svg width="180" height="140" viewBox="0 0 180 140">
@@ -286,18 +238,40 @@ if (snapshotLoading) {
                   />
                 )}
 
-                {idx === 3 && card.isCurrency && userRole === 'partner' && (
+                {idx === 3 && card.isCurrency && userRole === "partner" && (
                   <>
-                    <path d="M20,100 Q60,60 100,80 Q140,40 180,60" stroke={`url(#grad-${idx})`} strokeWidth="8" fill="none" opacity="0.7" />
-                    <path d="M30,110 Q70,70 110,90 Q150,50 190,70" stroke={`url(#grad-${idx})`} strokeWidth="6" fill="none" opacity="0.5" />
+                    <path
+                      d="M20,100 Q60,60 100,80 Q140,40 180,60"
+                      stroke={`url(#grad-${idx})`}
+                      strokeWidth="8"
+                      fill="none"
+                      opacity="0.7"
+                    />
+                    <path
+                      d="M30,110 Q70,70 110,90 Q150,50 190,70"
+                      stroke={`url(#grad-${idx})`}
+                      strokeWidth="6"
+                      fill="none"
+                      opacity="0.5"
+                    />
                     <polygon points="160,45 180,60 160,75" fill={`url(#grad-${idx})`} opacity="0.8" />
                   </>
                 )}
 
-                {idx === 3 && !card.isCurrency && userRole !== 'partner' && (
+                {idx === 3 && !card.isCurrency && userRole !== "partner" && (
                   <>
-                    <path d="M40,40 L120,120 M120,40 L40,120" stroke={`url(#grad-${idx})`} strokeWidth="10" opacity="0.6" />
-                    <path d="M60,20 L140,100 M140,20 L60,100" stroke={`url(#grad-${idx})`} strokeWidth="6" opacity="0.4" />
+                    <path
+                      d="M40,40 L120,120 M120,40 L40,120"
+                      stroke={`url(#grad-${idx})`}
+                      strokeWidth="10"
+                      opacity="0.6"
+                    />
+                    <path
+                      d="M60,20 L140,100 M140,20 L60,100"
+                      stroke={`url(#grad-${idx})`}
+                      strokeWidth="6"
+                      opacity="0.4"
+                    />
                   </>
                 )}
 
@@ -305,7 +279,7 @@ if (snapshotLoading) {
               </svg>
             </Box>
 
-            <CardContent sx={{ p: 2, position: 'relative', zIndex: 1 }}>
+            <CardContent sx={{ p: 2, position: "relative", zIndex: 1 }}>
               <Box display="flex" alignItems="center" gap={3} mb={3}>
                 <Box
                   sx={{
@@ -313,15 +287,15 @@ if (snapshotLoading) {
                     height: 64,
                     borderRadius: 2,
                     backgroundColor: card.iconBg,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
                     border: `2px solid ${card.lightColor}`,
-                    position: 'relative',
+                    position: "relative",
                     boxShadow: `0 4px 12px ${card.primaryColor}20`,
-                    '&::before': {
+                    "&::before": {
                       content: '""',
-                      position: 'absolute',
+                      position: "absolute",
                       inset: 0,
                       borderRadius: 2,
                       background: `linear-gradient(135deg, ${card.primaryColor}20, ${card.primaryColor}10)`,
@@ -330,15 +304,15 @@ if (snapshotLoading) {
                   }}
                 >
                   {React.cloneElement(card.icon, {
-                    sx: { fontSize: 32, color: card.primaryColor, position: 'relative', zIndex: 1 },
+                    sx: { fontSize: 32, color: card.primaryColor, position: "relative", zIndex: 1 },
                   })}
                 </Box>
-                <Typography variant="h6" sx={{ fontWeight: 600, color: '#6b7280', fontSize: '1rem' }}>
+                <Typography variant="h6" sx={{ fontWeight: 600, color: "#6b7280", fontSize: "1rem" }}>
                   {card.title}
                 </Typography>
               </Box>
 
-              <Typography variant="h2" sx={{ fontWeight: 800, color: '#111827', mb: 2, fontSize: '2.5rem' }}>
+              <Typography variant="h2" sx={{ fontWeight: 800, color: "#111827", mb: 2, fontSize: "2.5rem" }}>
                 {card.isPercentage ? (
                   <CountUp start={0} end={card.rawValue} duration={1.5} suffix="%" />
                 ) : card.isCurrency ? (
@@ -354,13 +328,13 @@ if (snapshotLoading) {
               </Typography>
 
               {card.previousValue && (
-                <Typography variant="body1" sx={{ color: '#9ca3af', mb: 3, fontSize: '1rem' }}>
+                <Typography variant="body1" sx={{ color: "#9ca3af", mb: 3, fontSize: "1rem" }}>
                   Previous: {card.previousValue}
                 </Typography>
               )}
 
               {card.subtitle && (
-                <Typography variant="body1" sx={{ color: '#6b7280', mb: 3, fontSize: '1rem' }}>
+                <Typography variant="body1" sx={{ color: "#6b7280", mb: 3, fontSize: "1rem" }}>
                   {card.subtitle}
                 </Typography>
               )}
@@ -368,14 +342,14 @@ if (snapshotLoading) {
               {card.delta !== null && (
                 <Chip
                   icon={card.delta >= 0 ? <TrendingUp fontSize="large" /> : <TrendingDown fontSize="small" />}
-                  label={`${card.delta >= 0 ? '+' : ''}${card.delta.toFixed(1)}%`}
+                  label={`${card.delta >= 0 ? "+" : ""}${card.delta.toFixed(1)}%`}
                   size="small"
                   sx={{
-                    fontSize: '1rem',
+                    fontSize: "1rem",
                     px: 1,
                     py: 0,
-                    backgroundColor: card.delta >= 0 ? '#f0fdf4' : '#fef2f2',
-                    color: card.delta >= 0 ? '#166534' : '#dc2626',
+                    backgroundColor: card.delta >= 0 ? "#f0fdf4" : "#fef2f2",
+                    color: card.delta >= 0 ? "#166534" : "#dc2626",
                     fontWeight: 700,
                   }}
                 />
@@ -385,7 +359,7 @@ if (snapshotLoading) {
         </Grid>
       ))}
     </Grid>
-  );
-};
+  )
+}
 
-export default SnapshotCards;
+export default SnapshotCards

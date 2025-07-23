@@ -2,7 +2,7 @@
 
 // src/components/GlobalFilters.tsx
 import type React from "react"
-import { useEffect } from "react"
+import { useEffect, useMemo } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import {
   Box,
@@ -68,6 +68,11 @@ interface Props {
   onMonthChange: (v: string) => void
 }
 
+interface MonthOption {
+  value: string
+  label: string
+}
+
 const GlobalFilters: React.FC<Props> = ({
   loanType,
   onLoanTypeChange,
@@ -81,6 +86,36 @@ const GlobalFilters: React.FC<Props> = ({
   const associates = useSelector((s: RootState) => s.associate.associates)
   const loanTypes = useSelector((s: RootState) => s.lenderLoan.loanTypes)
 
+  // Generate month options using Date object
+  const monthOptions = useMemo(() => {
+    const options: MonthOption[] = [
+      { value: "current", label: "Current Month" },
+      { value: "last", label: "Last Month" },
+    ]
+
+    const today = new Date()
+    const currentYear = today.getFullYear()
+    const currentMonth = today.getMonth()
+
+    // Add past 24 months (2 years)
+    for (let i = 0; i < 24; i++) {
+      const date = new Date(currentYear, currentMonth - i, 1)
+      const year = date.getFullYear()
+      const month = date.getMonth() + 1 // getMonth() is 0-indexed
+
+      const monthStr = month.toString().padStart(2, "0")
+      const value = `${year}-${monthStr}`
+
+      // Format the month name
+      const monthName = date.toLocaleString("default", { month: "long" })
+      const label = `${monthName} ${year}`
+
+      options.push({ value, label })
+    }
+
+    return options
+  }, [])
+
   useEffect(() => {
     dispatch(fetchAssociates())
     dispatch(fetchLoanTypes())
@@ -90,7 +125,10 @@ const GlobalFilters: React.FC<Props> = ({
 
   const handleLoanTypeChange = (e: SelectChangeEvent) => onLoanTypeChange(e.target.value)
   const handleAssociateChange = (e: SelectChangeEvent) => onAssociateChange(e.target.value)
-  const handleMonthChange = (e: SelectChangeEvent) => onMonthChange(e.target.value)
+  const handleMonthChange = (e: SelectChangeEvent) => {
+    console.log("Month changed to:", e.target.value)
+    onMonthChange(e.target.value)
+  }
 
   return (
     <Card
@@ -233,20 +271,32 @@ const GlobalFilters: React.FC<Props> = ({
             )}
 
             {/* Month */}
-            <StyledFormControl size="small">
+            <StyledFormControl size="small" sx={{ minWidth: 180 }}>
               <InputLabel id="month-label">
                 <Box display="flex" alignItems="center" gap={0.5}>
                   <CalendarMonth sx={{ fontSize: 14 }} />
                   Month
                 </Box>
               </InputLabel>
-              <Select labelId="month-label" id="month-select" value={month} label="Month" onChange={handleMonthChange}>
-                <MenuItem value="current">Current Month</MenuItem>
-                <MenuItem value="last">Last Month</MenuItem>
-                <MenuItem value="2024-01">January 2024</MenuItem>
-                <MenuItem value="2024-02">February 2024</MenuItem>
-                <MenuItem value="2024-03">March 2024</MenuItem>
-                {/* Add more months as needed */}
+              <Select
+                labelId="month-label"
+                id="month-select"
+                value={month}
+                label="Month"
+                onChange={handleMonthChange}
+                MenuProps={{
+                  PaperProps: {
+                    style: {
+                      maxHeight: 300,
+                    },
+                  },
+                }}
+              >
+                {monthOptions.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
               </Select>
             </StyledFormControl>
           </Box>

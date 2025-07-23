@@ -30,18 +30,29 @@ import TrendsChart from "./components/TrendsChart"
 import GlobalFilters from "./components/GlobalFilters"
 import DocumentAgreementDialog from "../../components/Layout/DocumentAgreementDialog"
 
-function computePeriod(month: string): string {
+function computePeriod(month: string): string | null {
+  // If month is already in YYYY-MM format, return as is
+  if (month.match(/^\d{4}-\d{2}$/)) {
+    return month
+  }
+
   const now = new Date()
-  const yyyy = now.getFullYear()
-  const mm = now.getMonth() + 1
+  const currentYear = now.getFullYear()
+  const currentMonth = now.getMonth() + 1
   const pad2 = (n: number) => n.toString().padStart(2, "0")
 
+  if (month === "current") {
+    return `${currentYear}-${pad2(currentMonth)}`
+  }
+
   if (month === "last") {
-    const lastMonth = mm === 1 ? 12 : mm - 1
-    const yearOfLast = mm === 1 ? yyyy - 1 : yyyy
+    const lastMonth = currentMonth === 1 ? 12 : currentMonth - 1
+    const yearOfLast = currentMonth === 1 ? currentYear - 1 : currentYear
     return `${yearOfLast}-${pad2(lastMonth)}`
   }
-  return `${yyyy}-${pad2(mm)}`
+
+  // Return null for invalid month format
+  return null
 }
 
 const CommonOverview: React.FC = () => {
@@ -101,7 +112,15 @@ const CommonOverview: React.FC = () => {
     const params: any = {}
     if (loanType !== "all") params.loanType = loanType
     if (associateId !== "all") params.associateId = associateId
-    if (month !== "current") params.period = computePeriod(month)
+
+    // Calculate period based on selected month
+    const period = computePeriod(month)
+    if (period) {
+      params.period = period
+    }
+
+    // Log the params to verify correct period is being sent
+    console.log("API params:", params)
 
     dispatch(fetchFunnelData(params))
     dispatch(fetchSnapshotData(params))

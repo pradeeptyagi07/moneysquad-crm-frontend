@@ -1,4 +1,3 @@
-// src/pages/BecomePartner.tsx
 "use client"
 
 import type React from "react"
@@ -153,29 +152,54 @@ const BecomePartner: React.FC = () => {
     window.scrollTo(0, 0)
   }
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e?: React.FormEvent) => {
+    // Prevent any form submission if this is called from a form
+    if (e) {
+      e.preventDefault()
+      e.stopPropagation()
+    }
+
     setIsSubmitting(true)
+
     try {
-      const result = await dispatch(
+      console.log("Starting partner creation...")
+
+      const resultAction = await dispatch(
         createPartner({
           ...formData,
           email: formData.email.trim().toLowerCase(),
           dateOfBirth: formData.dateOfBirth ?? undefined,
         }),
-      ).unwrap()
+      )
 
-      setPartnerId(result?.data?.partnerId)
-      setSnackbarSeverity("success")
-      setSnackbarMessage("Partner registered successfully!")
-      setSnackbarOpen(true)
-      setShowSuccessDialog(true)
+      console.log("Result action:", resultAction)
+
+      // Check if the action was fulfilled or rejected
+      if (createPartner.fulfilled.match(resultAction)) {
+        // Success case
+        const result = resultAction.payload
+        console.log("Partner creation successful:", result)
+
+        setPartnerId(result?.data?.partnerId || "")
+        setSnackbarSeverity("success")
+        setSnackbarMessage("Partner registered successfully!")
+        setSnackbarOpen(true)
+        setShowSuccessDialog(true)
+      } else if (createPartner.rejected.match(resultAction)) {
+        // Error case
+        const errorMessage =
+          (resultAction.payload as string) || "Something went wrong while submitting. Please try again."
+        console.error("Partner creation failed:", errorMessage)
+
+        setSnackbarSeverity("error")
+        setSnackbarMessage(errorMessage)
+        setSnackbarOpen(true)
+      }
     } catch (error: any) {
+      console.error("Unexpected error during partner creation:", error)
+
       const errorMsg =
-        typeof error === "string"
-          ? error
-          : error?.message ||
-            error?.response?.data?.message ||
-            "Something went wrong while submitting. Please try again."
+        typeof error === "string" ? error : error?.message || "An unexpected error occurred. Please try again."
 
       setSnackbarSeverity("error")
       setSnackbarMessage(errorMsg)
@@ -442,13 +466,14 @@ const BecomePartner: React.FC = () => {
             <Box sx={{ mt: 4 }}>{renderStepContent()}</Box>
 
             <Box sx={{ display: "flex", justifyContent: "space-between", mt: 4 }}>
-              <Button variant="outlined" onClick={activeStep === 0 ? handleExit : handleBack}>
+              <Button variant="outlined" onClick={activeStep === 0 ? handleExit : handleBack} disabled={isSubmitting}>
                 {activeStep === 0 ? "Cancel" : "Back"}
               </Button>
               <Button
                 variant="contained"
                 onClick={activeStep === steps.length - 1 ? handleSubmit : handleNext}
                 disabled={!isStepValid() || isSubmitting}
+                type="button"
               >
                 {activeStep === steps.length - 1 ? (isSubmitting ? "Submitting..." : "Submit") : "Continue"}
               </Button>

@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit"
 import axiosInstance from "../../services/api"
+import axios from "axios"
 
 // Types
 interface SignupState {
@@ -54,6 +55,8 @@ export const createPartner = createAsyncThunk(
   "signup/createPartner",
   async (form: PartnerFormData, { rejectWithValue }) => {
     try {
+      console.log("Creating FormData for partner registration...")
+
       const formData = new FormData()
 
       // Basic Info
@@ -108,20 +111,47 @@ export const createPartner = createAsyncThunk(
         }
       })
 
-      for (const pair of formData.entries()) {
-        console.log(pair[0], pair[1])
-      }
+      console.log("Making API request to create partner...")
 
-      const response = await axiosInstance.post("/partner/create", formData)
+      const response = await axiosInstance.post("/partner/create", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+        timeout: 60000, // 60 second timeout for file uploads
+      })
+
+      console.log("Partner creation API response:", response.data)
       return response.data
     } catch (error: any) {
-      // Check for specific error message about existing partner
-      if (error.response?.data?.message === "Partner already exists") {
-        return rejectWithValue(
-          "This email or phone number is already registered to an account. Try Login instead or use a different Email ID to create a new account.",
-        )
+      console.error("Partner creation API error:", error)
+
+      // Handle different types of errors
+      let errorMessage = "An unexpected error occurred. Please try again."
+
+      if (error.code === "ECONNABORTED") {
+        errorMessage = "Request timeout. Please check your internet connection and try again."
+      } else if (error.response) {
+        // Server responded with error status
+        const serverMessage = error.response.data?.message
+
+        if (serverMessage === "Partner already exists") {
+          errorMessage =
+            "This email or phone number is already registered. Try logging in instead or use a different email to create a new account."
+        } else if (serverMessage) {
+          errorMessage = serverMessage
+        } else {
+          errorMessage = `Server error (${error.response.status}). Please try again later.`
+        }
+      } else if (error.request) {
+        // Network error
+        errorMessage = "Network error. Please check your internet connection and try again."
+      } else if (error.message) {
+        errorMessage = error.message
       }
-      return rejectWithValue(error.response?.data?.message || "Partner creation failed")
+
+      console.error("Returning error message:", errorMessage)
+      // Use rejectWithValue to properly handle the error without causing unhandled promise rejection
+      return rejectWithValue(errorMessage)
     }
   },
 )
@@ -134,7 +164,8 @@ export const sendPartnerOtp = createAsyncThunk("signup/sendPartnerOtp", async (e
     })
     return response.data
   } catch (error: any) {
-    return rejectWithValue(error.response?.data?.message || "Failed to send OTP")
+    const errorMessage = error.response?.data?.message || "Failed to send OTP"
+    return rejectWithValue(errorMessage)
   }
 })
 
@@ -149,7 +180,8 @@ export const verifyPartnerOtp = createAsyncThunk(
       })
       return response.data
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || "OTP verification failed")
+      const errorMessage = error.response?.data?.message || "OTP verification failed"
+      return rejectWithValue(errorMessage)
     }
   },
 )
@@ -162,6 +194,11 @@ const signupPartnerSlice = createSlice({
     clearSignupPartnerState: (state) => {
       state.error = null
       state.success = null
+      state.loading = false
+    },
+    setSignupError: (state, action) => {
+      state.error = action.payload
+      state.loading = false
     },
   },
   extraReducers: (builder) => {
@@ -172,20 +209,21 @@ const signupPartnerSlice = createSlice({
         state.error = null
         state.success = null
       })
-      .addCase(createPartner.fulfilled, (state) => {
+      .addCase(createPartner.fulfilled, (state, action) => {
         state.loading = false
         state.success = "Partner created successfully"
+        state.error = null
       })
       .addCase(createPartner.rejected, (state, action) => {
         state.loading = false
         state.error = action.payload as string
+        state.success = null
       })
 
       // Send OTP
       .addCase(sendPartnerOtp.pending, (state) => {
         state.loading = true
         state.error = null
-        state.success = null
       })
       .addCase(sendPartnerOtp.fulfilled, (state) => {
         state.loading = false
@@ -200,7 +238,6 @@ const signupPartnerSlice = createSlice({
       .addCase(verifyPartnerOtp.pending, (state) => {
         state.loading = true
         state.error = null
-        state.success = null
       })
       .addCase(verifyPartnerOtp.fulfilled, (state) => {
         state.loading = false
@@ -213,5 +250,5 @@ const signupPartnerSlice = createSlice({
   },
 })
 
-export const { clearSignupPartnerState } = signupPartnerSlice.actions
+export const { clearSignupPartnerState, setSignupError } = signupPartnerSlice.actions
 export default signupPartnerSlice.reducer

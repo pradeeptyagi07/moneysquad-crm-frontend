@@ -12,11 +12,34 @@ export interface FunnelStage {
 }
 
 export interface SnapshotData {
-  totalDisbursal: { current: number; previous: number; deltaPercent: number }
-  activeLeads: { count: number; unique: number }
-  commissionEarned: { thisMonth: number; previousMonth: number; deltaPercent: number }
-  approvalRate: { currentPercent: number; previousPercent: number; deltaPercent: number }
-  rejectionRate: { currentPercent: number; previousPercent: number; deltaPercent: number }
+  totalDisbursal: {
+    current_month_amount: number
+    previous_month_amount: number
+    delta_percentage: number
+  }
+  leadAdded: {
+    leads_added: number
+    unique_lead: number
+  }
+  commissionEarned: {
+    current_month_amount: number
+    previous_month_amount: number
+    delta_percentage: number
+  }
+  approvalStatus: {
+    current_month_amount: number
+    previous_month_amount: number
+    delta_percentage: number
+  }
+  rejectionRation: {
+    rejection_ratio_this_month: number
+    rejection_ratio_prev_month: number
+    delta_percentage: number
+  }
+  activeLeads?: {
+    totalActiveLeads: number
+    uniqueCount: number
+  }
 }
 
 export interface RejectionReasonCount {
