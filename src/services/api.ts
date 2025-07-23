@@ -2,9 +2,9 @@ import axios from "axios";
 
 const axiosInstance = axios.create({
   // baseURL: "http://localhost:5003/api",
-  // baseURL: "https://api.moneysquad.in/api/",
+  baseURL: "https://api.moneysquad.in/api/",
   // baseURL: "https://articles-task-volume-headset.trycloudflare.com/api",
-baseURL:"http://178.236.185.178:5003/api",
+// baseURL:"http://178.236.185.178:5003/api",
 
 
   timeout: 60000,
