@@ -4,10 +4,8 @@ const axiosInstance = axios.create({
   // baseURL: "http://localhost:5003/api",
   baseURL: "https://api.moneysquad.in/api/",
   // baseURL: "https://articles-task-volume-headset.trycloudflare.com/api",
-// baseURL:"http://178.236.185.178:5003/api",
 
-
-  timeout: 60000,
+  // timeout: 60000,baseURL:"http://178.236.185.178:5003/api",
 });
 
 axiosInstance.interceptors.request.use(
@@ -31,13 +29,14 @@ axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
     const status = error.response?.status;
-    const message = error.response?.data?.message;
+    const message =
+      error.response?.data?.message || error.response?.data?.error;
 
     if (message === "Invalid token") {
       // 1) Clear token & any other persisted user info
       localStorage.removeItem("token");
-      localStorage.removeItem("user");      // if you store user JSON
-      localStorage.removeItem("userRole");  // if you store role
+      localStorage.removeItem("user"); // if you store user JSON
+      localStorage.removeItem("userRole"); // if you store role
 
       // 2) Optional: show a toast / console
       // console.warn("Session expired – logging you out");

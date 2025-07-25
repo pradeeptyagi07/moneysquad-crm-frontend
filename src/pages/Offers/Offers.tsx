@@ -1,4 +1,3 @@
-// Offers.tsx
 "use client"
 
 import React, { useState, useEffect } from "react"
@@ -43,7 +42,7 @@ const Transition = React.forwardRef(function Transition(
   props: TransitionProps & { children: React.ReactElement },
   ref: React.Ref<unknown>,
 ) {
-  return <Slide direction="" ref={ref} {...props} />
+  return <Slide direction="up" ref={ref} {...props} />
 })
 
 const Offers: React.FC = () => {
@@ -129,34 +128,80 @@ const Offers: React.FC = () => {
     setOpenCreateDialog(true)
   }
 
-  // Filter & paginate logic
+  // Helper function to check if offer is expired
+  const isOfferExpired = (offer: BankOffer): boolean => {
+    if (!offer.offerValidity) return false
+    const expiryDate = new Date(offer.offerValidity)
+    const currentDate = new Date()
+    return expiryDate.getTime() < currentDate.getTime()
+  }
+
+  // Filter & paginate logic with proper sorting
   const filteredOffers = Array.isArray(offers)
     ? offers
-        .filter((o) => {
-          const matches = [o.bankName, o.loanType, o.offerHeadline]
+        .filter((offer) => {
+          // Search filter
+          const searchFields = [offer.bankName, offer.loanType, offer.offerHeadline]
             .filter(Boolean)
-            .some((t) => t!.toLowerCase().includes(searchTerm.toLowerCase()))
-          if (!matches) return false
-          if (filterTab === 1) return o.isFeatured
-          if (filterTab === 2) return o.loanType.startsWith("PL")
-          if (filterTab === 3) return o.loanType.startsWith("BL")
-          if (filterTab === 4) return o.loanType.startsWith("SEPL")
-          return true
+            .map((field) => field!.toLowerCase())
+
+          const matchesSearch = searchFields.some((field) => field.includes(searchTerm.toLowerCase()))
+
+          if (!matchesSearch) return false
+
+          // Tab filters
+          switch (filterTab) {
+            case 1: // Featured
+              return offer.isFeatured
+            case 2: // Personal Loans
+              return offer.loanType.toLowerCase().includes("pl") || offer.loanType.toLowerCase().includes("personal")
+            case 3: // Business Loans
+              return offer.loanType.toLowerCase().includes("bl") || offer.loanType.toLowerCase().includes("business")
+            case 4: // SEPL Loans
+              return offer.loanType.toLowerCase().includes("sepl")
+            default: // All
+              return true
+          }
         })
         .sort((a, b) => {
           // Check if offers are expired
-          const aExpired = a.offerValidity ? new Date(a.offerValidity).getTime() < Date.now() : false
-          const bExpired = b.offerValidity ? new Date(b.offerValidity).getTime() < Date.now() : false
+          const aExpired = isOfferExpired(a)
+          const bExpired = isOfferExpired(b)
+
+          console.log(`Sorting: ${a.bankName} (expired: ${aExpired}) vs ${b.bankName} (expired: ${bExpired})`)
 
           // If one is expired and the other isn't, put expired at the end
-          if (aExpired && !bExpired) return 1
-          if (!aExpired && bExpired) return -1
+          if (aExpired && !bExpired) {
+            console.log(`Moving ${a.bankName} to end (expired)`)
+            return 1
+          }
+          if (!aExpired && bExpired) {
+            console.log(`Moving ${b.bankName} to end (expired)`)
+            return -1
+          }
 
-          // If both have same expiration status, maintain original order
+          // If both have same expiration status, sort by featured status
+          if (a.isFeatured && !b.isFeatured) return -1
+          if (!a.isFeatured && b.isFeatured) return 1
+
+          // If both have same expiration and featured status, maintain original order
           return 0
         })
     : []
+
   const paginatedOffers = filteredOffers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+
+  // Debug logging
+  useEffect(() => {
+    if (filteredOffers.length > 0) {
+      console.log("Filtered offers order:")
+      filteredOffers.forEach((offer, index) => {
+        console.log(
+          `${index + 1}. ${offer.bankName} - Expired: ${isOfferExpired(offer)} - Validity: ${offer.offerValidity}`,
+        )
+      })
+    }
+  }, [filteredOffers])
 
   return (
     <Box>

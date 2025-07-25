@@ -99,7 +99,7 @@ const DocumentAgreementDialog: React.FC<DocumentAgreementDialogProps> = ({
       color: "#2563eb",
       content: `MoneySquad Partner Service Agreement [last updated 30th June, 2025]
 
-Effective Date: [Auto-fill at registration] 
+Effective Date: Same as Acceptance or registration date.
 
 Introduction
 By registering as a Partner on the MoneySquad Partner Platform (https://app.moneysquad.in), you ("Partner") agree to the following Partner Service Agreement ("Agreement") with:
