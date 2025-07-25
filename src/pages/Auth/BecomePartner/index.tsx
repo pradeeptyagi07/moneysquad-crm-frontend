@@ -90,6 +90,7 @@ const BecomePartner: React.FC = () => {
   const dispatch = useAppDispatch()
 
   const [activeStep, setActiveStep] = useState(0)
+  const [agreementAccepted, setAgreementAccepted] = useState(false)
   const [formData, setFormData] = useState<PartnerFormData>({
     fullName: "",
     mobileNumber: "",
@@ -152,11 +153,23 @@ const BecomePartner: React.FC = () => {
     window.scrollTo(0, 0)
   }
 
+  const handleAgreementChange = (accepted: boolean) => {
+    console.log("Agreement changed in parent:", accepted)
+    setAgreementAccepted(accepted)
+  }
+
   const handleSubmit = async (e?: React.FormEvent) => {
     // Prevent any form submission if this is called from a form
     if (e) {
       e.preventDefault()
       e.stopPropagation()
+    }
+
+    if (!agreementAccepted) {
+      setSnackbarSeverity("error")
+      setSnackbarMessage("Please accept the terms and conditions to proceed.")
+      setSnackbarOpen(true)
+      return
     }
 
     setIsSubmitting(true)
@@ -225,7 +238,13 @@ const BecomePartner: React.FC = () => {
       case 4:
         return <UploadDocuments formData={formData} updateFormData={updateFormData} />
       case 5:
-        return <Preview formData={formData} />
+        return (
+          <Preview
+            formData={formData}
+            agreementAccepted={agreementAccepted}
+            onAgreementChange={handleAgreementChange}
+          />
+        )
       default:
         return null
     }
@@ -356,7 +375,9 @@ const BecomePartner: React.FC = () => {
       }
 
       case 5:
-        return true
+        // Preview & Submit validation - must accept agreement
+        console.log("Step 5 validation - agreementAccepted:", agreementAccepted)
+        return agreementAccepted
 
       default:
         return false

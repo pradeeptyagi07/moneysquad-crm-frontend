@@ -1,10 +1,28 @@
+"use client"
+
 import type React from "react"
-import { Box, Grid, Typography, Divider, Paper, Chip, List, ListItem, ListItemText, ListItemIcon } from "@mui/material"
+import {
+  Box,
+  Grid,
+  Typography,
+  Divider,
+  Paper,
+  Chip,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  Checkbox,
+  FormControlLabel,
+  Link,
+} from "@mui/material"
 import { Person, LocationOn, Work, AccountBalance, InsertDriveFile } from "@mui/icons-material"
 import type { PartnerFormData } from "../index"
 
 interface PreviewProps {
   formData: PartnerFormData
+  agreementAccepted?: boolean
+  onAgreementChange?: (accepted: boolean) => void
 }
 
 interface SectionProps {
@@ -55,7 +73,7 @@ const Section: React.FC<SectionProps> = ({ title, icon, children }) => {
   )
 }
 
-const Preview: React.FC<PreviewProps> = ({ formData }) => {
+const Preview: React.FC<PreviewProps> = ({ formData, agreementAccepted = false, onAgreementChange }) => {
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "Not provided"
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -63,6 +81,13 @@ const Preview: React.FC<PreviewProps> = ({ formData }) => {
       month: "long",
       day: "numeric",
     })
+  }
+
+  const handleAgreementChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log("Checkbox changed:", event.target.checked)
+    if (onAgreementChange) {
+      onAgreementChange(event.target.checked)
+    }
   }
 
   return (
@@ -92,7 +117,7 @@ const Preview: React.FC<PreviewProps> = ({ formData }) => {
             </Typography>
             <Typography variant="body1">{formData.email}</Typography>
           </Grid>
-         
+
           <Grid item xs={12} md={6}>
             <Typography variant="subtitle2" color="text.secondary">
               Registration Type
@@ -298,10 +323,60 @@ const Preview: React.FC<PreviewProps> = ({ formData }) => {
       </Section>
 
       <Box sx={{ textAlign: "center", mt: 4 }}>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          By submitting this form, you agree to our Terms of Service and Privacy Policy. Your information will be
-          verified before your account is activated.
-        </Typography>
+        <Paper
+          elevation={0}
+          sx={{
+            p: 3,
+            borderRadius: 2,
+            border: "1px solid",
+            borderColor: "divider",
+            backgroundColor: "#f8fafc",
+          }}
+        >
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={agreementAccepted}
+                onChange={handleAgreementChange}
+                color="primary"
+                sx={{ alignSelf: "flex-start", mt: -0.5 }}
+              />
+            }
+            label={
+              <Typography variant="body2" color="text.secondary" sx={{ textAlign: "left" }}>
+                By submitting this form, I agree to the{" "}
+                <Link
+                  href="https://moneysquad.in/terms"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={{ color: "primary.main", textDecoration: "underline" }}
+                >
+                  Terms of Service
+                </Link>
+                ,{" "}
+                <Link
+                  href="https://moneysquad.in/privacy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={{ color: "primary.main", textDecoration: "underline" }}
+                >
+                  Privacy Policy
+                </Link>
+                , and{" "}
+                <Link
+                  href="https://moneysquad.in/partner-agreement"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={{ color: "primary.main", textDecoration: "underline" }}
+                >
+                  Partner Agreement
+                </Link>
+                . I understand that my information will be verified before my account is activated.
+              </Typography>
+            }
+            sx={{ alignItems: "flex-start", mb: 0 }}
+          />
+        </Paper>
       </Box>
     </Box>
   )
