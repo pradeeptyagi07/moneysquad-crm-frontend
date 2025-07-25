@@ -5,7 +5,8 @@ const axiosInstance = axios.create({
   baseURL: "https://api.moneysquad.in/api/",
   // baseURL: "https://articles-task-volume-headset.trycloudflare.com/api",
 
-  // timeout: 60000,baseURL:"http://178.236.185.178:5003/api",
+  timeout: 60000,
+  // baseURL:"http://178.236.185.178:5003/api",
 });
 
 axiosInstance.interceptors.request.use(
