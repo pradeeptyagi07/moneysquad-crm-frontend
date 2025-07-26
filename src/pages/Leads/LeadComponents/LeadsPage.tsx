@@ -1,9 +1,18 @@
 "use client"
 
-import type React from "react"
-import { useEffect, useState, useMemo } from "react"
-import { Box, Typography, Button, Paper, Snackbar, Alert } from "@mui/material"
-import { Add } from "@mui/icons-material"
+import React, { useEffect, useState, useMemo } from "react"
+import {
+  Box,
+  Typography,
+  Fab,
+  Paper,
+  Snackbar,
+  Alert,
+  Tooltip,
+  useTheme,
+  useMediaQuery,
+} from "@mui/material"
+import { Add, FilterList } from "@mui/icons-material"
 
 import * as XLSX from "xlsx"
 import { saveAs } from "file-saver"
@@ -31,9 +40,12 @@ interface DateRange {
 }
 
 const LeadsPage: React.FC = () => {
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
+
   const dispatch = useAppDispatch()
   const { userRole } = useAuth()
-  const { leads: apiLeads } = useAppSelector((s) => s.leads)
+  const { leads: apiLeads, loading } = useAppSelector((s) => s.leads)
 
   // Basic filters & pagination
   const [statusFilter, setStatusFilter] = useState("all")
@@ -54,6 +66,9 @@ const LeadsPage: React.FC = () => {
     endDate: null,
   })
 
+  // Filter panel visibility
+  const [showFilters, setShowFilters] = useState(false)
+
   // Dialog state
   const [formOpen, setFormOpen] = useState(false)
   const [formMode, setFormMode] = useState<"create" | "edit" | "duplicate">("create")
@@ -72,7 +87,7 @@ const LeadsPage: React.FC = () => {
     severity: "success" | "error"
   }>({ open: false, message: "", severity: "success" })
 
-  // Fetch leads
+  // Fetch leads on mount
   useEffect(() => {
     dispatch(fetchAllLeads())
   }, [dispatch])
@@ -93,7 +108,11 @@ const LeadsPage: React.FC = () => {
         const key = lead.partnerId._id
         if (!partnersSet.has(key)) {
           partnersSet.add(key)
-          partners.push({ value: key, label: lead.partnerId.basicInfo.fullName, id: lead.partnerId.partnerId })
+          partners.push({
+            value: key,
+            label: lead.partnerId.basicInfo.fullName,
+            id: lead.partnerId.partnerId,
+          })
         }
       }
       if (lead.lenderType?.trim()) {
@@ -135,7 +154,7 @@ const LeadsPage: React.FC = () => {
     return { partners, lenders, managers, associates }
   }, [apiLeads])
 
-  // Prepare form data
+  // Prepare form data helper
   const prepareFormData = (api: Lead): LeadFormData => ({
     id: api.id,
     leadId: api.leadId,
@@ -157,66 +176,55 @@ const LeadsPage: React.FC = () => {
     lenderName: api.lenderType || "",
   })
 
-  // Helper function to parse date string and normalize to date only
+  // Date helpers
   const parseToDateOnly = (dateStr: string): Date => {
-    const date = new Date(dateStr)
-    // Create a new date with only year, month, day (no time)
-    return new Date(date.getFullYear(), date.getMonth(), date.getDate())
+    const d = new Date(dateStr)
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate())
   }
+  const isSameDate = (a: Date, b: Date): boolean =>
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
 
-  // Helper function to check if two dates are the same day
-  const isSameDate = (date1: Date, date2: Date): boolean => {
-    return (
-      date1.getFullYear() === date2.getFullYear() &&
-      date1.getMonth() === date2.getMonth() &&
-      date1.getDate() === date2.getDate()
-    )
-  }
-
-  // Updated date filtering logic
-  const isDateInRange = (dateStr: string, startDate: Date | null, endDate: Date | null): boolean => {
-    // If no date filters are set, show all
+  const isDateInRange = (
+    dateStr: string,
+    startDate: Date | null,
+    endDate: Date | null
+  ): boolean => {
     if (!startDate && !endDate) return true
-
     try {
-      // Parse the lead creation date to date-only format
       const leadDate = parseToDateOnly(dateStr)
-
-      // Handle different filter scenarios
       if (startDate && endDate) {
-        // Both dates selected - check if lead date is within range (inclusive)
-        const start = parseToDateOnly(startDate.toISOString())
-        const end = parseToDateOnly(endDate.toISOString())
-        return leadDate >= start && leadDate <= end
-      } else if (startDate && !endDate) {
-        // Only start date selected - show leads for ONLY that specific date
-        const start = parseToDateOnly(startDate.toISOString())
-        return isSameDate(leadDate, start)
-      } else if (!startDate && endDate) {
-        // Only end date selected - show leads for ONLY that specific date
-        const end = parseToDateOnly(endDate.toISOString())
-        return isSameDate(leadDate, end)
+        const s = parseToDateOnly(startDate.toISOString())
+        const e = parseToDateOnly(endDate.toISOString())
+        return leadDate >= s && leadDate <= e
       }
-
+      if (startDate) {
+        return isSameDate(leadDate, parseToDateOnly(startDate.toISOString()))
+      }
+      return isSameDate(leadDate, parseToDateOnly(endDate!.toISOString()))
+    } catch {
       return true
-    } catch (error) {
-      console.error("Error parsing date:", dateStr, error)
-      return true // If date parsing fails, include the record
     }
   }
 
-  // Rows & filteredRows
+  // Build rows array
   const rows = useMemo(
     () =>
       apiLeads.map((l) => ({
         dbId: l.id,
         leadId: l.leadId,
-        partnerName: l.partnerId?.basicInfo?.fullName ?? "Unknown Partner",
+        partnerName:
+          l.partnerId?.basicInfo?.fullName ?? "Unknown Partner",
         partnerId: l.partnerId?.partnerId ?? "",
-        associateName: l.associate ? `${l.associate.firstName} ${l.associate.lastName}`.trim() : "",
+        associateName: l.associate
+          ? `${l.associate.firstName} ${l.associate.lastName}`.trim()
+          : "",
         associateDisplayId: l.associate?.associateDisplayId ?? "",
         applicantName: l.applicantName,
-        applicantLocation: `${l.pincode?.city ?? ""}, ${l.pincode?.state ?? ""}`,
+        applicantLocation: `${l.pincode?.city ?? ""}, ${
+          l.pincode?.state ?? ""
+        }`,
         applicantMobile: l.mobile,
         applicantEmail: l.email,
         lenderName: l.lenderType || "",
@@ -225,25 +233,31 @@ const LeadsPage: React.FC = () => {
         comments: l.comments || "",
         status: l.status,
         lastUpdate: l.statusUpdatedAt,
-        managerName: l.manager ? `${l.manager.firstName} ${l.manager.lastName}`.trim() : "",
+        managerName: l.manager
+          ? `${l.manager.firstName} ${l.manager.lastName}`.trim()
+          : "",
         managerDisplayId: l.manager?.managerId || "",
         createdAt: l.createdAt,
-        disbursedData: l.disbursedData || null,
       })),
-    [apiLeads],
+    [apiLeads]
   )
 
+  // Filter rows
   const filteredRows = useMemo(
     () =>
       rows.filter((r) => {
-        // Date range filter - FIRST AND MOST IMPORTANT CHECK
-        if (!isDateInRange(r.createdAt, dateRange.startDate, dateRange.endDate)) {
+        if (
+          !isDateInRange(
+            r.createdAt,
+            dateRange.startDate,
+            dateRange.endDate
+          )
+        )
           return false
-        }
-
-        // Other filters
-        if (statusFilter !== "all" && r.status !== statusFilter) return false
-        if (loanTypeFilter !== "all" && r.loanType !== loanTypeFilter) return false
+        if (statusFilter !== "all" && r.status !== statusFilter)
+          return false
+        if (loanTypeFilter !== "all" && r.loanType !== loanTypeFilter)
+          return false
         if (searchTerm) {
           const s = searchTerm.toLowerCase()
           if (
@@ -255,20 +269,26 @@ const LeadsPage: React.FC = () => {
           )
             return false
         }
-        if (partnerFilter !== "all") {
-          const lead = apiLeads.find((l) => l.id === r.dbId)
-          if (!lead?.partnerId || lead.partnerId._id !== partnerFilter) return false
-        }
-        if (lenderFilter !== "all" && r.lenderName !== lenderFilter) return false
-        if (managerFilter !== "all") {
-          const lead = apiLeads.find((l) => l.id === r.dbId)
-          if (!lead?.manager || lead.manager._id !== managerFilter) return false
-        }
-        if (associateFilter !== "all") {
-          const lead = apiLeads.find((l) => l.id === r.dbId)
-          if (!lead?.associate || lead.associate._id !== associateFilter) return false
-        }
-
+        if (
+          partnerFilter !== "all" &&
+          apiLeads.find((l) => l.id === r.dbId)?.partnerId?._id !==
+            partnerFilter
+        )
+          return false
+        if (lenderFilter !== "all" && r.lenderName !== lenderFilter)
+          return false
+        if (
+          managerFilter !== "all" &&
+          apiLeads.find((l) => l.id === r.dbId)?.manager?._id !==
+            managerFilter
+        )
+          return false
+        if (
+          associateFilter !== "all" &&
+          apiLeads.find((l) => l.id === r.dbId)?.associate?._id !==
+            associateFilter
+        )
+          return false
         return true
       }),
     [
@@ -283,35 +303,12 @@ const LeadsPage: React.FC = () => {
       managerFilter,
       associateFilter,
       apiLeads,
-    ],
+    ]
   )
 
-  // Create / Refresh / Reset
-  const openCreate = () => {
-    setSelectedLead(null)
-    setFormMode("create")
-    setFormOpen(true)
-  }
-  const handleRefresh = () => {
-    dispatch(fetchAllLeads())
-    setSnackbar({ open: true, message: "Data refreshed", severity: "success" })
-  }
-  const handleReset = () => {
-    setStatusFilter("all")
-    setLoanTypeFilter("all")
-    setSearchTerm("")
-    setPartnerFilter("all")
-    setLenderFilter("all")
-    setManagerFilter("all")
-    setAssociateFilter("all")
-    setDateRange({ startDate: null, endDate: null })
-    setPage(0)
-  }
-
-  // EXPORT: only current page
+  // Export handlers
   const handleExportCsv = () => {
-    const visible = filteredRows
-    const data = visible.map((r) => ({
+    const data = filteredRows.map((r) => ({
       LeadID: r.leadId,
       Partner: r.partnerName,
       Associate: r.associateName,
@@ -330,9 +327,8 @@ const LeadsPage: React.FC = () => {
   }
 
   const handleExportExcel = () => {
-    const visible = filteredRows
     const ws = XLSX.utils.json_to_sheet(
-      visible.map((r) => ({
+      filteredRows.map((r) => ({
         LeadID: r.leadId,
         Partner: r.partnerName,
         Associate: r.associateName,
@@ -345,7 +341,7 @@ const LeadsPage: React.FC = () => {
         Status: r.status,
         Manager: r.managerName,
         CreatedAt: r.createdAt,
-      })),
+      }))
     )
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, "Leads")
@@ -353,99 +349,199 @@ const LeadsPage: React.FC = () => {
     saveAs(blob, `leads_${Date.now()}.xlsx`)
   }
 
+  // Only skeleton on initial fetch
+  const tableLoading =
+    loading &&
+    !formOpen &&
+    !assignOpen &&
+    !statusOpen &&
+    !timelineOpen &&
+    !detailsOpen &&
+    !disbursementOpen &&
+    !deleteOpen
+
   return (
-    <Box>
+    <Box
+      sx={{
+        position: "relative",
+        height: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+      }}
+    >
       {/* Header */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4">Lead Management</Typography>
-        <Button variant="contained" startIcon={<Add />} onClick={openCreate}>
-          Create New Lead
-        </Button>
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={2}
+        sx={{ minHeight: 48, flexShrink: 0 }}
+      >
+        <Box display="flex" alignItems="center" gap={2}>
+          <Typography variant="h4" sx={{ fontWeight: 600 }}>
+            Lead Management
+          </Typography>
+          <Tooltip title="Toggle Filters">
+            <Fab
+              size="small"
+              onClick={() => setShowFilters(!showFilters)}
+              sx={{
+                background: showFilters
+                  ? "linear-gradient(135deg, #667eea, #764ba2)"
+                  : "linear-gradient(135deg, #f8fafc, #e2e8f0)",
+                color: showFilters ? "#fff" : "#64748b",
+              }}
+            >
+              <FilterList fontSize="small" />
+            </Fab>
+          </Tooltip>
+        </Box>
+        <Tooltip title="Create New Lead">
+          <Fab color="primary" onClick={() => setFormOpen(true)}>
+            <Add />
+          </Fab>
+        </Tooltip>
       </Box>
 
-      {/* Filters */}
-      <LeadsFilterBar
-        statusFilter={statusFilter}
-        loanTypeFilter={loanTypeFilter}
-        searchTerm={searchTerm}
-        onStatusChange={setStatusFilter}
-        onLoanTypeChange={setLoanTypeFilter}
-        onSearchChange={setSearchTerm}
-        partnerFilter={partnerFilter}
-        lenderFilter={lenderFilter}
-        managerFilter={managerFilter}
-        associateFilter={associateFilter}
-        onPartnerChange={setPartnerFilter}
-        onLenderChange={setLenderFilter}
-        onManagerChange={setManagerFilter}
-        onAssociateChange={setAssociateFilter}
-        dateRange={dateRange}
-        onDateRangeChange={setDateRange}
-        partners={filterOptions.partners}
-        lenders={filterOptions.lenders}
-        managers={filterOptions.managers}
-        associates={filterOptions.associates}
-        onReset={handleReset}
-        onRefresh={handleRefresh}
-        onExportCsv={handleExportCsv}
-        onExportExcel={handleExportExcel}
-      />
+      {/* Filters + Table */}
+      <Box
+        sx={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          minHeight: 0,
+        }}
+      >
+        {/* Filter Bar */}
+        <Box
+          sx={{
+            flexShrink: 0,
+            ...(isMobile &&
+              showFilters && {
+                maxHeight: "40vh",
+                overflowY: "auto",
+              }),
+          }}
+        >
+          <LeadsFilterBar
+            showFilters={showFilters}
+            statusFilter={statusFilter}
+            loanTypeFilter={loanTypeFilter}
+            searchTerm={searchTerm}
+            onStatusChange={setStatusFilter}
+            onLoanTypeChange={setLoanTypeFilter}
+            onSearchChange={setSearchTerm}
+            partnerFilter={partnerFilter}
+            lenderFilter={lenderFilter}
+            managerFilter={managerFilter}
+            associateFilter={associateFilter}
+            onPartnerChange={setPartnerFilter}
+            onLenderChange={setLenderFilter}
+            onManagerChange={setManagerFilter}
+            onAssociateChange={setAssociateFilter}
+            dateRange={dateRange}
+            onDateRangeChange={setDateRange}
+            partners={filterOptions.partners}
+            lenders={filterOptions.lenders}
+            managers={filterOptions.managers}
+            associates={filterOptions.associates}
+            onReset={() => {
+              setStatusFilter("all")
+              setLoanTypeFilter("all")
+              setSearchTerm("")
+              setPartnerFilter("all")
+              setLenderFilter("all")
+              setManagerFilter("all")
+              setAssociateFilter("all")
+              setDateRange({ startDate: null, endDate: null })
+              setPage(0)
+            }}
+            onRefresh={() => {
+              dispatch(fetchAllLeads())
+              setSnackbar({
+                open: true,
+                message: "Data refreshed",
+                severity: "success",
+              })
+            }}
+            onExportCsv={handleExportCsv}
+            onExportExcel={handleExportExcel}
+          />
+        </Box>
 
-      {/* Table */}
-      <Paper sx={{ borderRadius: 2, overflow: "hidden", mb: 4 }}>
-        <LeadsDataTable
-          rows={filteredRows}
-          page={page}
-          rowsPerPage={rowsPerPage}
-          loading={false}
-          onPageChange={setPage}
-          onRowsPerPageChange={setRowsPerPage}
-          onOpenEdit={(r) => {
-            const api = apiLeads.find((l) => l.id === r.dbId)!
-            setSelectedLead(prepareFormData(api))
-            setFormMode("edit")
-            setFormOpen(true)
+        {/* Scrollable table region */}
+        <Box
+          sx={{
+            flex: 1,
+            overflowY: "auto",
+            mt: showFilters ? 1 : 0,
           }}
-          onOpenDuplicate={(r) => {
-            const api = apiLeads.find((l) => l.id === r.dbId)!
-            setSelectedLead(prepareFormData(api))
-            setFormMode("duplicate")
-            setFormOpen(true)
-          }}
-          onOpenAssign={(r) => {
-            const api = apiLeads.find((l) => l.id === r.dbId)!
-            setSelectedLead(prepareFormData(api))
-            setAssignOpen(true)
-          }}
-          onOpenStatus={(r) => {
-            const api = apiLeads.find((l) => l.id === r.dbId)!
-            setSelectedLead(prepareFormData(api))
-            setStatusOpen(true)
-          }}
-          onOpenTimeline={(r) => {
-            const api = apiLeads.find((l) => l.id === r.dbId)!
-            setSelectedLead(prepareFormData(api))
-            setTimelineOpen(true)
-          }}
-          onOpenDetails={(r) => {
-            const api = apiLeads.find((l) => l.id === r.dbId)!
-            setSelectedLead(prepareFormData(api))
-            setDetailsOpen(true)
-          }}
-          onOpenDisbursement={(r) => {
-            const api = apiLeads.find((l) => l.id === r.dbId)!
-            setSelectedLead(prepareFormData(api))
-            setApiDisbursementLead(api)
-            setDisbursementOpen(true)
-          }}
-          onOpenDelete={(r) => {
-            const api = apiLeads.find((l) => l.id === r.dbId)!
-            setSelectedLead(prepareFormData(api))
-            setDeleteOpen(true)
-          }}
-        />
-      </Paper>
+        >
+          <Paper
+            sx={{
+              borderRadius: 0,
+              overflow: "hidden",
+              boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
+              border: "1px solid rgba(0,0,0,0.05)",
+            }}
+          >
+            <LeadsDataTable
+              rows={filteredRows}
+              page={page}
+              rowsPerPage={rowsPerPage}
+              loading={tableLoading}
+              onPageChange={setPage}
+              onRowsPerPageChange={setRowsPerPage}
+              onOpenEdit={(r) => {
+                const api = apiLeads.find((l) => l.id === r.dbId)!
+                setSelectedLead(prepareFormData(api))
+                setFormMode("edit")
+                setFormOpen(true)
+              }}
+              onOpenDuplicate={(r) => {
+                const api = apiLeads.find((l) => l.id === r.dbId)!
+                setSelectedLead(prepareFormData(api))
+                setFormMode("duplicate")
+                setFormOpen(true)
+              }}
+              onOpenAssign={(r) => {
+                const api = apiLeads.find((l) => l.id === r.dbId)!
+                setSelectedLead(prepareFormData(api))
+                setAssignOpen(true)
+              }}
+              onOpenStatus={(r) => {
+                const api = apiLeads.find((l) => l.id === r.dbId)!
+                setSelectedLead(prepareFormData(api))
+                setStatusOpen(true)
+              }}
+              onOpenTimeline={(r) => {
+                const api = apiLeads.find((l) => l.id === r.dbId)!
+                setSelectedLead(prepareFormData(api))
+                setTimelineOpen(true)
+              }}
+              onOpenDetails={(r) => {
+                const api = apiLeads.find((l) => l.id === r.dbId)!
+                setSelectedLead(prepareFormData(api))
+                setDetailsOpen(true)
+              }}
+              onOpenDisbursement={(r) => {
+                const api = apiLeads.find((l) => l.id === r.dbId)!
+                setSelectedLead(prepareFormData(api))
+                setApiDisbursementLead(api)
+                setDisbursementOpen(true)
+              }}
+              onOpenDelete={(r) => {
+                const api = apiLeads.find((l) => l.id === r.dbId)!
+                setSelectedLead(prepareFormData(api))
+                setDeleteOpen(true)
+              }}
+            />
+          </Paper>
+        </Box>
+      </Box>
 
+      {/* Dialogs & Snackbar */}
       <LeadsDialogs
         formDialogOpen={formOpen}
         onFormClose={() => setFormOpen(false)}
@@ -467,16 +563,25 @@ const LeadsPage: React.FC = () => {
         apiDisbursementLead={apiDisbursementLead}
         deleteOpen={deleteOpen}
         onDeleteClose={() => setDeleteOpen(false)}
-        onRefresh={handleRefresh}
+        onRefresh={() => {
+          dispatch(fetchAllLeads())
+          setSnackbar({
+            open: true,
+            message: "Data refreshed",
+            severity: "success",
+          })
+        }}
       />
-
       <Snackbar
         open={snackbar.open}
         autoHideDuration={4000}
         onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
         anchorOrigin={{ vertical: "top", horizontal: "center" }}
       >
-        <Alert onClose={() => setSnackbar((s) => ({ ...s, open: false }))} severity={snackbar.severity}>
+        <Alert
+          onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+          severity={snackbar.severity}
+        >
           {snackbar.message}
         </Alert>
       </Snackbar>

@@ -248,7 +248,7 @@ const LeadDetailsDialog: React.FC<LeadDetailsDialogProps> = ({ open, onClose, le
                         <Typography variant="body2" color="textSecondary">
                           Name
                         </Typography>
-                        <Typography variant="body1">{lead.partnerId.basicInfo.fullName}</Typography>
+                        <Typography variant="body1">{lead.partnerId?.basicInfo?.fullName}</Typography>
                       </Grid>
                       <Grid item xs={12} sm={4}>
                         <Typography variant="body2" color="textSecondary">
