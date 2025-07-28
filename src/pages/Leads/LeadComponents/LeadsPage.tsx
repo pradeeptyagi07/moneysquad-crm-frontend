@@ -213,6 +213,8 @@ const LeadsPage: React.FC = () => {
     () =>
       apiLeads.map((l) => ({
         dbId: l.id,
+          disbursedData: l.disbursedData ?? null,   // ← add this
+
         leadId: l.leadId,
         partnerName:
           l.partnerId?.basicInfo?.fullName ?? "Unknown Partner",
