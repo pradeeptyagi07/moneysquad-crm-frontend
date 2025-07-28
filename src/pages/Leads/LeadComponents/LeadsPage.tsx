@@ -1,17 +1,8 @@
 "use client"
 
-import React, { useEffect, useState, useMemo } from "react"
-import {
-  Box,
-  Typography,
-  Fab,
-  Paper,
-  Snackbar,
-  Alert,
-  Tooltip,
-  useTheme,
-  useMediaQuery,
-} from "@mui/material"
+import type React from "react"
+import { useEffect, useState, useMemo } from "react"
+import { Box, Typography, Fab, Paper, Snackbar, Alert, Tooltip, useTheme, useMediaQuery } from "@mui/material"
 import { Add, FilterList } from "@mui/icons-material"
 
 import * as XLSX from "xlsx"
@@ -182,15 +173,9 @@ const LeadsPage: React.FC = () => {
     return new Date(d.getFullYear(), d.getMonth(), d.getDate())
   }
   const isSameDate = (a: Date, b: Date): boolean =>
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
+    a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
 
-  const isDateInRange = (
-    dateStr: string,
-    startDate: Date | null,
-    endDate: Date | null
-  ): boolean => {
+  const isDateInRange = (dateStr: string, startDate: Date | null, endDate: Date | null): boolean => {
     if (!startDate && !endDate) return true
     try {
       const leadDate = parseToDateOnly(dateStr)
@@ -213,20 +198,15 @@ const LeadsPage: React.FC = () => {
     () =>
       apiLeads.map((l) => ({
         dbId: l.id,
-          disbursedData: l.disbursedData ?? null,   // ← add this
+        disbursedData: l.disbursedData ?? null, // ← add this
 
         leadId: l.leadId,
-        partnerName:
-          l.partnerId?.basicInfo?.fullName ?? "Unknown Partner",
+        partnerName: l.partnerId?.basicInfo?.fullName ?? "Unknown Partner",
         partnerId: l.partnerId?.partnerId ?? "",
-        associateName: l.associate
-          ? `${l.associate.firstName} ${l.associate.lastName}`.trim()
-          : "",
+        associateName: l.associate ? `${l.associate.firstName} ${l.associate.lastName}`.trim() : "",
         associateDisplayId: l.associate?.associateDisplayId ?? "",
         applicantName: l.applicantName,
-        applicantLocation: `${l.pincode?.city ?? ""}, ${
-          l.pincode?.state ?? ""
-        }`,
+        applicantLocation: `${l.pincode?.city ?? ""}, ${l.pincode?.state ?? ""}`,
         applicantMobile: l.mobile,
         applicantEmail: l.email,
         lenderName: l.lenderType || "",
@@ -235,31 +215,20 @@ const LeadsPage: React.FC = () => {
         comments: l.comments || "",
         status: l.status,
         lastUpdate: l.statusUpdatedAt,
-        managerName: l.manager
-          ? `${l.manager.firstName} ${l.manager.lastName}`.trim()
-          : "",
+        managerName: l.manager ? `${l.manager.firstName} ${l.manager.lastName}`.trim() : "",
         managerDisplayId: l.manager?.managerId || "",
         createdAt: l.createdAt,
       })),
-    [apiLeads]
+    [apiLeads],
   )
 
   // Filter rows
   const filteredRows = useMemo(
     () =>
       rows.filter((r) => {
-        if (
-          !isDateInRange(
-            r.createdAt,
-            dateRange.startDate,
-            dateRange.endDate
-          )
-        )
-          return false
-        if (statusFilter !== "all" && r.status !== statusFilter)
-          return false
-        if (loanTypeFilter !== "all" && r.loanType !== loanTypeFilter)
-          return false
+        if (!isDateInRange(r.createdAt, dateRange.startDate, dateRange.endDate)) return false
+        if (statusFilter !== "all" && r.status !== statusFilter) return false
+        if (loanTypeFilter !== "all" && r.loanType !== loanTypeFilter) return false
         if (searchTerm) {
           const s = searchTerm.toLowerCase()
           if (
@@ -271,25 +240,12 @@ const LeadsPage: React.FC = () => {
           )
             return false
         }
-        if (
-          partnerFilter !== "all" &&
-          apiLeads.find((l) => l.id === r.dbId)?.partnerId?._id !==
-            partnerFilter
-        )
+        if (partnerFilter !== "all" && apiLeads.find((l) => l.id === r.dbId)?.partnerId?._id !== partnerFilter)
           return false
-        if (lenderFilter !== "all" && r.lenderName !== lenderFilter)
+        if (lenderFilter !== "all" && r.lenderName !== lenderFilter) return false
+        if (managerFilter !== "all" && apiLeads.find((l) => l.id === r.dbId)?.manager?._id !== managerFilter)
           return false
-        if (
-          managerFilter !== "all" &&
-          apiLeads.find((l) => l.id === r.dbId)?.manager?._id !==
-            managerFilter
-        )
-          return false
-        if (
-          associateFilter !== "all" &&
-          apiLeads.find((l) => l.id === r.dbId)?.associate?._id !==
-            associateFilter
-        )
+        if (associateFilter !== "all" && apiLeads.find((l) => l.id === r.dbId)?.associate?._id !== associateFilter)
           return false
         return true
       }),
@@ -305,7 +261,7 @@ const LeadsPage: React.FC = () => {
       managerFilter,
       associateFilter,
       apiLeads,
-    ]
+    ],
   )
 
   // Export handlers
@@ -343,7 +299,7 @@ const LeadsPage: React.FC = () => {
         Status: r.status,
         Manager: r.managerName,
         CreatedAt: r.createdAt,
-      }))
+      })),
     )
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, "Leads")
@@ -400,7 +356,14 @@ const LeadsPage: React.FC = () => {
           </Tooltip>
         </Box>
         <Tooltip title="Create New Lead">
-          <Fab color="primary" onClick={() => setFormOpen(true)}>
+          <Fab
+            color="primary"
+            onClick={() => {
+              setSelectedLead(null)
+              setFormMode("create")
+              setFormOpen(true)
+            }}
+          >
             <Add />
           </Fab>
         </Tooltip>
@@ -580,10 +543,7 @@ const LeadsPage: React.FC = () => {
         onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
         anchorOrigin={{ vertical: "top", horizontal: "center" }}
       >
-        <Alert
-          onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
-          severity={snackbar.severity}
-        >
+        <Alert onClose={() => setSnackbar((s) => ({ ...s, open: false }))} severity={snackbar.severity}>
           {snackbar.message}
         </Alert>
       </Snackbar>
