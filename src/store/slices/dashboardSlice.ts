@@ -53,15 +53,16 @@ export interface RejectionReasonResponse {
   totalCount: number
 }
 
-export interface TrendData {
+// Updated Trends interface to match new API response with monthly data
+export interface TrendMonth {
   month: string
-  value: number
+  activeLead: number
+  totalDisbursed: number
+  totalDisbursedsumLoanAmounts: number
 }
 
 export interface Trends {
-  leadsAdded: TrendData[]
-  disbursals: TrendData[]
-  payouts: TrendData[]
+  trends: TrendMonth[]
 }
 
 export interface MatrixData {
@@ -87,7 +88,7 @@ interface DashboardState {
   // trends
   trendsLoading: boolean
   trendsError: string | null
-  trends: Trends | null
+  trends: TrendMonth[] | null
   // matrix
   matrixLoading: boolean
   matrixError: string | null
@@ -158,13 +159,13 @@ export const fetchRejectionReasonCount = createAsyncThunk<
 })
 
 export const fetchTrends = createAsyncThunk<
-  Trends,
+  TrendMonth[],
   { loanType?: string; associateId?: string; trendMonths?: number } | undefined,
   { rejectValue: string }
 >("dashboard/fetchTrends", async (params = { trendMonths: 3 }, { rejectWithValue }) => {
   try {
     const res = await axiosInstance.get("/dashboard/trends", { params })
-    return res.data.trends as Trends
+    return res.data.trends as TrendMonth[]
   } catch (err: any) {
     return rejectWithValue(err.response?.data?.message || "Failed to fetch trends")
   }

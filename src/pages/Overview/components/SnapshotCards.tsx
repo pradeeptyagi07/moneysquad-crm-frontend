@@ -122,7 +122,7 @@ const SnapshotCards: React.FC = () => {
     ...(userRole === "partner"
       ? [
           {
-            title: "Commission Earned",
+            title: "Commission Payabel",
             rawValue: snapshot.commissionEarned.current_month_amount,
             previousValue: formatCurrency(snapshot.commissionEarned.previous_month_amount),
             delta: snapshot.commissionEarned.delta_percentage,

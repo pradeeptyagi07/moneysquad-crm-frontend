@@ -84,8 +84,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const isLgUp = useMediaQuery(theme.breakpoints.up("lg"))
   const isXlUp = useMediaQuery(theme.breakpoints.up("xl"))
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsed, setCollapsed] = useState(true) // Auto-collapse by default
   const [expandedItems, setExpandedItems] = useState<string[]>([])
+  const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null)
   const navigate = useNavigate()
   const location = useLocation()
   const { logout } = useAuth()
@@ -130,6 +131,26 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     navigate("/")
   }
 
+  // Auto-collapse functionality
+  const handleMouseEnter = () => {
+    if (hoverTimeout) {
+      clearTimeout(hoverTimeout)
+      setHoverTimeout(null)
+    }
+    if (collapsed && isMdUp) {
+      setCollapsed(false)
+    }
+  }
+
+  const handleMouseLeave = () => {
+    if (isMdUp) {
+      const timeout = setTimeout(() => {
+        setCollapsed(true)
+      }, 300) // 300ms delay before collapsing
+      setHoverTimeout(timeout)
+    }
+  }
+
   const handleExpandClick = (itemText: string) => {
     setExpandedItems((prev) =>
       prev.includes(itemText) ? prev.filter((item) => item !== itemText) : [...prev, itemText],
@@ -170,9 +191,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     const active = isActive(item.path)
     const hasChildren = item.children && item.children.length > 0
     const isExpanded = expandedItems.includes(item.text)
-    // On mobile, always show full text; on desktop, show full text when expanded or use tooltip when collapsed
     const shouldShowTooltip = collapsed && isMdUp
-    const showText = !collapsed || !isMdUp // Always show text on mobile
+    const showText = !collapsed || !isMdUp
 
     return (
       <React.Fragment key={item.text}>
@@ -210,8 +230,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             >
               <ListItemIcon
                 sx={{
-                  minWidth: collapsed && isMdUp ? 0 : { xs: 36, sm: 30 },
-                  mr: collapsed && isMdUp ? 0 : 2,
+                  minWidth: collapsed && isMdUp ? 0 : { xs: 32, sm: 28 },
+                  mr: collapsed && isMdUp ? 0 : 1.5,
                   justifyContent: "center",
                   color: active ? "#0f766e" : "rgba(0,0,0,0.7)",
                   transition: "all 0.2s",
@@ -236,7 +256,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                   "& .MuiListItemText-primary": {
                     fontWeight: active ? 600 : 500,
                     color: active ? "#0f766e" : "rgba(0,0,0,0.87)",
-                    fontSize: { xs: "0.875rem", sm: "0.9rem" },
+                    fontSize: { xs: "0.8rem", sm: "0.82rem" },
                     lineHeight: 1.2,
                     whiteSpace: "nowrap",
                     overflow: "hidden",
@@ -290,11 +310,13 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
   const drawer = (
     <Box
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       sx={{
         display: "flex",
         flexDirection: "column",
         height: "100%",
-        background: "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)",
+        background: "#ffffff",
         position: "relative",
         "&::before": {
           content: '""',
@@ -311,7 +333,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         sx={{
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between", // or "flex-start"
+          justifyContent: "space-between",
           py: { xs: 1.5, sm: 2 },
           px: collapsed && isMdUp ? 1 : 2,
           minHeight: { xs: 56, sm: 60 },
@@ -328,69 +350,42 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           },
         }}
       >
-        {/* Collapse Button on the left */}
-        {isMdUp && (
-          <Tooltip title={collapsed ? "Expand" : "Collapse"} placement="right" arrow>
-            <IconButton
-              onClick={handleCollapseToggle}
-              size="small"
-              sx={{
-                color: "#0f766e",
-                backgroundColor: collapsed ? "transparent" : "rgba(15,118,110,0.08)",
-                transition: "all 0.2s",
-                width: 32,
-                height: 32,
-                mr: 1,
-                "&:hover": {
-                  backgroundColor: collapsed ? "transparent" : "rgba(15,118,110,0.12)",
-                  transform: collapsed ? "none" : "scale(1.1)",
-                },
-              }}
-            >
-              {collapsed ? (
-               <Box
-  component="img"
-  src="/images/MoneySquad_sidebar.png"
-  alt="Expand Sidebar"
-  sx={{
-    width: "40px",        // Bigger size
-    height: "40px",
-    objectFit: "contain",
-    display: "block",
-    ml: 1.5,                // Left margin = theme.spacing(2)
-    maxWidth: "none"      // Override any max-width from parent/container
-  }}
-/>
 
-              ) : (
-                <ChevronLeft />
-              )}
-            </IconButton>
-          </Tooltip>
+
+        {collapsed && isMdUp ? (
+          <Box
+            component="img"
+            src="/images/MoneySquad_sidebar.png"
+            alt="MoneySquad Sidebar"
+            sx={{
+              width: "40px",
+              height: "40px",
+              objectFit: "contain",
+              display: "block",
+              mx: "auto",
+              transition: "all 0.3s ease",
+            }}
+          />
+        ) : (
+          <Box
+            component="img"
+            src="/images/MoneySquad-logo.png"
+            alt="MoneySquad Logo"
+            sx={{
+              height: { xs: 28, sm: 32, md: 36 },
+              width: "auto",
+              maxWidth: "85%",
+              objectFit: "contain",
+              filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.1))",
+              transition: "all 0.3s ease",
+              "&:hover": {
+                transform: "scale(1.02)",
+              },
+            }}
+          />
         )}
-
-        {/* Logo */}
-        <Box
-          component="img"
-          src="/images/MoneySquad-logo.png"
-          alt="MoneySquad Logo"
-          sx={{
-            height: { xs: 28, sm: 32, md: 36 },
-            width: "auto",
-            maxWidth: "85%",
-            objectFit: "contain",
-            filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.1))",
-            transition: "all 0.3s ease",
-            opacity: collapsed && isMdUp ? 0 : 1,
-            transform: collapsed && isMdUp ? "scale(0.8)" : "scale(1)",
-            "&:hover": {
-              transform: collapsed && isMdUp ? "scale(0.8)" : "scale(1.02)",
-            },
-          }}
-        />
       </Box>
 
-      {/* Navigation List */}
       <List
         sx={{
           flexGrow: 1,
@@ -412,22 +407,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               backgroundColor: "rgba(0,0,0,0.3)",
             },
           },
-          "&::after": {
-            content: '""',
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            width: "100%",
-            height: 24,
-            background: "linear-gradient(rgba(248,250,252,0), #f8fafc 90%)",
-            pointerEvents: "none",
-          },
         }}
       >
         {menuItems.map((item) => renderMenuItem(item))}
       </List>
 
-      {/* Professional Profile Section */}
       <Box
         sx={{
           p: collapsed && isMdUp ? 1 : { xs: 1.2, sm: 1.5 },
@@ -458,9 +442,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 sx={{
                   bgcolor: "#0f766e",
                   color: "white",
-                  width: { xs: 32, sm: 36 },
-                  height: { xs: 32, sm: 36 },
-                  fontSize: { xs: "0.875rem", sm: "1rem" },
+                  width: { xs: 28, sm: 32 },
+                  height: { xs: 28, sm: 32 },
+                  fontSize: { xs: "0.75rem", sm: "0.875rem" },
                   fontWeight: 600,
                   mx: collapsed && isMdUp ? "auto" : 0,
                   transition: "all 0.2s ease",
@@ -490,7 +474,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 variant="subtitle2"
                 sx={{
                   fontWeight: 600,
-                  fontSize: { xs: "0.875rem", sm: "0.9rem" },
+                  fontSize: { xs: "0.75rem", sm: "0.8rem" },
                   color: "#1e293b",
                   whiteSpace: "nowrap",
                   overflow: "hidden",
@@ -512,9 +496,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 <Typography
                   variant="caption"
                   sx={{
-                    fontSize: { xs: "0.75rem", sm: "0.8rem" },
+                    fontSize: { xs: "0.65rem", sm: "0.7rem" },
                     color: "#64748b",
-                    fontWeight: 500,
+                    fontWeight: 400,
                     textTransform: "uppercase",
                     letterSpacing: "0.025em",
                   }}
@@ -526,10 +510,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                   <Typography
                     variant="caption"
                     sx={{
-                      fontSize: { xs: "0.75rem", sm: "0.8rem" },
+                      fontSize: { xs: "0.65rem", sm: "0.7rem" },
                       color: "#64748b",
                       fontFamily: "ui-monospace, Monaco, 'Cascadia Code', monospace",
-                      fontWeight: 500,
+                      fontWeight: 400,
                     }}
                   >
                     {displayId}
@@ -543,7 +527,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         {!(collapsed && isMdUp) && (
           <Button
             variant="outlined"
-            startIcon={<LogoutIcon sx={{ fontSize: "16px !important" }} />}
+            startIcon={<LogoutIcon sx={{ fontSize: "14px !important" }} />}
             onClick={handleLogout}
             fullWidth
             size="small"
@@ -552,10 +536,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               color: "#0f766e",
               backgroundColor: "#ffffff",
               textTransform: "none",
-              fontSize: { xs: "0.8rem", sm: "0.85rem" },
+              fontSize: { xs: "0.7rem", sm: "0.75rem" },
               py: 0.6,
               fontWeight: 500,
-              minHeight: { xs: 32, sm: 36 },
+              minHeight: { xs: 28, sm: 32 },
               borderRadius: 1.5,
               transition: "all 0.2s ease",
               "&:hover": {
@@ -583,7 +567,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       <Box sx={{ display: "flex" }}>
         <CssBaseline />
 
-        {/* Mobile Menu Button */}
         {!isMdUp && (
           <IconButton
             color="inherit"
@@ -613,7 +596,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           </IconButton>
         )}
 
-        {/* Responsive Drawer */}
         <Drawer
           variant={isMdUp ? "permanent" : "temporary"}
           open={isMdUp || mobileOpen}
@@ -632,7 +614,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           {drawer}
         </Drawer>
 
-        {/* Main Content Area */}
         <Box
           component="main"
           sx={{
@@ -648,7 +629,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             transition: "margin 0.3s ease, width 0.3s ease",
           }}
         >
-          {/* your page content grows here */}
           <Box sx={{ flexGrow: 1 }}>{children}</Box>
         </Box>
       </Box>

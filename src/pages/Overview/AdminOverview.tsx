@@ -3,7 +3,7 @@ import { Box, Typography } from "@mui/material";
 import AdminDashboard from "./components/adminComponents/AdminDashboard";
 
 const AdminOverview: React.FC = () => {
-  const isAdminDashboardReady = false; // toggle to true when ready
+  const isAdminDashboardReady = true; // toggle to true when ready
 
   return (
     <>
