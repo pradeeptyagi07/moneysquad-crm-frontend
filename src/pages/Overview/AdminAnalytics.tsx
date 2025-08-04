@@ -1,8 +1,8 @@
 import type React from "react";
 import { Box, Typography } from "@mui/material";
-import AdminDashboard from "./components/adminComponents/AdminDashboard";
+import AdminDashboard from "./components/adminAnalyticsComponents/AdminDashboard";
 
-const AdminOverview: React.FC = () => {
+const AdminAnalytics: React.FC = () => {
   const isAdminDashboardReady = true; // toggle to true when ready
 
   return (
@@ -66,4 +66,4 @@ const AdminOverview: React.FC = () => {
 </>  );
 };
 
-export default AdminOverview;
+export default AdminAnalytics;

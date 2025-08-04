@@ -68,6 +68,8 @@ const CommonOverview: React.FC = () => {
   const [loanType, setLoanType] = useState("all")
   const [associateId, setAssociateId] = useState("all")
   const [month, setMonth] = useState("current")
+  const [managerId, setManagerId] = useState("all")
+  const [partnerId, setPartnerId] = useState("all")
 
   // Agreement dialog state
   const [showDocumentDialog, setShowDocumentDialog] = useState(false)
@@ -112,6 +114,8 @@ const CommonOverview: React.FC = () => {
     const params: any = {}
     if (loanType !== "all") params.loanType = loanType
     if (associateId !== "all") params.associateId = associateId
+    if (managerId !== "all") params.managerId = managerId
+    if (partnerId !== "all") params.partnerId = partnerId
 
     // Calculate period based on selected month
     const period = computePeriod(month)
@@ -119,14 +123,14 @@ const CommonOverview: React.FC = () => {
       params.period = period
     }
 
-    // Log the params to verify correct period is being sent
+    // Log the params to verify correct parameters are being sent
     console.log("API params:", params)
 
     dispatch(fetchFunnelData(params))
     dispatch(fetchSnapshotData(params))
     dispatch(fetchRejectionReasonCount(params))
     dispatch(fetchMatrix(params))
-  }, [loanType, associateId, month, dispatch])
+  }, [loanType, associateId, month, managerId, partnerId, dispatch])
 
   const handleDocumentAccept = async () => {
     try {
@@ -172,6 +176,10 @@ const CommonOverview: React.FC = () => {
             onAssociateChange={setAssociateId}
             month={month}
             onMonthChange={setMonth}
+            managerId={managerId}
+            onManagerChange={setManagerId}
+            partnerId={partnerId}
+            onPartnerChange={setPartnerId}
           />
         </Grid>
 

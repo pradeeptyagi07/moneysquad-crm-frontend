@@ -3,7 +3,6 @@
 import type { RouteObject } from "react-router-dom"
 import { Navigate } from "react-router-dom"
 import AdminLayout from "../components/Layout/AdminLayout"
-import AdminOverview from "../pages/Overview/AdminOverview"
 import Leads from "../pages/Leads/Leads"
 import Offers from "../pages/Offers/Offers"
 import Settings from "../pages/Settings/Settings"
@@ -14,6 +13,7 @@ import { useAppSelector } from "../hooks/useAppSelector"
 import CommissionDashboard from "../pages/Commissions/CommissionDashboard"
 import HelpSupportMain from "../pages/HelpAndSupport/HelpSupportMain"
 import TrainingResourcesTab from "../pages/TrainingResources/TrainingResources"
+import CommonOverview from "../pages/Overview/CommonOverview"
 
 // Protected route component specific to admin role
 const AdminRoute = ({ children }: { children: JSX.Element }) => {
@@ -42,11 +42,11 @@ const adminRoutes: RouteObject[] = [
     children: [
       {
         index: true,
-        element: <AdminOverview />,
+        element: <CommonOverview />,
       },
       {
         path: "overview",
-        element: <AdminOverview />,
+        element: <CommonOverview />,
       },
       {
         path: "leads",

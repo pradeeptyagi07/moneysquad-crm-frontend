@@ -17,12 +17,14 @@ import {
   type SelectChangeEvent,
   Divider,
 } from "@mui/material"
-import { FilterList, TrendingUp, Person, CalendarMonth } from "@mui/icons-material"
+import { FilterList, TrendingUp, Person, CalendarMonth, Business, Group } from "@mui/icons-material"
 import type { AppDispatch, RootState } from "../../../store"
 import { fetchAssociates } from "../../../store/slices/associateSlice"
 import { fetchLoanTypes } from "../../../store/slices/lenderLoanSlice"
 import { useAuth } from "../../../hooks/useAuth"
 import WelcomeMessage from "./WelcomeMessage"
+import { fetchManagers } from "../../../store/slices/teamSLice"
+import { fetchAllPartners } from "../../../store/slices/managePartnerSlice"
 
 const StyledFormControl = styled(FormControl)(() => ({
   minWidth: 160,
@@ -66,6 +68,10 @@ interface Props {
   onAssociateChange: (v: string) => void
   month: string
   onMonthChange: (v: string) => void
+  managerId: string
+  onManagerChange: (v: string) => void
+  partnerId: string
+  onPartnerChange: (v: string) => void
 }
 
 interface MonthOption {
@@ -80,11 +86,17 @@ const GlobalFilters: React.FC<Props> = ({
   onAssociateChange,
   month,
   onMonthChange,
+  managerId,
+  onManagerChange,
+  partnerId,
+  onPartnerChange,
 }) => {
   const dispatch = useDispatch<AppDispatch>()
   const { userRole } = useAuth()
   const associates = useSelector((s: RootState) => s.associate.associates)
   const loanTypes = useSelector((s: RootState) => s.lenderLoan.loanTypes)
+  const managers = useSelector((s: RootState) => s.team.managers)
+  const partners = useSelector((s: RootState) => s.managePartners.partners)
 
   // Generate month options using Date object
   const monthOptions = useMemo(() => {
@@ -119,15 +131,33 @@ const GlobalFilters: React.FC<Props> = ({
   useEffect(() => {
     dispatch(fetchAssociates())
     dispatch(fetchLoanTypes())
-  }, [dispatch])
+    // Only fetch managers and partners for admin users
+    if (userRole === "admin") {
+      dispatch(fetchManagers())
+      dispatch(fetchAllPartners())
+    }
+  }, [dispatch, userRole])
 
-  const activeCount = (loanType !== "all" ? 1 : 0) + (associateId !== "all" ? 1 : 0) + (month !== "current" ? 1 : 0)
+  const activeCount =
+    (loanType !== "all" ? 1 : 0) +
+    (associateId !== "all" ? 1 : 0) +
+    (month !== "current" ? 1 : 0) +
+    (userRole === "admin" && managerId !== "all" ? 1 : 0) +
+    (userRole === "admin" && partnerId !== "all" ? 1 : 0)
 
   const handleLoanTypeChange = (e: SelectChangeEvent) => onLoanTypeChange(e.target.value)
   const handleAssociateChange = (e: SelectChangeEvent) => onAssociateChange(e.target.value)
   const handleMonthChange = (e: SelectChangeEvent) => {
     console.log("Month changed to:", e.target.value)
     onMonthChange(e.target.value)
+  }
+  const handleManagerChange = (e: SelectChangeEvent) => {
+    console.log("Manager changed to:", e.target.value)
+    onManagerChange(e.target.value)
+  }
+  const handlePartnerChange = (e: SelectChangeEvent) => {
+    console.log("Partner changed to:", e.target.value)
+    onPartnerChange(e.target.value)
   }
 
   return (
@@ -263,7 +293,7 @@ const GlobalFilters: React.FC<Props> = ({
                   <MenuItem value="all">All Associates</MenuItem>
                   {associates.map((a: any) => (
                     <MenuItem key={a._id} value={a._id}>
-                      {a.associateDisplayId} – {a.firstName} {a.lastName}
+                      {a.firstName} {a.lastName}
                     </MenuItem>
                   ))}
                 </Select>
@@ -299,6 +329,72 @@ const GlobalFilters: React.FC<Props> = ({
                 ))}
               </Select>
             </StyledFormControl>
+
+            {/* Manager Filter - Only visible for admin */}
+            {userRole === "admin" && (
+              <StyledFormControl size="small" sx={{ minWidth: 180 }}>
+                <InputLabel id="manager-label">
+                  <Box display="flex" alignItems="center" gap={0.5}>
+                    <Business sx={{ fontSize: 14 }} />
+                    Manager
+                  </Box>
+                </InputLabel>
+                <Select
+                  labelId="manager-label"
+                  id="manager-select"
+                  value={managerId}
+                  label="Manager"
+                  onChange={handleManagerChange}
+                  MenuProps={{
+                    PaperProps: {
+                      style: {
+                        maxHeight: 300,
+                      },
+                    },
+                  }}
+                >
+                  <MenuItem value="all">All Managers</MenuItem>
+                  {managers.map((manager: any) => (
+                    <MenuItem key={manager._id} value={manager._id}>
+                      {manager.firstName} {manager.lastName}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </StyledFormControl>
+            )}
+
+            {/* Partner Filter - Only visible for admin */}
+            {userRole === "admin" && (
+              <StyledFormControl size="small" sx={{ minWidth: 180 }}>
+                <InputLabel id="partner-label">
+                  <Box display="flex" alignItems="center" gap={0.5}>
+                    <Group sx={{ fontSize: 14 }} />
+                    Partner
+                  </Box>
+                </InputLabel>
+                <Select
+                  labelId="partner-label"
+                  id="partner-select"
+                  value={partnerId}
+                  label="Partner"
+                  onChange={handlePartnerChange}
+                  MenuProps={{
+                    PaperProps: {
+                      style: {
+                        maxHeight: 300,
+                      },
+                    },
+                  }}
+                >
+                  <MenuItem value="all">All Partners</MenuItem>
+                  {partners.map((partner: any) => (
+                    <MenuItem key={partner._id} value={partner._id}>
+                      {partner.basicInfo?.fullName || "N/A"}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </StyledFormControl>
+            )}
           </Box>
         </Box>
       </Box>

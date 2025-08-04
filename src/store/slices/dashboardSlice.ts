@@ -66,10 +66,26 @@ export interface Trends {
 }
 
 export interface MatrixData {
-  disbursalRatePct: number
-  avgDisbursalTATdays: number
-  avgLoanAmount: number
-  targetAchievedPct: number | null
+  disbursalRate: {
+    current_month_amount: number
+    previous_month_amount: number
+    delta_percentage: number
+  }
+  avgTATDays: {
+    current_month_amount: number
+    previous_month_amount: number
+    delta_percentage: number
+  }
+  avgLoanAmount: {
+    current_month_amount: number
+    previous_month_amount: number
+    delta_percentage: number
+  }
+  targetAchieved: {
+    current_month_amount: number
+    previous_month_amount: number
+    delta_percentage: number
+  }
 }
 
 interface DashboardState {
@@ -121,7 +137,7 @@ const initialState: DashboardState = {
 
 export const fetchFunnelData = createAsyncThunk<
   FunnelStage[],
-  { period?: string; loanType?: string; associateId?: string } | undefined,
+  { period?: string; loanType?: string; associateId?: string; managerId?: string; partnerId?: string } | undefined,
   { rejectValue: string }
 >("dashboard/fetchFunnel", async (params = {}, { rejectWithValue }) => {
   try {
@@ -134,7 +150,7 @@ export const fetchFunnelData = createAsyncThunk<
 
 export const fetchSnapshotData = createAsyncThunk<
   SnapshotData,
-  { period?: string; loanType?: string; associateId?: string } | undefined,
+  { period?: string; loanType?: string; associateId?: string; managerId?: string; partnerId?: string } | undefined,
   { rejectValue: string }
 >("dashboard/fetchSnapshot", async (params = {}, { rejectWithValue }) => {
   try {
@@ -147,7 +163,7 @@ export const fetchSnapshotData = createAsyncThunk<
 
 export const fetchRejectionReasonCount = createAsyncThunk<
   RejectionReasonResponse,
-  { period?: string; loanType?: string; associateId?: string } | undefined,
+  { period?: string; loanType?: string; associateId?: string; managerId?: string; partnerId?: string } | undefined,
   { rejectValue: string }
 >("dashboard/fetchRejectionReasonCount", async (params = {}, { rejectWithValue }) => {
   try {
@@ -160,7 +176,7 @@ export const fetchRejectionReasonCount = createAsyncThunk<
 
 export const fetchTrends = createAsyncThunk<
   TrendMonth[],
-  { loanType?: string; associateId?: string; trendMonths?: number } | undefined,
+  { loanType?: string; associateId?: string; trendMonths?: number; managerId?: string; partnerId?: string } | undefined,
   { rejectValue: string }
 >("dashboard/fetchTrends", async (params = { trendMonths: 3 }, { rejectWithValue }) => {
   try {
@@ -173,7 +189,7 @@ export const fetchTrends = createAsyncThunk<
 
 export const fetchMatrix = createAsyncThunk<
   MatrixData,
-  { period?: string; loanType?: string; associateId?: string } | undefined,
+  { period?: string; loanType?: string; associateId?: string; managerId?: string; partnerId?: string } | undefined,
   { rejectValue: string }
 >("dashboard/fetchMatrix", async (params = {}, { rejectWithValue }) => {
   try {

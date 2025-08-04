@@ -1,7 +1,7 @@
 // src/pages/Leads/components/StatusUpdateDialog.tsx
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -19,10 +19,16 @@ import {
   Snackbar,
   Alert,
   CircularProgress,
+  Skeleton,
 } from "@mui/material";
 import { Close } from "@mui/icons-material";
 import { useAppDispatch } from "../../../hooks/useAppDispatch";
-import { fetchAllLeads, Lead, updateLeadStatus } from "../../../store/slices/leadSLice";
+import {
+  fetchAllLeads,
+  Lead,
+  updateLeadStatus,
+  fetchLeadById,
+} from "../../../store/slices/leadSLice";
 
 type LeadStatus =
   | "pending"
@@ -65,30 +71,34 @@ const closeReasonOptions = [
 
 // Valid next‐status transitions
 const statusTransitions: Record<LeadStatus, LeadStatus[]> = {
-  pending: ["login", "closed"],           // added closed
-  login: ["approved", "rejected", "closed"], // added closed
+  pending: ["login", "closed"],
+  login: ["approved", "rejected", "closed"],
   approved: ["disbursed", "closed", "rejected"],
   disbursed: ["closed"],
-  rejected: ["approved","closed"],
+  rejected: ["approved", "closed"],
   closed: [],
   expired: ["login"],
 };
 
-
 interface StatusUpdateDialogProps {
   open: boolean;
   onClose: () => void;
-  lead?: Lead | null;
+  lead?: Lead | null; // incoming prop
 }
 
 const StatusUpdateDialog: React.FC<StatusUpdateDialogProps> = ({
   open,
   onClose,
-  lead,
+  lead: propLead,
 }) => {
   const dispatch = useAppDispatch();
-  console.log("data",lead)
 
+  // freshest lead fetched on open
+  const [freshLead, setFreshLead] = useState<Lead | null | undefined>(undefined);
+  const [isFetchingLead, setIsFetchingLead] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
+  // form state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<LeadStatus>("pending");
   const [comment, setComment] = useState("");
@@ -103,8 +113,37 @@ const StatusUpdateDialog: React.FC<StatusUpdateDialogProps> = ({
     severity: "success" | "error";
   }>({ open: false, message: "", severity: "success" });
 
-  // Whenever we open with a new lead, reset everything
-  // and capture the “original” status in both state & label.
+  // Choose freshest available lead (freshLead overrides propLead if present)
+  const lead: Lead | undefined | null =
+    freshLead !== undefined && freshLead !== null ? freshLead : propLead;
+
+  // Fetch lead by ID when dialog opens or propLead.id changes
+  useEffect(() => {
+    if (open && propLead?.id) {
+      setIsFetchingLead(true);
+      setFetchError(null);
+      dispatch(fetchLeadById(propLead.id))
+        .unwrap()
+        .then((fetched) => {
+          setFreshLead(fetched);
+        })
+        .catch((err: any) => {
+          const msg =
+            typeof err === "string" ? err : err?.message || "Failed to fetch lead";
+          setFetchError(msg);
+          setFreshLead(undefined);
+        })
+        .finally(() => {
+          setIsFetchingLead(false);
+        });
+    } else if (!open) {
+      // reset on close
+      setFreshLead(undefined);
+      setFetchError(null);
+    }
+  }, [open, propLead?.id, dispatch]);
+
+  // Reset form state whenever dialog opens with available lead
   useEffect(() => {
     if (open && lead) {
       const orig: LeadStatus = (lead.status ?? "pending") as LeadStatus;
@@ -118,25 +157,28 @@ const StatusUpdateDialog: React.FC<StatusUpdateDialogProps> = ({
     }
   }, [open, lead]);
 
-  if (!open || !lead?.id) return null;
-
-  // Use the lead’s STATUS for the label & for choosing next statuses
-  const originalStatus = (lead.status ?? "pending") as LeadStatus;
+  const originalStatus = (lead?.status ?? "pending") as LeadStatus;
   const currentStatusLabel =
     originalStatus.charAt(0).toUpperCase() + originalStatus.slice(1);
-
   const nextStatuses = statusTransitions[originalStatus] || [];
 
-  const canSubmit = () => {
+  const canSubmit = useMemo(() => {
     if (!comment.trim() || selectedStatus === originalStatus) return false;
     if (selectedStatus === "rejected") return Boolean(rejectionReason.trim());
     if (selectedStatus === "approved") return Boolean(approvedAmount.trim());
     if (selectedStatus === "closed") return Boolean(closeReason.trim());
     return true;
-  };
+  }, [
+    comment,
+    selectedStatus,
+    originalStatus,
+    rejectionReason,
+    approvedAmount,
+    closeReason,
+  ]);
 
   const handleUpdate = async () => {
-    if (!canSubmit()) return;
+    if (!canSubmit || !lead?.id) return;
     setIsSubmitting(true);
     try {
       await dispatch(
@@ -177,147 +219,215 @@ const StatusUpdateDialog: React.FC<StatusUpdateDialogProps> = ({
   return (
     <>
       <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-        <DialogTitle>
-          <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Typography variant="h6">Update Lead Status</Typography>
-            <IconButton onClick={onClose} size="small">
-              <Close />
-            </IconButton>
+        {/* Missing lead fallback */}
+        {(!lead?.id && !isFetchingLead) && (
+          <Box p={3}>
+            <DialogTitle>
+              <Box display="flex" justifyContent="space-between" alignItems="center">
+                <Typography variant="h6">Update Lead Status</Typography>
+                <IconButton onClick={onClose} size="small">
+                  <Close />
+                </IconButton>
+              </Box>
+            </DialogTitle>
+            <DialogContent dividers>
+              <Alert severity="error" sx={{ mb: 2 }}>
+                Lead data is unavailable. Please retry or refresh the parent list.
+              </Alert>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={onClose}>Close</Button>
+            </DialogActions>
           </Box>
-        </DialogTitle>
+        )}
 
-        <DialogContent dividers>
-          {/* Lead ID */}
-          <Box mb={3}>
-            <Typography variant="subtitle2" color="textSecondary">
-              Lead ID
-            </Typography>
-            <Typography variant="body1" fontWeight={500}>
-              {lead.leadId}
-            </Typography>
-          </Box>
+        {/* Normal content */}
+        {(lead?.id || isFetchingLead) && (
+          <>
+            <DialogTitle>
+              <Box display="flex" justifyContent="space-between" alignItems="center">
+                <Typography variant="h6">Update Lead Status</Typography>
+                <IconButton onClick={onClose} size="small">
+                  <Close />
+                </IconButton>
+              </Box>
+            </DialogTitle>
 
-          {/* Current Status */}
-          <Box mb={3}>
-            <Typography variant="subtitle2" color="textSecondary">
-              Current Status
-            </Typography>
-            <Typography variant="body1" fontWeight={500}>
-              {currentStatusLabel}
-            </Typography>
-          </Box>
+            <DialogContent dividers sx={{ position: "relative" }}>
+              {fetchError && (
+                <Box mb={2}>
+                  <Alert severity="warning">
+                    Failed to refresh lead: {fetchError}. Using fallback data.
+                  </Alert>
+                </Box>
+              )}
 
-          {/* New Status */}
-          <FormControl fullWidth sx={{ mb: 3 }}>
-            <InputLabel>New Status</InputLabel>
-            <Select
-              value={selectedStatus}
-              label="New Status"
-              onChange={(e) => setSelectedStatus(e.target.value as LeadStatus)}
-            >
-              {nextStatuses.map((s) => (
-                <MenuItem key={s} value={s}>
-                  {s.charAt(0).toUpperCase() + s.slice(1)}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+              {/* Lead ID */}
+              <Box mb={3} sx={{ transition: "opacity 0.3s", opacity: isFetchingLead ? 0.6 : 1 }}>
+                <Typography variant="subtitle2" color="textSecondary">
+                  Lead ID
+                </Typography>
+                {isFetchingLead ? (
+                  <Skeleton width="40%" height={24} />
+                ) : (
+                  <Typography variant="body1" fontWeight={500}>
+                    {lead?.leadId || "—"}
+                  </Typography>
+                )}
+              </Box>
 
-          {/* Comment */}
-          <TextField
-            fullWidth
-            multiline
-            rows={3}
-            label="Comment"
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            sx={{ mb: 3 }}
-          />
+              {/* Current Status */}
+              <Box mb={3} sx={{ transition: "opacity 0.3s", opacity: isFetchingLead ? 0.6 : 1 }}>
+                <Typography variant="subtitle2" color="textSecondary">
+                  Current Status
+                </Typography>
+                {isFetchingLead ? (
+                  <Skeleton width="30%" height={24} />
+                ) : (
+                  <Typography variant="body1" fontWeight={500}>
+                    {currentStatusLabel}
+                  </Typography>
+                )}
+              </Box>
 
-          {/* Rejection */}
-          {selectedStatus === "rejected" && (
-            <>
-              <FormControl fullWidth sx={{ mb: 3 }}>
-                <InputLabel>Rejection Reason</InputLabel>
+              {/* New Status */}
+              <FormControl fullWidth sx={{ mb: 3, transition: "opacity 0.3s", opacity: isFetchingLead ? 0.6 : 1 }}>
+                <InputLabel>New Status</InputLabel>
                 <Select
-                  value={rejectionReason}
-                  label="Rejection Reason"
-                  onChange={(e) => setRejectionReason(e.target.value)}
+                  value={selectedStatus}
+                  label="New Status"
+                  onChange={(e) => setSelectedStatus(e.target.value as LeadStatus)}
+                  disabled={isFetchingLead}
                 >
-                  {rejectionOptions.map((opt) => (
-                    <MenuItem key={opt} value={opt}>
-                      {opt}
+                  {nextStatuses.map((s) => (
+                    <MenuItem key={s} value={s}>
+                      {s.charAt(0).toUpperCase() + s.slice(1)}
                     </MenuItem>
                   ))}
                 </Select>
               </FormControl>
-              <Button
-                variant="outlined"
-                component="label"
-                fullWidth
-                sx={{ mb: 1 }}
-              >
-                Upload Rejection Proof (Optional)
-                <input
-                  type="file"
-                  hidden
-                  onChange={(e) =>
-                    setRejectionProof(e.target.files?.[0] || null)
-                  }
+
+              {/* Comment */}
+              {isFetchingLead ? (
+                <Skeleton variant="rectangular" height={80} sx={{ mb: 3 }} />
+              ) : (
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={3}
+                  label="Comment"
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  sx={{ mb: 3, transition: "opacity 0.3s", opacity: isSubmitting ? 0.7 : 1 }}
+                  disabled={isFetchingLead}
                 />
-              </Button>
-              {rejectionProof && (
-                <Typography variant="caption" color="textSecondary">
-                  Selected file: {rejectionProof.name}
-                </Typography>
               )}
-            </>
-          )}
 
-          {/* Approval */}
-          {selectedStatus === "approved" && (
-            <TextField
-              fullWidth
-              type="number"
-              label="Approved Amount"
-              value={approvedAmount}
-              onChange={(e) => setApprovedAmount(e.target.value)}
-              sx={{ mb: 3 }}
-              required
-            />
-          )}
+              {/* Rejection */}
+              {selectedStatus === "rejected" && (
+                <>
+                  <FormControl fullWidth sx={{ mb: 3, transition: "opacity 0.3s", opacity: isFetchingLead ? 0.6 : 1 }}>
+                    <InputLabel>Rejection Reason</InputLabel>
+                    {isFetchingLead ? (
+                      <Skeleton width="60%" height={56} />
+                    ) : (
+                      <Select
+                        value={rejectionReason}
+                        label="Rejection Reason"
+                        onChange={(e) => setRejectionReason(e.target.value)}
+                        disabled={isFetchingLead}
+                      >
+                        {rejectionOptions.map((opt) => (
+                          <MenuItem key={opt} value={opt}>
+                            {opt}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    )}
+                  </FormControl>
+                  <Button
+                    variant="outlined"
+                    component="label"
+                    fullWidth
+                    sx={{ mb: 1, transition: "opacity 0.3s", opacity: isFetchingLead ? 0.6 : 1 }}
+                    disabled={isFetchingLead}
+                  >
+                    Upload Rejection Proof (Optional)
+                    <input
+                      type="file"
+                      hidden
+                      onChange={(e) =>
+                        setRejectionProof(e.target.files?.[0] || null)
+                      }
+                      disabled={isFetchingLead}
+                    />
+                  </Button>
+                  {rejectionProof && !isFetchingLead && (
+                    <Typography variant="caption" color="textSecondary">
+                      Selected file: {rejectionProof.name}
+                    </Typography>
+                  )}
+                </>
+              )}
 
-          {/* Closed */}
-          {selectedStatus === "closed" && (
-            <FormControl fullWidth sx={{ mb: 3 }}>
-              <InputLabel>Close Reason</InputLabel>
-              <Select
-                value={closeReason}
-                label="Close Reason"
-                onChange={(e) => setCloseReason(e.target.value)}
+              {/* Approval */}
+              {selectedStatus === "approved" && (
+                <>
+                  {isFetchingLead ? (
+                    <Skeleton variant="rectangular" height={56} sx={{ mb: 3 }} />
+                  ) : (
+                    <TextField
+                      fullWidth
+                      type="number"
+                      label="Approved Amount"
+                      value={approvedAmount}
+                      onChange={(e) => setApprovedAmount(e.target.value)}
+                      sx={{ mb: 3, transition: "opacity 0.3s", opacity: isSubmitting ? 0.7 : 1 }}
+                      required
+                      disabled={isFetchingLead}
+                    />
+                  )}
+                </>
+              )}
+
+              {/* Closed */}
+              {selectedStatus === "closed" && (
+                <FormControl fullWidth sx={{ mb: 3, transition: "opacity 0.3s", opacity: isFetchingLead ? 0.6 : 1 }}>
+                  <InputLabel>Close Reason</InputLabel>
+                  {isFetchingLead ? (
+                    <Skeleton width="50%" height={56} />
+                  ) : (
+                    <Select
+                      value={closeReason}
+                      label="Close Reason"
+                      onChange={(e) => setCloseReason(e.target.value)}
+                      disabled={isFetchingLead}
+                    >
+                      {closeReasonOptions.map((opt) => (
+                        <MenuItem key={opt} value={opt}>
+                          {opt}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  )}
+                </FormControl>
+              )}
+            </DialogContent>
+
+            <DialogActions>
+              <Button onClick={onClose} disabled={isSubmitting || isFetchingLead}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleUpdate}
+                variant="contained"
+                disabled={!canSubmit || isSubmitting || isFetchingLead}
               >
-                {closeReasonOptions.map((opt) => (
-                  <MenuItem key={opt} value={opt}>
-                    {opt}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          )}
-        </DialogContent>
-
-        <DialogActions>
-          <Button onClick={onClose} disabled={isSubmitting}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleUpdate}
-            variant="contained"
-            disabled={!canSubmit() || isSubmitting}
-          >
-            {isSubmitting ? <CircularProgress size={20} /> : "Update Status"}
-          </Button>
-        </DialogActions>
+                {isSubmitting ? <CircularProgress size={20} /> : "Update Status"}
+              </Button>
+            </DialogActions>
+          </>
+        )}
       </Dialog>
 
       <Snackbar
