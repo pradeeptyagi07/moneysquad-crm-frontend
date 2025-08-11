@@ -1,4 +1,4 @@
-"use client"
+
 
 import React from "react"
 import {
@@ -34,6 +34,7 @@ import {
   ChangeCircle,
   FileDownload,
   GetApp,
+  Circle,
 } from "@mui/icons-material"
 import PartnerDetailsDialog from "./PartnerDetailsDialog"
 import PartnerEditDialog from "./PartnerEditDialog"
@@ -156,6 +157,112 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners }) => {
     }
   }
 
+  // Helper function to get status with last seen info
+  const getStatusWithLastSeen = (status: string, lastSeen?: string) => {
+    const isActive = status === "active"
+    
+    if (!lastSeen) {
+      return {
+        status: isActive ? "Active" : "Inactive",
+        lastSeenText: "Never seen",
+        color: isActive ? "#4CAF50" : "#F44336",
+        bgColor: isActive ? "#E8F5E8" : "#FFEBEE",
+        dotColor: isActive ? "#4CAF50" : "#F44336",
+        isOnline: false,
+        priority: isActive ? 1 : 4
+      }
+    }
+
+    const lastSeenDate = new Date(lastSeen)
+    const now = new Date()
+    const diffInMs = now.getTime() - lastSeenDate.getTime()
+    const diffInMinutes = Math.floor(diffInMs / (1000 * 60))
+    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60))
+    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24))
+
+    // Online (within 5 minutes)
+    if (diffInMinutes < 5 && isActive) {
+      return {
+        status: "Online",
+        lastSeenText: "Active now",
+        color: "#00E676",
+        bgColor: "#E8F8F5",
+        dotColor: "#00E676",
+        isOnline: true,
+        priority: 0,
+        pulse: true
+      }
+    }
+    
+    // Recently active (within 1 hour)
+    if (diffInMinutes < 60 && isActive) {
+      return {
+        status: "Active",
+        lastSeenText: `${diffInMinutes}m ago`,
+        color: "#4CAF50",
+        bgColor: "#E8F5E8",
+        dotColor: "#4CAF50",
+        isOnline: false,
+        priority: 1
+      }
+    }
+    
+    // Active today (within 24 hours)
+    if (diffInHours < 24 && isActive) {
+      return {
+        status: "Active",
+        lastSeenText: `${diffInHours}h ago`,
+        color: "#8BC34A",
+        bgColor: "#F1F8E9",
+        dotColor: "#8BC34A",
+        isOnline: false,
+        priority: 2
+      }
+    }
+    
+    // Active this week (within 7 days)
+    if (diffInDays < 7 && isActive) {
+      return {
+        status: "Active",
+        lastSeenText: `${diffInDays}d ago`,
+        color: "#FFC107",
+        bgColor: "#FFFDE7",
+        dotColor: "#FFC107",
+        isOnline: false,
+        priority: 3
+      }
+    }
+    
+    // Inactive or old activity
+    if (isActive) {
+      return {
+        status: "Away",
+        lastSeenText: lastSeenDate.toLocaleDateString("en-IN", {
+          day: "2-digit",
+          month: "short",
+        }),
+        color: "#FF9800",
+        bgColor: "#FFF3E0",
+        dotColor: "#FF9800",
+        isOnline: false,
+        priority: 4
+      }
+    } else {
+      return {
+        status: "Inactive",
+        lastSeenText: lastSeenDate.toLocaleDateString("en-IN", {
+          day: "2-digit",
+          month: "short",
+        }),
+        color: "#F44336",
+        bgColor: "#FFEBEE",
+        dotColor: "#F44336",
+        isOnline: false,
+        priority: 5
+      }
+    }
+  }
+
   // Export functions
   const handleExportExcel = () => {
     const result = exportPartnersToExcel(paginatedPartners, "partners_current_page")
@@ -201,18 +308,18 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners }) => {
       </Box>
 
       <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: "none" }}>
-        <Table sx={{ minWidth: 1350 }}>
+        <Table sx={{ minWidth: 1400 }} size="small">
           <TableHead sx={{ bgcolor: "grey.50" }}>
             <TableRow>
-              <TableCell sx={{ fontWeight: 600 }}>Partner</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Contact</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Registration</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Commission Plan</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Role</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Joined On</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Change Requests</TableCell>
-              <TableCell align="right" sx={{ fontWeight: 600 }}>
+              <TableCell sx={{ fontWeight: 600, fontSize: "0.75rem", py: 1 }}>Partner</TableCell>
+              <TableCell sx={{ fontWeight: 600, fontSize: "0.75rem", py: 1 }}>Contact</TableCell>
+              <TableCell sx={{ fontWeight: 600, fontSize: "0.75rem", py: 1 }}>Registration</TableCell>
+              <TableCell sx={{ fontWeight: 600, fontSize: "0.75rem", py: 1 }}>Commission Plan</TableCell>
+              <TableCell sx={{ fontWeight: 600, fontSize: "0.75rem", py: 1 }}>Role</TableCell>
+              <TableCell sx={{ fontWeight: 600, fontSize: "0.75rem", py: 1 }}>Status</TableCell>
+              <TableCell sx={{ fontWeight: 600, fontSize: "0.75rem", py: 1 }}>Joined On</TableCell>
+              <TableCell sx={{ fontWeight: 600, fontSize: "0.75rem", py: 1 }}>Change Requests</TableCell>
+              <TableCell align="right" sx={{ fontWeight: 600, fontSize: "0.75rem", py: 1 }}>
                 Actions
               </TableCell>
             </TableRow>
@@ -221,41 +328,40 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners }) => {
           <TableBody>
             {paginatedPartners.map((partner) => (
               <TableRow key={partner.partnerId} hover>
-                <TableCell>
+                <TableCell sx={{ py: 1.5 }}>
                   <Box sx={{ display: "flex", alignItems: "center" }}>
-                    <Avatar src={partner.documents.profilePhoto} sx={{ mr: 2, bgcolor: "primary.main" }}>
-                      <Person />
+                    <Avatar src={partner.documents.profilePhoto} sx={{ mr: 1.5, width: 32, height: 32, bgcolor: "primary.main" }}>
+                      <Person fontSize="small" />
                     </Avatar>
                     <Box>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 600, fontSize: "0.8rem", lineHeight: 1.2 }}>
                         {partner.basicInfo.fullName}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.7rem" }}>
                         {partner.partnerId}
                       </Typography>
                     </Box>
                   </Box>
                 </TableCell>
 
-                <TableCell>
-                  <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                <TableCell sx={{ py: 1.5 }}>
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 0.3 }}>
                     <Box sx={{ display: "flex", alignItems: "center" }}>
-                      <Email fontSize="small" sx={{ color: "text.secondary", mr: 1 }} />
-                      <Typography variant="body2">{partner.basicInfo.email}</Typography>
+                      <Email fontSize="small" sx={{ color: "text.secondary", mr: 0.5, fontSize: "0.9rem" }} />
+                      <Typography variant="body2" sx={{ fontSize: "0.75rem" }}>{partner.basicInfo.email}</Typography>
                     </Box>
                     <Box sx={{ display: "flex", alignItems: "center" }}>
-                      <Phone fontSize="small" sx={{ color: "text.secondary", mr: 1 }} />
-                      <Typography variant="body2">{partner.basicInfo.mobile}</Typography>
+                      <Phone fontSize="small" sx={{ color: "text.secondary", mr: 0.5, fontSize: "0.9rem" }} />
+                      <Typography variant="body2" sx={{ fontSize: "0.75rem" }}>{partner.basicInfo.mobile}</Typography>
                     </Box>
                   </Box>
                 </TableCell>
 
-                <TableCell>
-                  <Typography variant="body2">{partner.basicInfo.registeringAs}</Typography>
+                <TableCell sx={{ py: 1.5 }}>
+                  <Typography variant="body2" sx={{ fontSize: "0.75rem" }}>{partner.basicInfo.registeringAs}</Typography>
                 </TableCell>
 
-                <TableCell>
-                  {/* Commission Plan Chip logic unchanged */}
+                <TableCell sx={{ py: 1.5 }}>
                   {(() => {
                     const plan = (partner.commissionPlan?.toLowerCase() || "n/a") as
                       | "gold"
@@ -275,6 +381,8 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners }) => {
                         size="small"
                         sx={{
                           fontWeight: 600,
+                          fontSize: "0.7rem",
+                          height: 20,
                           bgcolor: style.bg,
                           color: style.color,
                         }}
@@ -283,7 +391,7 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners }) => {
                   })()}
                 </TableCell>
 
-                <TableCell>
+                <TableCell sx={{ py: 1.5 }}>
                   <Chip
                     label={partner.personalInfo.roleSelection === "leadSharing" ? "Lead Sharing" : "File Sharing"}
                     size="small"
@@ -292,21 +400,77 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners }) => {
                         partner.personalInfo.roleSelection === "leadSharing" ? "primary.lighter" : "secondary.lighter",
                       color: partner.personalInfo.roleSelection === "leadSharing" ? "primary.dark" : "secondary.dark",
                       fontWeight: 600,
+                      fontSize: "0.7rem",
+                      height: 20,
                     }}
                   />
                 </TableCell>
 
-                <TableCell>
-                  <Chip
-                    icon={partner.status === "active" ? <CheckCircle fontSize="small" /> : <Block fontSize="small" />}
-                    label={partner.status === "active" ? "Active" : "Inactive"}
-                    size="small"
-                    color={partner.status === "active" ? "success" : "default"}
-                    sx={{ fontWeight: 600 }}
-                  />
+                <TableCell sx={{ py: 1.5 }}>
+                  {(() => {
+                    const statusInfo = getStatusWithLastSeen(partner.status, partner.lastSeen)
+                    return (
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <Box sx={{ position: "relative", display: "flex", alignItems: "center" }}>
+                          <Circle 
+                            sx={{ 
+                              fontSize: "0.6rem", 
+                              color: statusInfo.dotColor,
+                              ...(statusInfo.pulse && {
+                                animation: "pulse 2s infinite",
+                                "@keyframes pulse": {
+                                  "0%": { opacity: 1 },
+                                  "50%": { opacity: 0.5 },
+                                  "100%": { opacity: 1 }
+                                }
+                              })
+                            }} 
+                          />
+                          {statusInfo.isOnline && (
+                            <Circle 
+                              sx={{ 
+                                position: "absolute",
+                                fontSize: "0.8rem", 
+                                color: statusInfo.dotColor,
+                                opacity: 0.3,
+                                animation: "ripple 2s infinite",
+                                "@keyframes ripple": {
+                                  "0%": { transform: "scale(1)", opacity: 0.3 },
+                                  "100%": { transform: "scale(1.4)", opacity: 0 }
+                                }
+                              }} 
+                            />
+                          )}
+                        </Box>
+                        <Box>
+                          <Typography 
+                            variant="body2" 
+                            sx={{ 
+                              fontSize: "0.75rem", 
+                              fontWeight: 600,
+                              color: statusInfo.color,
+                              lineHeight: 1.2
+                            }}
+                          >
+                            {statusInfo.status}
+                          </Typography>
+                          <Typography 
+                            variant="caption" 
+                            sx={{ 
+                              fontSize: "0.65rem", 
+                              color: "text.secondary",
+                              display: "block",
+                              lineHeight: 1.1
+                            }}
+                          >
+                            {statusInfo.lastSeenText}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    )
+                  })()}
                 </TableCell>
-
-                <TableCell>
+                   <TableCell>
                   <Typography variant="body2">
                     {new Date(partner.createdAt).toLocaleDateString("en-IN", {
                       day: "2-digit",
@@ -316,30 +480,33 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners }) => {
                   </Typography>
                 </TableCell>
 
-                {/* NEW: Change Requests Count */}
-                <TableCell>
+                <TableCell sx={{ py: 1.5 }}>
                   <Chip
-                    icon={<ChangeCircle fontSize="small" />}
+                    icon={<ChangeCircle sx={{ fontSize: "0.8rem !important" }} />}
                     label={partner.pendingChangeRequestCount}
                     size="small"
                     sx={{
                       fontWeight: 600,
+                      fontSize: "0.7rem",
+                      height: 20,
                       borderRadius: 2,
-                      boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
                       bgcolor: partner.pendingChangeRequestCount > 0 ? "warning.lighter" : "grey.200",
                       color: partner.pendingChangeRequestCount > 0 ? "warning.dark" : "text.secondary",
                     }}
                   />
                 </TableCell>
+                
 
-                <TableCell align="right">
+                <TableCell align="right" sx={{ py: 1.5 }}>
                   <Tooltip title="Actions">
                     <IconButton
                       aria-controls={`partner-menu-${partner.partnerId}`}
                       aria-haspopup="true"
                       onClick={(e) => handleMenuOpen(e, partner.partnerId)}
+                      size="small"
                     >
-                      <MoreVert />
+                      <MoreVert fontSize="small" />
                     </IconButton>
                   </Tooltip>
                 </TableCell>
@@ -348,7 +515,7 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners }) => {
           </TableBody>
         </Table>
 
-        <Box sx={{ display: "flex", justifyContent: "flex-end", p: 2 }}>
+        <Box sx={{ display: "flex", justifyContent: "flex-end", p: 1.5 }}>
           <TablePagination
             rowsPerPageOptions={[5, 10, 25, 50]}
             component="div"
@@ -357,6 +524,11 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners }) => {
             page={page}
             onPageChange={handleChangePage}
             onRowsPerPageChange={handleChangeRowsPerPage}
+            sx={{
+              "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows": {
+                fontSize: "0.75rem",
+              },
+            }}
           />
         </Box>
 

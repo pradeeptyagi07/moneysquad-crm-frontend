@@ -17,6 +17,7 @@ interface Partner {
   createdAt: string;
   updatedAt: string;
   pendingChangeRequestCount:number;
+  lastSeen:string;
   __v: number;
 }
 
