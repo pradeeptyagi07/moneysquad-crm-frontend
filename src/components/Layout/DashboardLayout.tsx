@@ -36,6 +36,7 @@ import {
   ExpandLess,
   ExpandMore,
   ChevronLeft,
+  Analytics,
 } from "@mui/icons-material"
 import { useAuth } from "../../hooks/useAuth"
 import { useAppDispatch } from "../../hooks/useAppDispatch"
@@ -161,6 +162,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     switch (iconName) {
       case "Dashboard":
         return <DashboardIcon />
+        case "Analytics":
+        return <Analytics />
       case "People":
         return <PeopleIcon />
       case "LocalOffer":

@@ -1,16 +1,17 @@
-"use client"
+"use client";
 
-import { Outlet } from "react-router-dom"
-import { Box } from "@mui/material"
-import DashboardLayout from "./DashboardLayout"
-import { useAuth } from "../../hooks/useAuth"
-import Footer from "./Footer"
+import { Outlet } from "react-router-dom";
+import { Box } from "@mui/material";
+import DashboardLayout from "./DashboardLayout";
+import { useAuth } from "../../hooks/useAuth";
 
 const AdminLayout = () => {
-  const { userName } = useAuth()
+  const { userName } = useAuth();
 
   const menuItems = [
     { text: "Overview", icon: "Dashboard", path: "/admin/overview" },
+    // { text: "Analytics", icon: "Analytics", path: "/admin/analytics" },
+
     { text: "Leads", icon: "People", path: "/admin/leads" },
     { text: "Offers", icon: "LocalOffer", path: "/admin/offers" },
     { text: "Commissions", icon: "AttachMoney", path: "/admin/commissions" },
@@ -29,18 +30,22 @@ const AdminLayout = () => {
 
     { text: "Settings", icon: "Settings", path: "/admin/settings" },
     { text: "Help & Support", icon: "Help", path: "/admin/help-support" }, // ✅ Add this
-  ]
+  ];
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-      <DashboardLayout menuItems={menuItems} userRole="Admin" userName={userName}>
+      <DashboardLayout
+        menuItems={menuItems}
+        userRole="Admin"
+        userName={userName}
+      >
         <Box sx={{ p: 3, flexGrow: 1 }}>
           <Outlet />
         </Box>
       </DashboardLayout>
       {/* <Footer /> */}
     </Box>
-  )
-}
+  );
+};
 
-export default AdminLayout
+export default AdminLayout;

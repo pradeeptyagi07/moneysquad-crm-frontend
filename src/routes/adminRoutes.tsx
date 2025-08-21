@@ -14,6 +14,7 @@ import CommissionDashboard from "../pages/Commissions/CommissionDashboard"
 import HelpSupportMain from "../pages/HelpAndSupport/HelpSupportMain"
 import TrainingResourcesTab from "../pages/TrainingResources/TrainingResources"
 import CommonOverview from "../pages/Overview/CommonOverview"
+import AdminAnalytics from "../pages/Overview/AdminAnalytics"
 
 // Protected route component specific to admin role
 const AdminRoute = ({ children }: { children: JSX.Element }) => {
@@ -63,6 +64,10 @@ const adminRoutes: RouteObject[] = [
       {
         path: "settings",
         element: <Settings />,
+      },
+       {
+        path: "analytics",
+        element: <AdminAnalytics />,
       },
       {
         path: "manage-partners",

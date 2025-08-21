@@ -3,7 +3,7 @@ import axios from "axios";
 const axiosInstance = axios.create({
   // baseURL: "http://localhost:5003/api",
   // baseURL: "https://api.moneysquad.in/api/",
-  // baseURL: "https://short-reveals-drivers-readily.trycloudflare.com/api/",
+  // baseURL: "https://humor-rear-paintings-grass.trycloudflare.com/api/",
 
   timeout: 60000,
   baseURL:"http://178.236.185.178:5003/api",
@@ -33,7 +33,7 @@ axiosInstance.interceptors.response.use(
     const message =
       error.response?.data?.message || error.response?.data?.error;
 
-    if (message === "Invalid token") {
+    if (message === "Invalid token" || message === "Account is inactive") {
       // 1) Clear token & any other persisted user info
       localStorage.removeItem("token");
       localStorage.removeItem("user"); // if you store user JSON

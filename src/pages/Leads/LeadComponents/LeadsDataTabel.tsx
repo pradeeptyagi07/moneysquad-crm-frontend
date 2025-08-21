@@ -20,7 +20,7 @@ import {
   Skeleton,
   useMediaQuery,
 } from "@mui/material"
-import { MoreVert, Timeline as TimelineIcon } from "@mui/icons-material"
+import { MoreVert, Timeline as TimelineIcon, Visibility, VisibilityOff } from "@mui/icons-material"
 import { formatCurrency, getStatusColor } from "../utils/leadUtils"
 import { useAuth } from "../../../hooks/useAuth"
 import LeadsActionMenu from "./LeadsActionMenu"
@@ -318,6 +318,8 @@ const LeadsDataTable: React.FC<LeadsDataTableProps> = ({
   const [menuDbId, setMenuDbId] = useState<string | null>(null)
   const [currentRowData, setCurrentRowData] = useState<any>(null)
   const [hoveredRowId, setHoveredRowId] = useState<string | null>(null)
+// which row’s phone is revealed (null => all masked)
+const [revealedRowId, setRevealedRowId] = useState<string | null>(null)
 
   useEffect(() => {
     if (rows.length > 0) {
@@ -327,6 +329,12 @@ const LeadsDataTable: React.FC<LeadsDataTableProps> = ({
       onPageChange(0)
     }
   }, [rows.length, page, rowsPerPage, onPageChange])
+
+  useEffect(() => {
+  const onDocClick = () => setRevealedRowId(null)
+  document.addEventListener("click", onDocClick)
+  return () => document.removeEventListener("click", onDocClick)
+}, [])
 
   const handleMenuOpen = (
     e: React.MouseEvent<HTMLElement>,
@@ -361,6 +369,28 @@ const LeadsDataTable: React.FC<LeadsDataTableProps> = ({
     onRowsPerPageChange(+e.target.value)
     onPageChange(0)
   }
+  // Mask phone helper: hides all digits except last 4, keeps non-digit formatting intact
+function maskPhone(input?: string | null): string {
+  if (!input) return ""
+  const digits = input.replace(/\D/g, "")
+  if (digits.length <= 4) return input
+
+  const keep = 4
+  const maskUntil = digits.length - keep
+  let digitIdx = 0
+  let masked = ""
+
+  for (const ch of input) {
+    if (/\d/.test(ch)) {
+      masked += digitIdx < maskUntil ? "•" : ch // use bullet for cleaner look
+      digitIdx++
+    } else {
+      masked += ch
+    }
+  }
+  return masked
+}
+
 
   return (
     <>
@@ -575,22 +605,63 @@ const LeadsDataTable: React.FC<LeadsDataTableProps> = ({
                       </TableCell>
 
                       {/* Contact */}
-                      <TableCell>
-                        <Typography
-                          variant="body2"
-                          fontWeight={500}
-                          sx={{ fontSize: "0.75rem" }}
-                        >
-                          {r.applicantMobile}
-                        </Typography>
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                          sx={{ fontSize: "0.65rem" }}
-                        >
-                          {r.applicantEmail}
-                        </Typography>
-                      </TableCell>
+             {/* Contact (masked with eye / eye-off) */}
+<TableCell>
+  {(() => {
+    const isRevealed = revealedRowId === r.dbId
+    const displayPhone = isRevealed ? r.applicantMobile : maskPhone(r.applicantMobile)
+    return (
+      <>
+        {/* stopPropagation so clicks here don't trigger the global auto-mask */}
+        <Box
+          onClick={(e) => e.stopPropagation()}
+          sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
+        >
+          <Typography
+            variant="body2"
+            fontWeight={500}
+            sx={{
+              fontSize: "0.75rem",
+              fontFamily:
+                "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+              letterSpacing: "0.2px",
+            }}
+          >
+            {displayPhone}
+          </Typography>
+          <Tooltip title={isRevealed ? "Hide" : "Show"}>
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation()
+                setRevealedRowId((prev) => (prev === r.dbId ? null : r.dbId))
+              }}
+              sx={{
+                ml: 0.5,
+                color: isRevealed ? "#ef4444" : "#64748b",
+                "&:hover": {
+                  backgroundColor: "rgba(102,126,234,0.08)",
+                  color: "#667eea",
+                },
+              }}
+            >
+              {isRevealed ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+            </IconButton>
+          </Tooltip>
+        </Box>
+
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ fontSize: "0.65rem" }}
+        >
+          {r.applicantEmail}
+        </Typography>
+      </>
+    )
+  })()}
+</TableCell>
+
 
                       {/* Lender */}
                       <TableCell>

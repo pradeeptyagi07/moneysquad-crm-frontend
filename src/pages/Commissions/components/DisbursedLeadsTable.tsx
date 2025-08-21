@@ -206,23 +206,32 @@ const DisbursedLeadsTable: React.FC = () => {
   const paginatedLeads = filteredLeads.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
 
   // Export functions
-  const handleExportExcel = () => {
-    const result = exportDisbursedLeadsToExcel(paginatedLeads, userRole, "disbursed_leads_current_page")
-    if (result.success) {
-      console.log(`Exported ${paginatedLeads.length} disbursed leads to Excel: ${result.filename}`)
-    } else {
-      console.error("Export failed:", result.error)
-    }
+// Export functions
+const handleExportExcel = () => {
+  const result = exportDisbursedLeadsToExcel(
+    filteredLeads, // ✅ use filteredLeads instead of paginatedLeads
+    userRole,
+    "disbursed_leads_all"
+  )
+  if (result.success) {
+    console.log(`Exported ${filteredLeads.length} disbursed leads to Excel: ${result.filename}`)
+  } else {
+    console.error("Export failed:", result.error)
   }
+}
 
-  const handleExportCSV = () => {
-    const result = exportDisbursedLeadsToCSV(paginatedLeads, userRole, "disbursed_leads_current_page")
-    if (result.success) {
-      console.log(`Exported ${paginatedLeads.length} disbursed leads to CSV: ${result.filename}`)
-    } else {
-      console.error("Export failed:", result.error)
-    }
+const handleExportCSV = () => {
+  const result = exportDisbursedLeadsToCSV(
+    filteredLeads, // ✅ use filteredLeads instead of paginatedLeads
+    userRole,
+    "disbursed_leads_all"
+  )
+  if (result.success) {
+    console.log(`Exported ${filteredLeads.length} disbursed leads to CSV: ${result.filename}`)
+  } else {
+    console.error("Export failed:", result.error)
   }
+}
 
   if (disbursedLeadsLoading) {
     return (
