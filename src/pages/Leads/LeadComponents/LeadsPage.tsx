@@ -14,7 +14,11 @@ import { useAppDispatch } from "../../../hooks/useAppDispatch"
 
 import LeadsDialogs from "./LeadsDialogs"
 import type { LeadFormData } from "../leadManagement/formDialog/LeadFormDialog"
-import { fetchAllLeads, type Lead } from "../../../store/slices/leadSLice"
+import {
+  fetchAllLeads,
+  fetchArchivedLeads, // ← NEW: bring in archived fetch
+  type Lead,
+} from "../../../store/slices/leadSLice"
 import LeadsDataTable from "./LeadsDataTabel"
 import { useAuth } from "../../../hooks/useAuth"
 import LeadsFilterBar from "./LeadsFilterBar"
@@ -30,13 +34,28 @@ interface DateRange {
   endDate: Date | null
 }
 
-const LeadsPage: React.FC = () => {
+type LeadsPageProps = {
+  dataSource?: "active" | "archived"
+  title?: string
+  hideCreate?: boolean
+  fetchOnMount?: boolean // controls whether this page fires fetch on mount
+}
+
+const LeadsPage: React.FC<LeadsPageProps> = ({
+  dataSource = "active",
+  title,
+  hideCreate = false,
+  fetchOnMount = true,
+}) => {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
 
   const dispatch = useAppDispatch()
   const { userRole } = useAuth()
-  const { leads: apiLeads, loading } = useAppSelector((s) => s.leads)
+
+  // Pull both active + archived datasets from slice; choose based on dataSource
+  const { leads, archivedLeads, loading, archivedLoading } = useAppSelector((s) => s.leads)
+  const apiLeads = dataSource === "archived" ? archivedLeads : leads
 
   // Basic filters & pagination
   const [statusFilter, setStatusFilter] = useState("all")
@@ -78,10 +97,15 @@ const LeadsPage: React.FC = () => {
     severity: "success" | "error"
   }>({ open: false, message: "", severity: "success" })
 
-  // Fetch leads on mount
+  // Fetch data on mount (respects dataSource and fetchOnMount)
   useEffect(() => {
-    dispatch(fetchAllLeads())
-  }, [dispatch])
+    if (!fetchOnMount) return
+    if (dataSource === "archived") {
+      dispatch(fetchArchivedLeads())
+    } else {
+      dispatch(fetchAllLeads())
+    }
+  }, [dispatch, dataSource, fetchOnMount])
 
   // Build filter options
   const filterOptions = useMemo(() => {
@@ -145,7 +169,7 @@ const LeadsPage: React.FC = () => {
     return { partners, lenders, managers, associates }
   }, [apiLeads])
 
-  // Prepare form data helper
+  // Prepare form data helper (reused by all modals)
   const prepareFormData = (api: Lead): LeadFormData => ({
     id: api.id,
     leadId: api.leadId,
@@ -198,7 +222,7 @@ const LeadsPage: React.FC = () => {
     () =>
       apiLeads.map((l) => ({
         dbId: l.id,
-        disbursedData: l.disbursedData ?? null, // ← add this
+        disbursedData: l.disbursedData ?? null,
 
         leadId: l.leadId,
         partnerName: l.partnerId?.basicInfo?.fullName ?? "Unknown Partner",
@@ -264,7 +288,9 @@ const LeadsPage: React.FC = () => {
     ],
   )
 
-  // Export handlers
+  // Export handlers (keep identical, just vary filename prefix)
+  const filePrefix = dataSource === "archived" ? "archived_leads" : "leads"
+
   const handleExportCsv = () => {
     const data = filteredRows.map((r) => ({
       LeadID: r.leadId,
@@ -281,7 +307,7 @@ const LeadsPage: React.FC = () => {
       CreatedAt: r.createdAt,
     }))
     const csv = unparse(data)
-    saveAs(new Blob([csv], { type: "text/csv" }), `leads_${Date.now()}.csv`)
+    saveAs(new Blob([csv], { type: "text/csv" }), `${filePrefix}_${Date.now()}.csv`)
   }
 
   const handleExportExcel = () => {
@@ -304,19 +330,13 @@ const LeadsPage: React.FC = () => {
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, "Leads")
     const blob = new Blob([XLSX.write(wb, { bookType: "xlsx", type: "array" })])
-    saveAs(blob, `leads_${Date.now()}.xlsx`)
+    saveAs(blob, `${filePrefix}_${Date.now()}.xlsx`)
   }
 
-  // Only skeleton on initial fetch
-  const tableLoading =
-    loading &&
-    !formOpen &&
-    !assignOpen &&
-    !statusOpen &&
-    !timelineOpen &&
-    !detailsOpen &&
-    !disbursementOpen &&
-    !deleteOpen
+  // Final loading logic: respect dataSource AND suppress spinner under open modals
+  const anyModalOpen =
+    formOpen || assignOpen || statusOpen || timelineOpen || detailsOpen || disbursementOpen || deleteOpen
+  const finalTableLoading = (dataSource === "archived" ? archivedLoading : loading) && !anyModalOpen
 
   return (
     <Box
@@ -338,7 +358,7 @@ const LeadsPage: React.FC = () => {
       >
         <Box display="flex" alignItems="center" gap={2}>
           <Typography variant="h4" sx={{ fontWeight: 600 }}>
-            Lead Management
+            {title ?? (dataSource === "archived" ? "Archived Leads" : "Lead Management")}
           </Typography>
           <Tooltip title="Toggle Filters">
             <Fab
@@ -355,18 +375,22 @@ const LeadsPage: React.FC = () => {
             </Fab>
           </Tooltip>
         </Box>
-        <Tooltip title="Create New Lead">
-          <Fab
-            color="primary"
-            onClick={() => {
-              setSelectedLead(null)
-              setFormMode("create")
-              setFormOpen(true)
-            }}
-          >
-            <Add />
-          </Fab>
-        </Tooltip>
+
+        {/* Hide Create for archived */}
+        {!hideCreate && dataSource !== "archived" && (
+          <Tooltip title="Create New Lead">
+            <Fab
+              color="primary"
+              onClick={() => {
+                setSelectedLead(null)
+                setFormMode("create")
+                setFormOpen(true)
+              }}
+            >
+              <Add />
+            </Fab>
+          </Tooltip>
+        )}
       </Box>
 
       {/* Filters + Table */}
@@ -423,7 +447,11 @@ const LeadsPage: React.FC = () => {
               setPage(0)
             }}
             onRefresh={() => {
-              dispatch(fetchAllLeads())
+              if (dataSource === "archived") {
+                dispatch(fetchArchivedLeads())
+              } else {
+                dispatch(fetchAllLeads())
+              }
               setSnackbar({
                 open: true,
                 message: "Data refreshed",
@@ -455,7 +483,7 @@ const LeadsPage: React.FC = () => {
               rows={filteredRows}
               page={page}
               rowsPerPage={rowsPerPage}
-              loading={tableLoading}
+              loading={finalTableLoading}
               onPageChange={setPage}
               onRowsPerPageChange={setRowsPerPage}
               onOpenEdit={(r) => {
@@ -529,7 +557,11 @@ const LeadsPage: React.FC = () => {
         deleteOpen={deleteOpen}
         onDeleteClose={() => setDeleteOpen(false)}
         onRefresh={() => {
-          dispatch(fetchAllLeads())
+          if (dataSource === "archived") {
+            dispatch(fetchArchivedLeads())
+          } else {
+            dispatch(fetchAllLeads())
+          }
           setSnackbar({
             open: true,
             message: "Data refreshed",

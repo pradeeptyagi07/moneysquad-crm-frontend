@@ -24,10 +24,8 @@ const TrendsChart: React.FC<Props> = ({ loanType, associateId }) => {
   const [selectedPeriod, setSelectedPeriod] = useState<"3M" | "6M" | "12M">("6M")
   const periods = ["3M", "6M", "12M"] as const
 
-  // Map '3M' -> 3, etc.
   const periodToMonths = (p: (typeof periods)[number]) => Number.parseInt(p.replace("M", ""), 10)
 
-  // Fetch trends on mount & whenever filters or period change
   useEffect(() => {
     const params: any = { trendMonths: periodToMonths(selectedPeriod) }
     if (loanType !== "all") params.loanType = loanType
@@ -35,19 +33,19 @@ const TrendsChart: React.FC<Props> = ({ loanType, associateId }) => {
     dispatch(fetchTrends(params))
   }, [dispatch, loanType, associateId, selectedPeriod])
 
-  if (trendsError) {
-    return <Alert severity="error">{trendsError}</Alert>
-  }
-
+  if (trendsError) return <Alert severity="error">{trendsError}</Alert>
   if (!trends || trends.length === 0) return null
 
-  // Format month names for display (e.g., "2025-02" -> "Feb 2025")
+  // "YYYY-MM" -> "Mon YYYY"
   const formatMonth = (monthStr: string) => {
     const date = new Date(monthStr + "-01")
     return date.toLocaleDateString("en-US", { month: "short", year: "numeric" })
   }
 
-  // Build series with monthly data
+  // Convert rupees -> ₹ Lakh (1 Lakh = 100,000)
+  const toLakh = (amountInRupees: number) => Number(((amountInRupees || 0) / 100_000).toFixed(2))
+
+  // Build series (amount in ₹ Lakh)
   const series: { name: string; data: number[] }[] = [
     {
       name: "Active Leads",
@@ -57,13 +55,11 @@ const TrendsChart: React.FC<Props> = ({ loanType, associateId }) => {
       name: "Disbursals",
       data: trends.map((d) => d.totalDisbursed),
     },
+    {
+      name: "Disbursed Amount (₹ Lakh)",
+      data: trends.map((d) => toLakh(d.totalDisbursedsumLoanAmounts)),
+    },
   ]
-
-  // Add disbursed amount series (convert to thousands for better display)
-  series.push({
-    name: "Disbursed Amount (₹K)",
-    data: trends.map((d) => Math.round(d.totalDisbursedsumLoanAmounts / 1000)),
-  })
 
   const chartOptions: ApexOptions = {
     chart: {
@@ -72,11 +68,7 @@ const TrendsChart: React.FC<Props> = ({ loanType, associateId }) => {
       zoom: { enabled: false },
     },
     plotOptions: {
-      bar: {
-        horizontal: false,
-        borderRadius: 5,
-        columnWidth: "65%",
-      },
+      bar: { horizontal: false, borderRadius: 5, columnWidth: "65%" },
     },
     colors: ["#5569FF", "#FF1943", "#57CA22"],
     dataLabels: { enabled: false },
@@ -100,13 +92,15 @@ const TrendsChart: React.FC<Props> = ({ loanType, associateId }) => {
       axisBorder: { show: false },
       axisTicks: { show: false },
     },
+    // Single y-axis representing counts and ₹ Lakh (keeps layout intact)
     yaxis: {
       show: true,
       labels: {
         style: { colors: "#64748b", fontSize: "11px", fontWeight: 500 },
-        formatter: (val) => (val >= 1000 ? `${(val / 1000).toFixed(0)}K` : val.toString()),
+        // Large values abbreviated for readability; applies to all series uniformly
+        formatter: (val) => (val >= 1000 ? `${(val / 1000).toFixed(0)}K` : `${val}`),
       },
-      title: { text: "Count", style: { color: "#64748b", fontSize: "12px", fontWeight: 600 } },
+      title: { text: "Count / ₹ Lakh", style: { color: "#64748b", fontSize: "12px", fontWeight: 600 } },
     },
     grid: {
       strokeDashArray: 3,
@@ -123,9 +117,10 @@ const TrendsChart: React.FC<Props> = ({ loanType, associateId }) => {
       },
       y: {
         formatter: (val, opts) => {
-          if (opts.seriesIndex === 0) return `${val.toLocaleString()} active leads`
-          if (opts.seriesIndex === 1) return `${val.toLocaleString()} disbursals`
-          return `₹${(val * 1000).toLocaleString()} disbursed amount`
+          if (opts.seriesIndex === 0) return `${Number(val).toLocaleString()} active leads`
+          if (opts.seriesIndex === 1) return `${Number(val).toLocaleString()} disbursals`
+          // seriesIndex === 2 → already in Lakh
+          return `₹${Number(val).toLocaleString(undefined, { maximumFractionDigits: 2 })} Lakh`
         },
       },
     },
@@ -136,10 +131,7 @@ const TrendsChart: React.FC<Props> = ({ loanType, associateId }) => {
           plotOptions: { bar: { columnWidth: "80%" } },
           legend: { position: "bottom", horizontalAlign: "center" },
           xaxis: {
-            labels: {
-              rotate: -90,
-              style: { fontSize: "10px" },
-            },
+            labels: { rotate: -90, style: { fontSize: "10px" } },
           },
         },
       },
@@ -193,13 +185,14 @@ const TrendsChart: React.FC<Props> = ({ loanType, associateId }) => {
             },
           }}
         >
-          {periods.map((p) => (
+          {(["3M", "6M", "12M"] as const).map((p) => (
             <Button key={p} onClick={() => setSelectedPeriod(p)} className={selectedPeriod === p ? "selected" : ""}>
               {p}
             </Button>
           ))}
         </ButtonGroup>
       </Box>
+
       <Box sx={{ p: 3, pt: 2 }}>
         <Chart options={chartOptions} series={series} type="bar" height={340} />
       </Box>

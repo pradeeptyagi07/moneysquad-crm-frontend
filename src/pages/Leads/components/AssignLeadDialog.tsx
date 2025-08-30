@@ -23,7 +23,7 @@ import { Close } from "@mui/icons-material";
 import { useAppDispatch } from "../../../hooks/useAppDispatch";
 import { useAppSelector } from "../../../hooks/useAppSelector";
 import { fetchManagers } from "../../../store/slices/teamSLice";
-import { assignLead, fetchAllLeads } from "../../../store/slices/leadSLice";
+import { assignLead, fetchAllLeads, fetchArchivedLeads } from "../../../store/slices/leadSLice";
 import type { Lead } from "../../../store/slices/leadSLice";
 
 interface AssignLeadDialogProps {
@@ -65,6 +65,8 @@ const AssignLeadDialog: React.FC<AssignLeadDialogProps> = ({ open, onClose, lead
     try {
       await dispatch(assignLead({ leadId: lead.id!, managerAssigned: selectedMgr })).unwrap();
       dispatch(fetchAllLeads());
+      dispatch(fetchArchivedLeads());
+
       setSnackbar({ open: true, message: "Manager assigned successfully!", severity: "success" });
       setTimeout(() => {
         setSnackbar((s) => ({ ...s, open: false }));

@@ -28,6 +28,7 @@ import {
   Lead,
   updateLeadStatus,
   fetchLeadById,
+  fetchArchivedLeads,
 } from "../../../store/slices/leadSLice";
 
 type LeadStatus =
@@ -199,6 +200,8 @@ const StatusUpdateDialog: React.FC<StatusUpdateDialogProps> = ({
       ).unwrap();
 
       dispatch(fetchAllLeads());
+      dispatch(fetchArchivedLeads());
+
       setSnackbar({
         open: true,
         message: "Status updated successfully!",

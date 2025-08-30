@@ -13,6 +13,8 @@ const AdminLayout = () => {
     // { text: "Analytics", icon: "Analytics", path: "/admin/analytics" },
 
     { text: "Leads", icon: "People", path: "/admin/leads" },
+    { text: "Archived Leads", icon: "Archive", path: "/admin/archive" },
+
     { text: "Offers", icon: "LocalOffer", path: "/admin/offers" },
     { text: "Commissions", icon: "AttachMoney", path: "/admin/commissions" },
     {

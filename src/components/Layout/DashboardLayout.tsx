@@ -48,6 +48,7 @@ import {
   isAssociateUser,
 } from "../../store/slices/userDataSlice"
 import { useAppSelector } from "../../hooks/useAppSelector"
+import { FileArchiveIcon } from "lucide-react"
 
 // Increased responsive drawer widths for better text visibility
 const drawerWidths = {
@@ -166,6 +167,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         return <Analytics />
       case "People":
         return <PeopleIcon />
+          case "Archive":
+        return <FileArchiveIcon />
       case "LocalOffer":
         return <LocalOfferIcon />
       case "AttachMoney":
@@ -201,103 +204,84 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       <React.Fragment key={item.text}>
         <ListItem disablePadding>
           <Tooltip title={shouldShowTooltip ? item.text : ""} placement="right" arrow>
-            <ListItemButton
-              onClick={() => {
-                if (hasChildren) {
-                  handleExpandClick(item.text)
-                } else {
-                  navigate(item.path)
-                  if (!isMdUp) setMobileOpen(false)
-                }
-              }}
-              sx={{
-                justifyContent: collapsed && isMdUp ? "center" : "initial",
-                borderRadius: 2,
-                mb: 0.5,
-                mx: 0,
-                ml: level * 2,
-                px: collapsed && isMdUp ? 1 : 2,
-                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                position: "relative",
-                backgroundColor: active ? "rgba(15,118,110,0.08)" : "transparent",
-                minHeight: 48,
-                "&:hover": {
-                  backgroundColor: active ? "rgba(15,118,110,0.12)" : "rgba(15,118,110,0.04)",
-                  transform: collapsed && isMdUp ? "none" : "translateX(4px)",
-                  boxShadow: active ? "0 4px 20px rgba(15,118,110,0.15)" : "0 2px 10px rgba(0,0,0,0.08)",
-                },
-                "&:active": {
-                  transform: collapsed && isMdUp ? "none" : "translateX(2px)",
-                },
-              }}
-            >
-              <ListItemIcon
-                sx={{
-                  minWidth: collapsed && isMdUp ? 0 : { xs: 32, sm: 28 },
-                  mr: collapsed && isMdUp ? 0 : 1.5,
-                  justifyContent: "center",
-                  color: active ? "#0f766e" : "rgba(0,0,0,0.7)",
-                  transition: "all 0.2s",
-                }}
-              >
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    transform: active ? "scale(1.1)" : "scale(1)",
-                    transition: "transform 0.3s",
-                  }}
-                >
-                  {getIcon(item.icon)}
-                </Box>
-              </ListItemIcon>
-              <ListItemText
-                primary={item.text}
-                sx={{
-                  display: showText ? "block" : "none",
-                  "& .MuiListItemText-primary": {
-                    fontWeight: active ? 600 : 500,
-                    color: active ? "#0f766e" : "rgba(0,0,0,0.87)",
-                    fontSize: { xs: "0.8rem", sm: "0.82rem" },
-                    lineHeight: 1.2,
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                  },
-                }}
-              />
-              {hasChildren && showText && (
-                <IconButton
-                  size="small"
-                  sx={{
-                    color: active ? "#0f766e" : "rgba(0,0,0,0.54)",
-                    minWidth: "auto",
-                    p: 0,
-                  }}
-                >
-                  {isExpanded ? <ExpandLess /> : <ExpandMore />}
-                </IconButton>
-              )}
-              {active && !(collapsed && isMdUp) && (
-                <Box
-                  sx={{
-                    width: { xs: 4, sm: 5, lg: 6 },
-                    height: { xs: 4, sm: 5, lg: 6 },
-                    borderRadius: "50%",
-                    backgroundColor: "#0f766e",
-                    position: "absolute",
-                    right: collapsed && isMdUp ? 12 : 16,
-                    animation: "pulse 2s infinite",
-                    "@keyframes pulse": {
-                      "0%": { opacity: 1 },
-                      "50%": { opacity: 0.5 },
-                      "100%": { opacity: 1 },
-                    },
-                  }}
-                />
-              )}
-            </ListItemButton>
+<ListItemButton
+  onClick={() => {
+    if (hasChildren) {
+      handleExpandClick(item.text)
+    } else {
+      navigate(item.path)
+      if (!isMdUp) setMobileOpen(false)
+    }
+  }}
+  sx={{
+    position: "relative",
+    justifyContent: collapsed && isMdUp ? "center" : "flex-start",
+    borderRadius: 1.5,
+    mb: 0.25,
+    minHeight: 38,
+    px: collapsed && isMdUp ? 0.5 : 1.25,
+    transition: "background-color 120ms ease, border-color 120ms ease",
+
+    // --- OPEN SIDEBAR (text + icon) ---
+    ...(active && !(collapsed && isMdUp)
+      ? {
+          borderLeft: "3px solid #0f766e",
+          backgroundColor: "rgba(15,118,110,0.08)", // light green bg
+          pl: 1.5,
+        }
+      : {}),
+
+    // --- COLLAPSED (icon-only) ---
+    ...(active && collapsed && isMdUp
+      ? {
+          backgroundColor: "transparent", // no row bg
+        }
+      : {}),
+
+    "&:hover": {
+      backgroundColor:
+        collapsed && isMdUp
+          ? "transparent" // no hover fill in collapsed mode
+          : "rgba(15,118,110,0.04)", // soft wash when open
+    },
+  }}
+>
+  <ListItemIcon
+    sx={{
+      minWidth: collapsed && isMdUp ? 0 : 28,
+      mr: collapsed && isMdUp ? 0 : 1,
+      justifyContent: "center",
+      color: active ? "#0f766e" : "rgba(0,0,0,0.65)",
+      "& svg": { fontSize: 20 },
+      ...(collapsed && isMdUp && active
+        ? {
+            p: 0.5,
+            borderRadius: "8px",
+            backgroundColor: "rgba(15,118,110,0.15)", // circular highlight behind icon
+          }
+        : {}),
+    }}
+  >
+    {getIcon(item.icon)}
+  </ListItemIcon>
+
+  <ListItemText
+    primary={item.text}
+    sx={{
+      display: collapsed && isMdUp ? "none" : "block",
+      "& .MuiListItemText-primary": {
+        fontWeight: active ? 600 : 500,
+        color: active ? "#0f766e" : "rgba(0,0,0,0.82)",
+        fontSize: "0.82rem",
+        lineHeight: 1.15,
+        whiteSpace: "nowrap",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+      },
+    }}
+  />
+</ListItemButton>
+
           </Tooltip>
         </ListItem>
         {hasChildren && showText && (

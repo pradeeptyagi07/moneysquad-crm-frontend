@@ -131,6 +131,11 @@ interface LeadState {
   error: string | null
   success: string | null
   currentRemarks: LeadRemarks | null
+
+  // ↓ NEW
+  archivedLeads: Lead[]
+  archivedLoading: boolean
+  archivedError: string | null
 }
 
 const initialState: LeadState = {
@@ -141,6 +146,11 @@ const initialState: LeadState = {
   error: null,
   success: null,
   currentRemarks: null,
+
+  // ↓ NEW
+  archivedLeads: [],
+  archivedLoading: false,
+  archivedError: null,
 }
 
 enum Endpoints {
@@ -157,6 +167,8 @@ enum Endpoints {
   DISBURSE_UPDATE = "/lead/disbursed",
   REMARKS_GET = "/lead/remarks",
   REMARKS_CREATE = "/lead/create-remarks",
+  ARCHIVE_FETCH = "/lead/archived",
+
 }
 
 // Create Lead
@@ -448,6 +460,22 @@ export const fetchAllLeads = createAsyncThunk<Lead[], void, { rejectValue: strin
   },
 )
 
+// Fetch All  Archive Leads
+
+export const fetchArchivedLeads = createAsyncThunk<Lead[], void, { rejectValue: string }>(
+  "leads/fetchArchivedLeads",
+  async (_, { rejectWithValue }) => {
+    try {
+      const { data } = await axiosInstance.get(Endpoints.ARCHIVE_FETCH)
+      const list = (data?.data ?? []).map((l: any) => ({ ...l, id: l.id ?? l._id }))
+      return list as Lead[]
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data?.message || "Failed to fetch archived leads")
+    }
+  }
+)
+
+
 // Fetch One Lead
 export const fetchLeadById = createAsyncThunk<Lead, string, { rejectValue: string }>(
   "leads/fetchById",
@@ -585,20 +613,41 @@ const leadSlice = createSlice({
         state.success = "Remark added successfully!"
         state.loading = false
       })
-      .addMatcher(
-        (action) => action.type.endsWith("/pending"),
-        (state) => {
-          state.loading = true
-          state.error = null
-          state.success = null
-        },
-      )
-      .addMatcher(
-        (action) => action.type.endsWith("/rejected"),
-        (state, action) => {
-          state.loading = false
-          state.error = action.payload as string
-        },
+  // ↓ NEW: archived-only cases
+    .addCase(fetchArchivedLeads.pending, (state) => {
+      state.archivedLoading = true
+      state.archivedError = null
+    })
+    .addCase(fetchArchivedLeads.fulfilled, (state, { payload }) => {
+      state.archivedLeads = payload
+      state.archivedLoading = false
+    })
+    .addCase(fetchArchivedLeads.rejected, (state, action) => {
+      state.archivedLoading = false
+      state.archivedError = (action.payload as string) || "Failed to fetch archived leads"
+    })
+
+    // Keep your existing generic matchers, but exclude the archived thunk
+    .addMatcher(
+      (action) =>
+        action.type.startsWith("leads/") &&
+        action.type.endsWith("/pending") &&
+        action.type !== "leads/fetchArchivedLeads/pending",
+      (state) => {
+        state.loading = true
+        state.error = null
+        state.success = null
+      },
+    )
+    .addMatcher(
+      (action) =>
+        action.type.startsWith("leads/") &&
+        action.type.endsWith("/rejected") &&
+        action.type !== "leads/fetchArchivedLeads/rejected",
+      (state, action) => {
+        state.loading = false
+        state.error = action.payload as string
+      },
       )
   },
 })
