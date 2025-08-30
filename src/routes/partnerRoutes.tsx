@@ -6,7 +6,6 @@ import PartnerLayout from "../components/Layout/PartnerLayout";
 import PartnerOverview from "../pages/Overview/CommonOverview";
 import Leads from "../pages/Leads/Leads";
 import Offers from "../pages/Offers/Offers";
-import Commissions from "../pages/Commissions/Commissions";
 import Settings from "../pages/Settings/Settings";
 import { useAppSelector } from "../hooks/useAppSelector";
 import AssociateManagement from "../pages/Associates/AssociateManagement";
