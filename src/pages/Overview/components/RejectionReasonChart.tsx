@@ -196,7 +196,7 @@ const RejectionReasonsChart: React.FC = () => {
                     <Typography variant="caption" color="text.secondary">
                       {item.count} cases
                     </Typography>
-                    <Typography variant="caption" fontWeight={600} color="text.secondary">
+                    <Typography variant="caption" fontWeight={601} color="text.secondary">
                       {item.percent}%
                     </Typography>
                   </Box>
