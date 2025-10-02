@@ -12,6 +12,8 @@ const PartnerLayout = () => {
   const menuItems = [
     { text: "Overview", icon: "Dashboard", path: "/partner/overview" },
     { text: "Leads", icon: "People", path: "/partner/leads" },
+        { text: "Archived Leads", icon: "Archive", path: "/partner/archive" },
+
     { text: "Offers", icon: "LocalOffer", path: "/partner/offers" },
     { text: "Commissions", icon: "AttachMoney", path: "/partner/commissions" },
     { text: "Team Management", icon: "Groups", path: "/partner/team-management" },

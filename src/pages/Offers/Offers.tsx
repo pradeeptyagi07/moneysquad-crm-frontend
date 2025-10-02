@@ -1,207 +1,207 @@
-"use client"
+// pages/Offers.tsx
+"use client";
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react";
 import {
-  Box,
-  Typography,
-  Grid,
-  TextField,
-  InputAdornment,
-  Fab,
-  Tooltip,
-  Slide,
-  useTheme,
-  useMediaQuery,
-  Tabs,
-  Tab,
-  Snackbar,
-  Alert,
-  TablePagination,
-  Skeleton,
-  Card,
-  CardContent,
-} from "@mui/material"
-import type { TransitionProps } from "@mui/material/transitions"
-import { Add, Search, FilterList } from "@mui/icons-material"
-import { useAuth } from "../../hooks/useAuth"
-import OfferCard from "./components/OfferCard"
-import OfferDetailsDialog from "./components/OfferDetailsDialog"
-import CreateOfferDialog from "./components/CreateOfferDialog"
-import { useAppDispatch } from "../../hooks/useAppDispatch"
-import { useAppSelector } from "../../hooks/useAppSelector"
+  Box, Typography, Grid, TextField, InputAdornment, Fab, Tooltip, Slide,
+  useTheme, useMediaQuery, Tabs, Tab, Snackbar, Alert, TablePagination,
+  Skeleton, Card, CardContent
+} from "@mui/material";
+import type { TransitionProps } from "@mui/material/transitions";
+import { Add, Search, FilterList } from "@mui/icons-material";
+import { useAuth } from "../../hooks/useAuth";
+
+// IMPORTANT: import the premium card we just edited
+import OfferDetailsDialog from "./components/OfferDetailsDialog";
+import CreateOfferDialog from "./components/CreateOfferDialog";
+import { useAppDispatch } from "../../hooks/useAppDispatch";
+import { useAppSelector } from "../../hooks/useAppSelector";
 import {
-  fetchAllOffers,
-  deleteOffer,
-  clearOffersState,
-  setSelectedOffer,
-  type BankOffer,
-} from "../../store/slices/offersSlice"
+  fetchAllOffers, deleteOffer, clearOffersState, setSelectedOffer, type BankOffer,
+} from "../../store/slices/offersSlice";
+import OfferCardPremiumV5 from "./components/OfferCard";
 
 // Transition component for dialogs
 const Transition = React.forwardRef(function Transition(
   props: TransitionProps & { children: React.ReactElement },
   ref: React.Ref<unknown>,
 ) {
-  return <Slide direction="up" ref={ref} {...props} />
-})
+  return <Slide direction="up" ref={ref} {...props} />;
+});
+
+/* ------------------ expiry helpers (single source of truth) ------------------ */
+
+// robust parsing for multiple shapes: number | Date | "DD/MM/YYYY" | "YYYY-MM-DD" | ISO
+// --- Inclusive-by-date parsing: ALWAYS normalize to local end-of-day ---
+const parseExpiry = (v: unknown): Date | null => {
+  if (!v) return null;
+
+  // Helper to clamp to local end-of-day
+  const toLocalEOD = (d: Date) => {
+    if (isNaN(d.getTime())) return null;
+    const e = new Date(d);
+    e.setHours(23, 59, 59, 999);
+    return e;
+  };
+
+  if (typeof v === "number") {
+    // Treat numeric timestamps as a date and push to EOD of that date
+    const d = new Date(v);
+    return toLocalEOD(d);
+  }
+  if (v instanceof Date) {
+    return toLocalEOD(v);
+  }
+  if (typeof v === "string") {
+    const s = v.trim();
+
+    // DD/MM/YYYY or DD-MM-YYYY
+    const dmy = s.match(/^(\d{2})[\/-](\d{2})[\/-](\d{4})$/);
+    if (dmy) {
+      const [, dd, mm, yyyy] = dmy;
+      const d = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
+      return toLocalEOD(d);
+    }
+
+    // YYYY-MM-DD (optional Z)
+    const ymd = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:Z)?$/);
+    if (ymd) {
+      const [, yyyy, mm, dd] = ymd;
+      const d = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
+      return toLocalEOD(d);
+    }
+
+    // Fallback: parse, then clamp to EOD
+    const d = new Date(s);
+    return toLocalEOD(d);
+  }
+
+  return null;
+};
+
+const pickValidity = (offer: Partial<BankOffer> & Record<string, any>) =>
+  offer.offerValidity ?? offer.validity ?? offer.expiryDate ?? offer.expiry ?? offer.validTill ?? null;
+
+const getExpiryTs = (offer: BankOffer): number => {
+  const raw = pickValidity(offer as any);
+  const d = parseExpiry(raw);
+  return d ? d.getTime() : Number.POSITIVE_INFINITY;
+};
+
+// NOTE the strict ">" so it expires only AFTER the date is fully over.
+const isOfferExpired = (offer: BankOffer): boolean => {
+  const ts = getExpiryTs(offer);
+  if (!isFinite(ts)) return false; // no expiry -> not expired
+  return Date.now() > ts;
+};
+
+
+// Sorter: non-expired first, then featured first, then nearest expiry, then bank name
+const byExpiryThenFeatured = (
+  a: BankOffer & { _expired?: boolean; _expiryTs?: number },
+  b: BankOffer & { _expired?: boolean; _expiryTs?: number },
+) => {
+    const aExpired = !!a._expired;
+    const bExpired = !!b._expired;
+    if (aExpired !== bExpired) return aExpired ? 1 : -1;
+
+    const aFeat = !!a.isFeatured;
+    const bFeat = !!b.isFeatured;
+    if (aFeat !== bFeat) return aFeat ? -1 : 1;
+
+    const aTs = a._expiryTs ?? Number.POSITIVE_INFINITY;
+    const bTs = b._expiryTs ?? Number.POSITIVE_INFINITY;
+    if (aTs !== bTs) return aTs - bTs;
+
+    return (a.bankName || "").localeCompare(b.bankName || "");
+};
+
+/* ------------------ component ------------------ */
 
 const Offers: React.FC = () => {
-  const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"))
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
-  // 1s delay to show skeleton before real data
-  const [showSkeleton, setShowSkeleton] = useState(true)
+  const [showSkeleton, setShowSkeleton] = useState(true);
   useEffect(() => {
-    const timer = setTimeout(() => setShowSkeleton(false), 1000)
-    return () => clearTimeout(timer)
-  }, [])
+    const timer = setTimeout(() => setShowSkeleton(false), 1000);
+    return () => clearTimeout(timer);
+  }, []);
 
-  // Dialog & filter/search state
-  const [openDialog, setOpenDialog] = useState(false)
-  const [openCreateDialog, setOpenCreateDialog] = useState(false)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [filterTab, setFilterTab] = useState(0)
-  const [selectedOfferId, setSelectedOfferId] = useState<string | null>(null)
-  const { userRole } = useAuth()
+  const [openDialog, setOpenDialog] = useState(false);
+  const [openCreateDialog, setOpenCreateDialog] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterTab, setFilterTab] = useState(0);
+  const [selectedOfferId, setSelectedOfferId] = useState<string | null>(null);
+  const { userRole } = useAuth();
 
-  // Redux state & dispatch
-  const dispatch = useAppDispatch()
-  const { offers, loading, error, success } = useAppSelector((state) => state.offers)
-  const selectedOffer = useAppSelector((state) => state.offers.selectedOffer)
+  const dispatch = useAppDispatch();
+  const { offers, loading, error, success } = useAppSelector((state) => state.offers);
+  const selectedOffer = useAppSelector((state) => state.offers.selectedOffer);
 
-  // Pagination state
-  const [page, setPage] = useState(0)
-  const [rowsPerPage, setRowsPerPage] = useState(9)
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(9);
+  useEffect(() => { setPage(0); }, [searchTerm, filterTab, rowsPerPage]);
 
-  // Snackbar notifications
   const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: "",
-    severity: "success" as "success" | "error",
-  })
+    open: false, message: "", severity: "success" as "success" | "error",
+  });
 
-  // Initial fetch
-  useEffect(() => {
-    dispatch(fetchAllOffers())
-  }, [dispatch])
+  useEffect(() => { dispatch(fetchAllOffers()); }, [dispatch]);
 
-  // Show success / error messages
   useEffect(() => {
     if (success) {
-      setSnackbar({ open: true, message: success, severity: "success" })
-      setTimeout(() => dispatch(clearOffersState()), 5000)
+      setSnackbar({ open: true, message: success, severity: "success" });
+      setTimeout(() => dispatch(clearOffersState()), 5000);
     }
     if (error) {
-      setSnackbar({ open: true, message: error, severity: "error" })
-      setTimeout(() => dispatch(clearOffersState()), 5000)
+      setSnackbar({ open: true, message: error, severity: "error" });
+      setTimeout(() => dispatch(clearOffersState()), 5000);
     }
-  }, [success, error, dispatch])
+  }, [success, error, dispatch]);
 
-  // Handlers
-  const handleOpenDialog = (offer: BankOffer) => {
-    setSelectedOfferId(offer._id)
-    setOpenDialog(true)
-  }
+  const handleOpenDialog = (offer: BankOffer) => { setSelectedOfferId(offer._id); setOpenDialog(true); };
   const handleCloseDialog = () => {
-    setOpenDialog(false)
-    setTimeout(() => {
-      setSelectedOfferId(null)
-      dispatch(setSelectedOffer(null))
-    }, 300)
-  }
-  const handleOpenCreateDialog = () => setOpenCreateDialog(true)
-  const handleCloseCreateDialog = () => {
-    setOpenCreateDialog(false)
-    dispatch(setSelectedOffer(null))
-  }
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)
-  const handleFilterChange = (_: React.SyntheticEvent, newVal: number) => setFilterTab(newVal)
-  const handleChangePage = (_: unknown, newPage: number) => setPage(newPage)
+    setOpenDialog(false);
+    setTimeout(() => { setSelectedOfferId(null); dispatch(setSelectedOffer(null)); }, 300);
+  };
+  const handleOpenCreateDialog = () => setOpenCreateDialog(true);
+  const handleCloseCreateDialog = () => { setOpenCreateDialog(false); dispatch(setSelectedOffer(null)); };
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value);
+  const handleFilterChange = (_: React.SyntheticEvent, newVal: number) => setFilterTab(newVal);
+  const handleChangePage = (_: unknown, newPage: number) => setPage(newPage);
   const handleChangeRowsPerPage = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setRowsPerPage(Number.parseInt(e.target.value, 10))
-    setPage(0)
-  }
-  const handleCloseSnackbar = () => setSnackbar((prev) => ({ ...prev, open: false }))
-  const handleDeleteOffer = (id: string) => dispatch(deleteOffer(id))
-  const handleEditOffer = (offer: BankOffer) => {
-    dispatch(setSelectedOffer(offer))
-    setOpenCreateDialog(true)
-  }
+    setRowsPerPage(Number.parseInt(e.target.value, 10)); setPage(0);
+  };
+  const handleCloseSnackbar = () => setSnackbar((prev) => ({ ...prev, open: false }));
+  const handleDeleteOffer = (id: string) => dispatch(deleteOffer(id));
+  const handleEditOffer = (offer: BankOffer) => { dispatch(setSelectedOffer(offer)); setOpenCreateDialog(true); };
 
-  // Helper function to check if offer is expired
-  const isOfferExpired = (offer: BankOffer): boolean => {
-    if (!offer.offerValidity) return false
-    const expiryDate = new Date(offer.offerValidity)
-    const currentDate = new Date()
-    return expiryDate.getTime() < currentDate.getTime()
-  }
+  // Compute once, keep consistent across sort & UI
+  const computed = Array.isArray(offers)
+    ? offers.map((o) => ({ ...o, _expiryTs: getExpiryTs(o), _expired: isOfferExpired(o) }))
+    : [];
 
-  // Filter & paginate logic with proper sorting
-  const filteredOffers = Array.isArray(offers)
-    ? offers
-        .filter((offer) => {
-          // Search filter
-          const searchFields = [offer.bankName, offer.loanType, offer.offerHeadline]
-            .filter(Boolean)
-            .map((field) => field!.toLowerCase())
+  const filteredOffers = computed
+    .filter((offer) => {
+      const search = searchTerm.toLowerCase();
+      const fields = [offer.bankName, offer.loanType, offer.offerHeadline]
+        .filter(Boolean).map((f) => f!.toLowerCase());
+      const matchesSearch = search ? fields.some((f) => f.includes(search)) : true;
+      if (!matchesSearch) return false;
 
-          const matchesSearch = searchFields.some((field) => field.includes(searchTerm.toLowerCase()))
+      const lt = (offer.loanType || "").toLowerCase();
+      switch (filterTab) {
+        case 1: return !!offer.isFeatured;
+        case 2: return /(?:^|\b)(pl|personal)(?:\b|$)/i.test(lt);
+        case 3: return /(?:^|\b)(bl|business)(?:\b|$)/i.test(lt);
+        case 4: return /sepl/i.test(lt);
+        default: return true;
+      }
+    })
+    .sort(byExpiryThenFeatured);
 
-          if (!matchesSearch) return false
-
-          // Tab filters
-          switch (filterTab) {
-            case 1: // Featured
-              return offer.isFeatured
-            case 2: // Personal Loans
-              return offer.loanType.toLowerCase().includes("pl") || offer.loanType.toLowerCase().includes("personal")
-            case 3: // Business Loans
-              return offer.loanType.toLowerCase().includes("bl") || offer.loanType.toLowerCase().includes("business")
-            case 4: // SEPL Loans
-              return offer.loanType.toLowerCase().includes("sepl")
-            default: // All
-              return true
-          }
-        })
-        .sort((a, b) => {
-          // Check if offers are expired
-          const aExpired = isOfferExpired(a)
-          const bExpired = isOfferExpired(b)
-
-          console.log(`Sorting: ${a.bankName} (expired: ${aExpired}) vs ${b.bankName} (expired: ${bExpired})`)
-
-          // If one is expired and the other isn't, put expired at the end
-          if (aExpired && !bExpired) {
-            console.log(`Moving ${a.bankName} to end (expired)`)
-            return 1
-          }
-          if (!aExpired && bExpired) {
-            console.log(`Moving ${b.bankName} to end (expired)`)
-            return -1
-          }
-
-          // If both have same expiration status, sort by featured status
-          if (a.isFeatured && !b.isFeatured) return -1
-          if (!a.isFeatured && b.isFeatured) return 1
-
-          // If both have same expiration and featured status, maintain original order
-          return 0
-        })
-    : []
-
-  const paginatedOffers = filteredOffers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-
-  // Debug logging
-  useEffect(() => {
-    if (filteredOffers.length > 0) {
-      console.log("Filtered offers order:")
-      filteredOffers.forEach((offer, index) => {
-        console.log(
-          `${index + 1}. ${offer.bankName} - Expired: ${isOfferExpired(offer)} - Validity: ${offer.offerValidity}`,
-        )
-      })
-    }
-  }, [filteredOffers])
+  const paginatedOffers = filteredOffers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
   return (
     <Box>
@@ -217,9 +217,7 @@ const Offers: React.FC = () => {
                 sx={{
                   boxShadow: "0 8px 16px rgba(37,99,235,0.2)",
                   background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
-                  "&:hover": {
-                    background: "linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%)",
-                  },
+                  "&:hover": { background: "linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%)" },
                 }}
               >
                 <Add />
@@ -235,11 +233,7 @@ const Offers: React.FC = () => {
               value={searchTerm}
               onChange={handleSearchChange}
               InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Search />
-                  </InputAdornment>
-                ),
+                startAdornment: (<InputAdornment position="start"><Search /></InputAdornment>),
                 sx: { borderRadius: 2 },
               }}
             />
@@ -265,7 +259,7 @@ const Offers: React.FC = () => {
         </Grid>
       </Box>
 
-      {/* Skeleton loading matching card shape */}
+      {/* Skeletons */}
       {loading && offers.length === 0 && showSkeleton && (
         <Grid container spacing={2}>
           {Array.from({ length: rowsPerPage }).map((_, i) => (
@@ -281,9 +275,7 @@ const Offers: React.FC = () => {
                     <Skeleton width="40%" height={20} />
                     <Skeleton width="40%" height={20} />
                   </Box>
-                  <Box mt={2}>
-                    <Skeleton variant="rectangular" width="100%" height={40} />
-                  </Box>
+                  <Box mt={2}><Skeleton variant="rectangular" width="100%" height={40} /></Box>
                 </CardContent>
               </Card>
             </Grid>
@@ -294,30 +286,28 @@ const Offers: React.FC = () => {
       {/* No results */}
       {!loading && paginatedOffers.length === 0 && (
         <Box textAlign="center" my={8} p={3} bgcolor="background.paper" borderRadius={2}>
-          <Typography variant="h6" color="text.secondary">
-            No offers found
-          </Typography>
+          <Typography variant="h6" color="text.secondary">No offers found</Typography>
           <Typography variant="body2" color="text.secondary">
-            {searchTerm
-              ? "Try adjusting your search or filters"
-              : "There are no offers available at the moment. Check back later or create a new offer."}
+            {searchTerm ? "Try adjusting your search or filters"
+                        : "There are no offers available at the moment. Check back later or create a new offer."}
           </Typography>
         </Box>
       )}
 
       {/* Offer cards */}
       <Grid container spacing={4}>
-        {!loading &&
-          paginatedOffers.map((offer) => (
-            <Grid item xs={12} sm={6} md={4} key={offer._id}>
-              <OfferCard
-                offer={offer}
-                onViewDetails={handleOpenDialog}
-                onDeleteOffer={userRole === "admin" ? handleDeleteOffer : undefined}
-                onEditOffer={userRole === "admin" ? handleEditOffer : undefined}
-              />
-            </Grid>
-          ))}
+        {!loading && paginatedOffers.map((offer) => (
+          <Grid item xs={12} sm={6} md={4} key={offer._id}>
+            <OfferCardPremiumV5
+              offer={offer}
+              expired={offer._expired}
+              expiryTs={offer._expiryTs}
+              onViewDetails={handleOpenDialog}
+              onDeleteOffer={userRole === "admin" ? handleDeleteOffer : undefined}
+              onEditOffer={userRole === "admin" ? handleEditOffer : undefined}
+            />
+          </Grid>
+        ))}
       </Grid>
 
       {/* Pagination */}
@@ -359,7 +349,7 @@ const Offers: React.FC = () => {
         </Alert>
       </Snackbar>
     </Box>
-  )
-}
+  );
+};
 
-export default Offers
+export default Offers;

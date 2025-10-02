@@ -51,8 +51,8 @@ const partnerRoutes: RouteObject[] = [
         path: "leads",
         element: <Leads />,
       },
-      {
-        path: "archive-leads",
+ {
+        path: "archive",
         element: <ArchiveLeads />,
       },
 

@@ -1,4 +1,4 @@
-// OfferCardPremiumV5.tsx
+// components/OfferCardPremiumV5.tsx
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
@@ -26,6 +26,11 @@ interface OfferCardProps {
   onViewDetails: (offer: BankOffer) => void;
   onDeleteOffer?: (id: string) => void;
   onEditOffer?: (offer: BankOffer) => void;
+
+  /** injected from parent to keep sort & UI consistent */
+  expired?: boolean;
+  /** injected from parent (ms since epoch); Infinity or undefined = no expiry */
+  expiryTs?: number;
 }
 
 const PremiumCard = styled(Card)(({ theme }) => ({
@@ -48,19 +53,31 @@ const OfferCardPremiumV5: React.FC<OfferCardProps> = ({
   onViewDetails,
   onDeleteOffer,
   onEditOffer,
+  expired,
+  expiryTs,
 }) => {
   const theme = useTheme();
   const { userRole } = useAuth();
 
-  // expiration timer
-  const [timeLeft, setTimeLeft] = useState("");
-  const expirationDate = useMemo(() => {
-    if (!offer.offerValidity) return null;
-    const d = new Date(offer.offerValidity);
-    d.setHours(23, 59, 59, 999);
-    return d;
-  }, [offer.offerValidity]);
+// inside OfferCardPremiumV5
+const expirationDate = useMemo(() => {
+  if (typeof expiryTs === "number" && isFinite(expiryTs)) {
+    return new Date(expiryTs); // already EOD
+  }
+  if (!offer.offerValidity) return null;
+  const d = new Date(offer.offerValidity);
+  d.setHours(23, 59, 59, 999); // clamp to EOD for any local parse
+  return isNaN(d.getTime()) ? null : d;
+}, [expiryTs, offer.offerValidity]);
 
+const isExpired = typeof expired === "boolean"
+  ? expired
+  : !!expirationDate && Date.now() > expirationDate.getTime(); // strict >
+
+
+
+  // countdown
+  const [timeLeft, setTimeLeft] = useState("");
   useEffect(() => {
     if (!expirationDate) return;
     const tick = () => {
@@ -76,14 +93,12 @@ const OfferCardPremiumV5: React.FC<OfferCardProps> = ({
     return () => clearInterval(id);
   }, [expirationDate]);
 
-  const isExpired = !!expirationDate && expirationDate.getTime() < Date.now();
-
-  const fmt = (s: string) => {
-    const d = new Date(s);
-    return [d.getDate(), d.getMonth() + 1, d.getFullYear()]
-      .map((n) => String(n).padStart(2, "0"))
-      .join("/");
-  };
+  const fmt = (d?: Date | null) =>
+    d
+      ? [d.getDate(), d.getMonth() + 1, d.getFullYear()]
+          .map((n) => String(n).padStart(2, "0"))
+          .join("/")
+      : "-";
 
   const { gradient, textColor } =
     loanTypeColors[offer.loanType] || loanTypeColors.Other;
@@ -144,17 +159,17 @@ const OfferCardPremiumV5: React.FC<OfferCardProps> = ({
         )}
 
         {/* Loan-type chip */}
-        <Box sx={{ position: "absolute", top: 33, right: 33, zIndex: 2, }}>
+        <Box sx={{ position: "absolute", top: 33, right: 33, zIndex: 2 }}>
           <Chip
             label={offer.loanType}
             size="small"
-            sx={{ px: 1, fontWeight: 600, background: gradient, color: textColor ,borderRadius:5}}
+            sx={{ px: 1, fontWeight: 600, background: gradient, color: textColor, borderRadius: 5 }}
           />
         </Box>
 
         <CardContent sx={{ pt: 1, px: 1, pb: 1 }}>
           {/* Date/time bar */}
-          {offer.offerValidity && (
+          {expirationDate && (
             <Box
               sx={{
                 display: "flex",
@@ -172,11 +187,11 @@ const OfferCardPremiumV5: React.FC<OfferCardProps> = ({
               <Box sx={{ display: "flex", alignItems: "center" }}>
                 <AccessTime sx={{ mr: 1, color: "primary.main" }} />
                 <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                  {timeLeft}
+                  {timeLeft || (isExpired ? "Expired" : "")}
                 </Typography>
               </Box>
               <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                Expires {fmt(offer.offerValidity)}
+                Expires {fmt(expirationDate)}
               </Typography>
             </Box>
           )}
@@ -224,9 +239,7 @@ const OfferCardPremiumV5: React.FC<OfferCardProps> = ({
           </Typography>
 
           {/* Accent divider */}
-          <Box
-            sx={{ width: 80, height: 3, bgcolor: "primary.main", borderRadius: 1, mb: 3 }}
-          />
+          <Box sx={{ width: 80, height: 3, bgcolor: "primary.main", borderRadius: 1, mb: 3 }} />
 
           {/* Rates grid */}
           <Grid container spacing={2} sx={{ mb: 3 }}>
