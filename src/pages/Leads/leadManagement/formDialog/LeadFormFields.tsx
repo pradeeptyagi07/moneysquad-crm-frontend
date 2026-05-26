@@ -24,6 +24,7 @@ import { useAppSelector } from "../../../../hooks/useAppSelector";
 import { useAuth } from "../../../../hooks/useAuth";
 import type { FieldConfig, FieldKey } from "../../utils/fieldVisibility";
 import type { LeadFormData } from "./LeadFormDialog";
+import axiosInstance from "../../../../services/api";
 
 interface Option {
   id: string;
@@ -158,20 +159,19 @@ const LeadFormFields: React.FC<LeadFormFieldsProps> = ({
     }
 
     const timeout = setTimeout(() => {
-      fetch(`https://api.postalpincode.in/pincode/${pin}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (
-            Array.isArray(data) &&
-            data[0]?.Status === "Success" &&
-            data[0]?.PostOffice?.length
-          ) {
-            const { State, District } = data[0].PostOffice[0];
-            onFieldChange("state", State);
-            onFieldChange("city", District);
+      axiosInstance
+        .get(`/common/pincode/${pin}`)
+        .then((response) => {
+          const location = response.data?.data;
+          if (location?.state && location?.city) {
+            onFieldChange("state", location.state);
+            onFieldChange("city", location.city);
           }
         })
-        .catch(() => {});
+        .catch(() => {
+          onFieldChange("city", "");
+          onFieldChange("state", "");
+        });
     }, 500);
 
     return () => clearTimeout(timeout);
